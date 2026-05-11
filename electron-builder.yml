@@ -1,0 +1,31 @@
+appId: com.draw-to-web.app
+productName: Draw to Web
+copyright: Copyright © 2026
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**/*
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.*'
+  - '!tsconfig*.json'
+  - '!.eslintrc.*'
+  - '!.prettierrc'
+
+win:
+  executableName: draw-to-web
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+  oneClick: false
+  allowToChangeInstallationDirectory: true

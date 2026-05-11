@@ -1,0 +1,45 @@
+{
+  "name": "draw-to-web",
+  "version": "0.1.0",
+  "description": "Convert visual canvas layouts into clean, semantic HTML/CSS",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build && electron-builder --win",
+    "build:dir": "electron-vite build && electron-builder --win --dir",
+    "preview": "electron-vite preview",
+    "test": "vitest run",
+    "test:a11y": "vitest run tests/a11y",
+    "lint": "eslint . --ext .ts,.tsx && prettier --check .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "konva": "^9.3.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-konva": "^18.2.10",
+    "zustand": "^4.5.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.19.1",
+    "@typescript-eslint/parser": "^6.19.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "axe-core": "^4.8.3",
+    "electron": "^28.2.0",
+    "electron-builder": "^24.9.1",
+    "electron-vite": "^2.0.0",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.2.4",
+    "typescript": "~5.3.3",
+    "vitest": "^1.2.2"
+  }
+}

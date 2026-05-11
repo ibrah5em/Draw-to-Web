@@ -1,0 +1,11 @@
+node_modules/
+out/
+dist/
+.DS_Store
+*.log
+
+# Claude Code
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.mcp.json

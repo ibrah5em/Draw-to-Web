@@ -1,0 +1,13 @@
+# Normalize line endings: store as LF, check out as LF on all platforms.
+# Prevents CRLF churn when contributors work on Windows + WSL/macOS/Linux.
+* text=auto eol=lf
+
+# Binary files — never touch
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.zip binary

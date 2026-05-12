@@ -2,11 +2,18 @@
   "name": "draw-to-web",
   "version": "0.1.0",
   "description": "Convert visual canvas layouts into clean, semantic HTML/CSS",
+  "author": {
+    "name": "Draw-to-Web Team"
+  },
+  "license": "MIT",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "electron-vite build && electron-builder --win",
-    "build:dir": "electron-vite build && electron-builder --win --dir",
+    "build": "electron-vite build && electron-builder",
+    "build:win": "electron-vite build && electron-builder --win",
+    "build:linux": "electron-vite build && electron-builder --linux",
+    "build:dir": "electron-vite build && electron-builder --dir",
+    "compile": "electron-vite build",
     "preview": "electron-vite preview",
     "test": "vitest run",
     "test:a11y": "vitest run tests/a11y",
@@ -25,6 +32,7 @@
     "node": ">=20.0.0"
   },
   "devDependencies": {
+    "@types/jsdom": "^28.0.3",
     "@types/node": "^20.11.5",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
@@ -38,6 +46,7 @@
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "jsdom": "^29.1.1",
     "prettier": "^3.2.4",
     "typescript": "~5.3.3",
     "vitest": "^1.2.2"

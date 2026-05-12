@@ -11,6 +11,18 @@ interface ElectronAPI {
   ) => Promise<{ success: boolean; filePath?: string; error?: string }>
   /** Opens a native save dialog and returns the chosen path, or null if canceled. */
   showSaveDialog: (options: SaveDialogOptions) => Promise<string | null>
+  /** Serializes the project (JSON string) and prompts for a save location. */
+  saveProject: (
+    json: string,
+    suggestedName: string
+  ) => Promise<{ success: boolean; filePath?: string; error?: string }>
+  /** Prompts for a .dtw file and returns its JSON content. */
+  openProject: () => Promise<{
+    success: boolean
+    filePath?: string
+    json?: string
+    error?: string
+  }>
   /** Returns the application version string (synchronous, stamped at preload startup). */
   getAppVersion: () => string
   /** Subscribes to menu actions sent from the main process. Returns an unsubscribe function. */

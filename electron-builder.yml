@@ -1,6 +1,7 @@
 appId: com.draw-to-web.app
 productName: Draw to Web
 copyright: Copyright © 2026
+artifactName: ${name}-${version}-${os}-${arch}.${ext}
 
 directories:
   buildResources: build
@@ -29,3 +30,33 @@ nsis:
   createDesktopShortcut: always
   oneClick: false
   allowToChangeInstallationDirectory: true
+
+linux:
+  category: Graphics
+  synopsis: Convert visual canvas layouts into clean, semantic HTML/CSS
+  desktop:
+    StartupWMClass: draw-to-web
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+
+appImage:
+  artifactName: ${name}-${version}-${arch}.${ext}
+
+deb:
+  artifactName: ${name}_${version}_${arch}.${ext}
+  maintainer: Draw-to-Web Team <draw-to-web@example.com>
+  depends:
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - xdg-utils
+    - libatspi2.0-0
+    - libuuid1
+    - libsecret-1-0

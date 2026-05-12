@@ -29,6 +29,17 @@ function buildMenu(win: BrowserWindow): void {
       label: 'File',
       submenu: [
         {
+          label: 'Open Project…',
+          accelerator: 'CmdOrCtrl+O',
+          click: () => win.webContents.send('menu:action', 'open-project'),
+        },
+        {
+          label: 'Save Project…',
+          accelerator: 'CmdOrCtrl+S',
+          click: () => win.webContents.send('menu:action', 'save-project'),
+        },
+        { type: 'separator' },
+        {
           label: 'Export…',
           accelerator: 'CmdOrCtrl+E',
           click: () => win.webContents.send('menu:action', 'export'),

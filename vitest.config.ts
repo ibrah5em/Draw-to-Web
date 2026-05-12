@@ -15,6 +15,7 @@ export default defineConfig({
       '@generator': resolve(__dirname, 'src/generator'),
       '@seo': resolve(__dirname, 'src/seo'),
       '@export': resolve(__dirname, 'src/export'),
+      '@project': resolve(__dirname, 'src/project'),
       '@shared': resolve(__dirname, 'src/shared'),
     },
   },

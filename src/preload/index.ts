@@ -12,6 +12,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     filters?: Array<{ name: string; extensions: string[] }>
   }) => ipcRenderer.invoke('dialog:save', options),
 
+  saveProject: (json: string, suggestedName: string) =>
+    ipcRenderer.invoke('project:save', json, suggestedName),
+
+  openProject: () => ipcRenderer.invoke('project:open'),
+
   getAppVersion: () => APP_VERSION,
 
   onMenuAction: (callback: (action: string) => void) => {

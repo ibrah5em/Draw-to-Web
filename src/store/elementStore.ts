@@ -26,6 +26,8 @@ interface ElementActions {
   updateElement: (id: string, patch: Partial<Omit<CanvasElement, 'id'>>) => void
   removeElement: (id: string) => void
   setSelected: (id: string | null) => void
+  /** Replaces the entire element list — used by project file load (.dtw). */
+  replaceElements: (elements: CanvasElement[]) => void
 }
 
 export type ElementStore = ElementState & ElementActions
@@ -51,4 +53,6 @@ export const useElementStore = create<ElementStore>()((set) => ({
     })),
 
   setSelected: (id) => set({ selectedId: id }),
+
+  replaceElements: (elements) => set({ elements, selectedId: null }),
 }))

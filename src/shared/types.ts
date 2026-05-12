@@ -34,10 +34,38 @@ export interface SEOReport {
   imagesMissingAlt: number
 }
 
+/** A single axe-core rule violation. */
+export interface AccessibilityViolation {
+  /** axe-core rule id (e.g. "image-alt"). */
+  id: string
+  impact: 'critical' | 'serious' | 'moderate' | 'minor'
+  description: string
+  help: string
+  helpUrl: string
+  /** Count of nodes in the document that violate this rule. */
+  nodes: number
+}
+
+/** Result of running the axe-core accessibility gate against generated HTML. */
+export interface AccessibilityReport {
+  /** False if any violation has impact "critical" or "serious" — blocks export. */
+  passed: boolean
+  violations: readonly AccessibilityViolation[]
+  counts: Readonly<{ critical: number; serious: number; moderate: number; minor: number }>
+}
+
+/** Combined pre-export report shown to the user. */
+export interface FullExportReport {
+  seo: SEOReport
+  accessibility: AccessibilityReport
+  /** Actionable guidance strings — informational for SEO, blocking for a11y. */
+  guidance: readonly string[]
+}
+
 /** Final result returned to the renderer after the full export pipeline completes. */
 export interface ExportResult {
   success: boolean
   path?: string
   error?: string
-  report?: SEOReport
+  report?: FullExportReport
 }

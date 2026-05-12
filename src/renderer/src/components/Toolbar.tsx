@@ -10,7 +10,7 @@ export default function Toolbar(): JSX.Element {
         alignItems: 'center',
         padding: '0 16px',
         gap: 8,
-        flexShrink: 0
+        flexShrink: 0,
       }}
     >
       <span style={{ fontWeight: 600, fontSize: 14 }}>Draw to Web</span>

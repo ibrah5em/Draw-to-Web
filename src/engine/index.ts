@@ -1,8 +1,19 @@
 // Semantic inference engine — owned by Luf8y. Do not edit without team sign-off.
 import type { CanvasElement } from '../store/elementStore'
 
-export type SemanticTag = 'header' | 'nav' | 'main' | 'footer' | 'section' | 'div'
-  | 'h1' | 'h2' | 'h3' | 'p' | 'img' | 'button'
+export type SemanticTag =
+  | 'header'
+  | 'nav'
+  | 'main'
+  | 'footer'
+  | 'section'
+  | 'div'
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'p'
+  | 'img'
+  | 'button'
 
 export interface SemanticElement extends CanvasElement {
   semanticTag: SemanticTag

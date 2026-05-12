@@ -29,15 +29,15 @@ npm run dev
 
 ## Commands
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start in dev mode with hot reload |
-| `npm run build` | Build + package to `.exe` (Windows) |
+| Command             | Description                                 |
+| ------------------- | ------------------------------------------- |
+| `npm run dev`       | Start in dev mode with hot reload           |
+| `npm run build`     | Build + package to `.exe` (Windows)         |
 | `npm run build:dir` | Build only (no installer, faster iteration) |
-| `npm run test` | Run Vitest test suite |
-| `npm run test:a11y` | Run axe-core accessibility checks |
-| `npm run lint` | ESLint + Prettier check |
-| `npm run typecheck` | TypeScript type check |
+| `npm run test`      | Run Vitest test suite                       |
+| `npm run test:a11y` | Run axe-core accessibility checks           |
+| `npm run lint`      | ESLint + Prettier check                     |
+| `npm run typecheck` | TypeScript type check                       |
 
 ## Architecture
 

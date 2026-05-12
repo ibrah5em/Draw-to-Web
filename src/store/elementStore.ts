@@ -36,19 +36,19 @@ export const useElementStore = create<ElementStore>()((set) => ({
 
   addElement: (element) =>
     set((state) => ({
-      elements: [...state.elements, { ...element, id: crypto.randomUUID() }]
+      elements: [...state.elements, { ...element, id: crypto.randomUUID() }],
     })),
 
   updateElement: (id, patch) =>
     set((state) => ({
-      elements: state.elements.map((el) => (el.id === id ? { ...el, ...patch } : el))
+      elements: state.elements.map((el) => (el.id === id ? { ...el, ...patch } : el)),
     })),
 
   removeElement: (id) =>
     set((state) => ({
       elements: state.elements.filter((el) => el.id !== id),
-      selectedId: state.selectedId === id ? null : state.selectedId
+      selectedId: state.selectedId === id ? null : state.selectedId,
     })),
 
-  setSelected: (id) => set({ selectedId: id })
+  setSelected: (id) => set({ selectedId: id }),
 }))

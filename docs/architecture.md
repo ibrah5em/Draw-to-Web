@@ -17,28 +17,31 @@ Canvas Editor → Element Store → Inference Engine → Code Generator → SEO 
 ## Process Boundaries
 
 ### Main Process (`src/main/`)
+
 - Electron lifecycle, native file dialogs, `fs` writes
 - IPC handlers only — no business logic
 
 ### Renderer Process (`src/renderer/`, `src/store/`, `src/engine/`, `src/generator/`, `src/seo/`, `src/export/`)
+
 - All UI and business logic
 - Communicates to main via `window.electronAPI` (preload bridge)
 
 ### Preload (`src/preload/`)
+
 - Exposes a typed `window.electronAPI` via `contextBridge`
 - No raw `ipcRenderer` access in renderer
 
 ## Module Ownership
 
-| Module | Owner | Responsibility |
-|--------|-------|----------------|
-| `src/main/` | Ibrahim | Electron shell, IPC, native file ops |
-| `src/renderer/` | Yousef | Canvas UI, toolbar, properties panel |
-| `src/store/` | Yousef | Zustand element store, undo/redo |
-| `src/engine/` | Luf8y | Spatial → semantic tag inference |
-| `src/generator/` | Ibrahim | HTML/CSS emission from element tree |
-| `src/seo/` | Ibrahim | SEO meta tags, ARIA, heading structure |
-| `src/export/` | Ibrahim | ZIP bundling, export pipeline |
+| Module           | Owner   | Responsibility                         |
+| ---------------- | ------- | -------------------------------------- |
+| `src/main/`      | Ibrahim | Electron shell, IPC, native file ops   |
+| `src/renderer/`  | Yousef  | Canvas UI, toolbar, properties panel   |
+| `src/store/`     | Yousef  | Zustand element store, undo/redo       |
+| `src/engine/`    | Luf8y   | Spatial → semantic tag inference       |
+| `src/generator/` | Ibrahim | HTML/CSS emission from element tree    |
+| `src/seo/`       | Ibrahim | SEO meta tags, ARIA, heading structure |
+| `src/export/`    | Ibrahim | ZIP bundling, export pipeline          |
 
 ## Key Invariants
 

@@ -8,7 +8,7 @@ export default function PropertiesPanel(): JSX.Element {
         borderLeft: '1px solid #333',
         padding: 16,
         flexShrink: 0,
-        overflowY: 'auto'
+        overflowY: 'auto',
       }}
     >
       <p style={{ fontSize: 12, color: '#666' }}>Select an element to edit its properties.</p>

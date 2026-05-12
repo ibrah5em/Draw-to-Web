@@ -4,10 +4,10 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
   },
   preload: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
   },
   renderer: {
     resolve: {
@@ -17,9 +17,10 @@ export default defineConfig({
         '@engine': resolve('src/engine'),
         '@generator': resolve('src/generator'),
         '@seo': resolve('src/seo'),
-        '@export': resolve('src/export')
-      }
+        '@export': resolve('src/export'),
+        '@shared': resolve('src/shared'),
+      },
     },
-    plugins: [react()]
-  }
+    plugins: [react()],
+  },
 })

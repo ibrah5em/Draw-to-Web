@@ -6,21 +6,21 @@ The canonical data structure that all layers operate on. Defined in `src/store/e
 
 ```ts
 interface CanvasElement {
-  id: string                      // UUID, stable across sessions
+  id: string // UUID, stable across sessions
   type: 'rectangle' | 'text' | 'image' | 'button'
-  x: number                       // Grid column index (0–11)
-  y: number                       // Pixel Y from canvas top
-  width: number                   // Grid column span (1–12)
-  height: number                  // Pixel height
+  x: number // Grid column index (0–11)
+  y: number // Pixel Y from canvas top
+  width: number // Grid column span (1–12)
+  height: number // Pixel height
   props: {
-    text?: string                 // text/button label
-    src?: string                  // image URL or data URI
-    alt?: string                  // image alt text (required for a11y gate)
-    fontSize?: number             // text: px
+    text?: string // text/button label
+    src?: string // image URL or data URI
+    alt?: string // image alt text (required for a11y gate)
+    fontSize?: number // text: px
     fontFamily?: string
-    color?: string                // CSS color
-    background?: string           // CSS color
-    borderRadius?: number         // px
+    color?: string // CSS color
+    background?: string // CSS color
+    borderRadius?: number // px
   }
 }
 ```
@@ -28,9 +28,9 @@ interface CanvasElement {
 ## Type → HTML Mapping
 
 | type      | HTML tag   | Condition                          |
-|-----------|------------|------------------------------------|
-| rectangle | `<header>` | y < 80 and width ≥ 10             |
-| rectangle | `<footer>` | bottom of canvas and width ≥ 10   |
+| --------- | ---------- | ---------------------------------- |
+| rectangle | `<header>` | y < 80 and width ≥ 10              |
+| rectangle | `<footer>` | bottom of canvas and width ≥ 10    |
 | rectangle | `<main>`   | largest central element            |
 | rectangle | `<nav>`    | children are a horizontal link row |
 | rectangle | `<div>`    | default                            |

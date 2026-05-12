@@ -1,10 +1,2 @@
-interface ElectronAPI {
-  exportZip: (
-    zipBuffer: ArrayBuffer,
-    filename: string
-  ) => Promise<{ success: boolean; filePath?: string }>
-}
-
-declare interface Window {
-  electronAPI: ElectronAPI
-}
+// Types are declared in src/shared/electronAPI.d.ts — included via tsconfig.web.json.
+// This file is kept as a placeholder so the renderer src/types/ directory remains meaningful.

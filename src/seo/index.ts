@@ -1,9 +1,6 @@
-export interface SEOConfig {
-  title: string
-  description: string
-  ogImage?: string
-  canonicalUrl?: string
-}
+import type { SEOConfig } from '../shared/types'
+
+export type { SEOConfig }
 
 /**
  * Post-processes generated HTML to inject SEO meta tags, ARIA attributes,
@@ -12,5 +9,5 @@ export interface SEOConfig {
  * @param config - SEO metadata provided by the user
  */
 export function injectSEO(_html: string, _config: SEOConfig): string {
-  throw new Error('Not implemented')
+  throw new Error('Not implemented — Phase 3')
 }

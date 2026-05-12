@@ -1,0 +1,98 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`generate > matches snapshot 1`] = `
+{
+  "css": "*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+img,
+picture {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.dtw-canvas {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+}
+
+.dtw-el-header-1 {
+  grid-column: 1 / span 12;
+  min-height: 80px;
+  background-color: #1a1a2e;
+}
+
+.dtw-el-h1-1 {
+  grid-column: 2 / span 10;
+  min-height: 60px;
+  margin-top: 100px;
+  color: #333333;
+  font-size: clamp(27px, 2.250rem + 1vw, 45px);
+}
+
+.dtw-el-img-1 {
+  grid-column: 1 / span 6;
+  min-height: 300px;
+  margin-top: 200px;
+}
+
+.dtw-el-btn-1 {
+  grid-column: 2 / span 2;
+  min-height: 48px;
+  margin-top: 540px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5em 1em;
+  border: none;
+  cursor: pointer;
+  background-color: #0066ff;
+  color: #ffffff;
+  border-radius: 4px;
+}
+
+.dtw-el-footer-1 {
+  grid-column: 1 / span 12;
+  min-height: 80px;
+  margin-top: 620px;
+  background-color: #111111;
+}",
+  "html": "<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="dtw-canvas">
+      <header class="dtw-el-header-1"></header>
+      <h1 class="dtw-el-h1-1">Hello World</h1>
+      <img class="dtw-el-img-1" src="hero.jpg" alt="Hero image" />
+      <button class="dtw-el-btn-1" type="button">Get started</button>
+      <footer class="dtw-el-footer-1"></footer>
+    </div>
+  </body>
+</html>",
+}
+`;

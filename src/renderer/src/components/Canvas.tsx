@@ -1,6 +1,6 @@
 import { Stage, Layer } from 'react-konva'
 
-/** Main canvas editing area — owned by Yousef */
+/** Main canvas editing area — owned by Luf8y */
 export default function Canvas(): JSX.Element {
   return (
     <Stage

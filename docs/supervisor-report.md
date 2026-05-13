@@ -4,7 +4,7 @@
 **Author:** Ibrahim Haski (221116)
 **Modules covered:** Electron shell · IPC bridge · code generator · SEO injector · accessibility gate · export engine · build pipeline · CI/CD
 **Scope of this report:** the modules Ibrahim owns end-to-end. The semantic
-inference engine (Luf8y) and the canvas UI (Yousef) are referenced only at
+inference engine (Yousef) and the canvas UI (Luf8y) are referenced only at
 their interface boundaries.
 
 ## 1. Problem & goals
@@ -22,13 +22,13 @@ page that is:
 
 These goals translate to **hard invariants** enforced by the code:
 
-| Invariant                                  | Enforced by                                    |
-| ------------------------------------------ | ---------------------------------------------- |
-| No JavaScript in generated HTML            | Generator emits no `<script>`; no JS template  |
-| No `position: absolute`                    | CSS emitter uses Grid + Flexbox exclusively    |
-| Grid-aligned positions                     | `x`, `width` are 12-column indices, not px     |
-| Zero axe-core critical/serious violations  | `runAxeGate` blocks export at the gate stage   |
-| Determinism                                | No random IDs, no timestamps, no `Date.now()`  |
+| Invariant                                 | Enforced by                                   |
+| ----------------------------------------- | --------------------------------------------- |
+| No JavaScript in generated HTML           | Generator emits no `<script>`; no JS template |
+| No `position: absolute`                   | CSS emitter uses Grid + Flexbox exclusively   |
+| Grid-aligned positions                    | `x`, `width` are 12-column indices, not px    |
+| Zero axe-core critical/serious violations | `runAxeGate` blocks export at the gate stage  |
+| Determinism                               | No random IDs, no timestamps, no `Date.now()` |
 
 ## 2. Architecture
 
@@ -47,7 +47,7 @@ Output layer   Export Orchestrator · JSZip · IPC bridge                (render
 File system    index.html + styles.css packed as <name>.zip
 ```
 
-Data flows one direction. The canvas is a *rendering* of the element store,
+Data flows one direction. The canvas is a _rendering_ of the element store,
 never the model itself. Once an element is in the store, every downstream
 stage is a pure function of that store plus a small `SEOConfig`.
 
@@ -87,7 +87,7 @@ a failure occurred:
 ```
 ┌───────────────────┐  ┌───────────────┐  ┌───────────────┐  ┌─────────────────────┐
 │ 1. inferSemantics │─▶│ 2. generate() │─▶│ 3. injectSEO  │─▶│ 4. axe-core gate    │
-│  (engine — Luf8y) │  │  HTML + CSS   │  │ meta · ARIA   │  │ jsdom + axe.run()   │
+│  (engine — Yousef)│  │  HTML + CSS   │  │ meta · ARIA   │  │ jsdom + axe.run()   │
 └───────────────────┘  └───────────────┘  └───────────────┘  └─────────────────────┘
                                                                        │
                                                                        ▼ pass
@@ -116,8 +116,8 @@ type ExportProjectResult =
 
 Key choices:
 
-- **Per-stage error tagging.** A user-facing "Export failed at *Accessibility
-  check*" is far more actionable than a single string. The `stage` enum maps
+- **Per-stage error tagging.** A user-facing "Export failed at _Accessibility
+  check_" is far more actionable than a single string. The `stage` enum maps
   directly to UI labels in `ExportReportDialog`.
 - **Report is returned on a11y failure.** When the gate blocks, the violation
   list is the diagnostic. Suppressing it would force the user to guess.
@@ -129,7 +129,7 @@ Key choices:
 ### 3.1 Code generator (`src/generator/`)
 
 The generator is a **compiler**, not an inferer. The element tree it receives
-has already been classified by Luf8y's engine (or the local stub) into
+has already been classified by Yousef's engine (or the local stub) into
 `SemanticElement`s with explicit `semanticTag` fields. The generator's job is
 purely emission: walk the tree, render each tag, accumulate CSS Grid rules.
 
@@ -157,7 +157,7 @@ Steps:
    tags, optional `og:image` and `link rel="canonical"` immediately before
    `</head>`. Preserves the generator's `charset` and `viewport` metas.
 3. `addAriaRoles` — adds landmark roles to `<header>`/`<nav>`/`<main>`/
-   `<footer>` *only if not already present* — the regex is idempotent.
+   `<footer>` _only if not already present_ — the regex is idempotent.
 
 All user-supplied strings flow through `escapeHtml` before injection. The
 test suite includes a dedicated XSS escape case (`<script>alert("xss")</script>`).
@@ -214,6 +214,7 @@ versioned (`version: 1`) and validated on load:
   is enforced against the closed `ElementType` union.
 
 This pattern protects against:
+
 - Casual hand-editing producing schema drift
 - Old `.dtw` files attempting to load against newer schemas
 - Malicious files exploiting a `JSON.parse` → store hydration
@@ -222,14 +223,14 @@ This pattern protects against:
 
 Three handlers, all defensive in the same way:
 
-| Handler         | Validates                                           | Writes to                |
-| --------------- | --------------------------------------------------- | ------------------------ |
-| `export:zip`    | `ArrayBuffer`, ≤ 50 MB, filename is a string        | Save-dialog path         |
-| `project:save`  | `string`, ≤ 10 MB                                   | Save-dialog path         |
-| `project:open`  | `.dtw` extension, ≤ 10 MB after read                | (read-only)              |
+| Handler        | Validates                                    | Writes to        |
+| -------------- | -------------------------------------------- | ---------------- |
+| `export:zip`   | `ArrayBuffer`, ≤ 50 MB, filename is a string | Save-dialog path |
+| `project:save` | `string`, ≤ 10 MB                            | Save-dialog path |
+| `project:open` | `.dtw` extension, ≤ 10 MB after read         | (read-only)      |
 
 `sanitizePath` rejects any input containing `..` segments **before**
-`path.normalize` runs. (`normalize` collapses `..` into a path that *looks*
+`path.normalize` runs. (`normalize` collapses `..` into a path that _looks_
 canonical — letting `/tmp/../etc/passwd` through as `/etc/passwd`.) The IPC
 test suite explicitly verifies this case.
 
@@ -237,12 +238,12 @@ test suite explicitly verifies this case.
 
 The suite has three layers:
 
-| Layer        | Files                          | Strategy                                  |
-| ------------ | ------------------------------ | ----------------------------------------- |
-| Unit         | `tests/generator/`, `tests/seo/injectSEO.test.ts`, `tests/project/`, `tests/engine/stubInfer.test.ts` | Pure functions, fast, deterministic |
-| Integration  | `tests/export/exportProject.test.ts` | Mocks engine + IPC, exercises real pipeline |
-| Round-trip   | `tests/main/ipc.test.ts`       | Mocks `electron`, calls handlers, writes real files to a tempdir |
-| Real axe-core | `tests/seo/axeGate.test.ts`   | Drives jsdom + axe.run against known-good and known-bad HTML |
+| Layer         | Files                                                                                                 | Strategy                                                         |
+| ------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Unit          | `tests/generator/`, `tests/seo/injectSEO.test.ts`, `tests/project/`, `tests/engine/stubInfer.test.ts` | Pure functions, fast, deterministic                              |
+| Integration   | `tests/export/exportProject.test.ts`                                                                  | Mocks engine + IPC, exercises real pipeline                      |
+| Round-trip    | `tests/main/ipc.test.ts`                                                                              | Mocks `electron`, calls handlers, writes real files to a tempdir |
+| Real axe-core | `tests/seo/axeGate.test.ts`                                                                           | Drives jsdom + axe.run against known-good and known-bad HTML     |
 
 Totals at the time of writing: **102 tests across 9 files, full suite under
 3 s on a laptop.** The IPC suite uncovered the path-traversal bug noted in
@@ -253,24 +254,24 @@ even when most of the logic is already covered by unit tests.
 
 - **electron-builder** packages the app for Windows (NSIS) and Linux
   (AppImage + .deb). Build commands: `npm run build:win`, `npm run build:linux`.
-- **CI** runs in Gitea Actions on every push and pull request:
+- **CI** runs in GitHub Actions on every push and pull request:
   `lint → typecheck → test → compile`. On tagged commits `v*` it additionally
   packages Linux artifacts and attaches them to the workflow.
 
 ## 6. Deviations from the original specification
 
-| Spec item                                      | What shipped                                       | Why                                                    |
-| ---------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------ |
-| Live preview via BrowserView / `<webview>` / hidden BrowserWindow | Sandboxed iframe with `srcdoc`             | Generated output is zero-JS — the iframe is byte-identical to the export, simpler to wire, no separate process |
-| Real `inferSemantics`                          | Local stub fallback in `src/engine/stubInfer.ts`   | Luf8y's engine is still WIP; the stub lets the rest of the app run end-to-end and will be replaced transparently when the real engine lands |
-| Build targets macOS                            | Not addressed                                      | macOS isn't a development target for the team          |
+| Spec item                                                         | What shipped                                     | Why                                                                                                                                          |
+| ----------------------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Live preview via BrowserView / `<webview>` / hidden BrowserWindow | Sandboxed iframe with `srcdoc`                   | Generated output is zero-JS — the iframe is byte-identical to the export, simpler to wire, no separate process                               |
+| Real `inferSemantics`                                             | Local stub fallback in `src/engine/stubInfer.ts` | Yousef's engine is still WIP; the stub lets the rest of the app run end-to-end and will be replaced transparently when the real engine lands |
+| Build targets macOS                                               | Not addressed                                    | macOS isn't a development target for the team                                                                                                |
 
 ## 7. Open items at handoff
 
-- Luf8y's `inferSemantics` — once it ships, the `runEngine` fallback in
+- Yousef's `inferSemantics` — once it ships, the `runEngine` fallback in
   `src/export/index.ts` will dead-stop firing and `src/engine/stubInfer.ts`
   can be deleted.
-- Yousef's canvas interactions (drag/resize/select) and undo/redo middleware.
+- Luf8y's canvas interactions (drag/resize/select) and undo/redo middleware.
 - Renderer bundle size — jsdom is bundled into the renderer because the
   axe-core gate runs there. A future optimisation is to move the gate into a
   worker or the main process; not done because the current 13 MB bundle

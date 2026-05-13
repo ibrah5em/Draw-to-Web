@@ -1,9 +1,4 @@
-import type {
-  AccessibilityReport,
-  FullExportReport,
-  SEOConfig,
-  SEOReport,
-} from '../shared/types'
+import type { AccessibilityReport, FullExportReport, SEOConfig, SEOReport } from '../shared/types'
 import { formatViolation, runAxeGate } from './axeGate'
 
 export type { SEOConfig }
@@ -138,8 +133,7 @@ function buildGuidance(seo: SEOReport, a11y: AccessibilityReport): string[] {
     lines.push('⚠ No canonical URL — set one if this page is reachable via multiple URLs')
 
   if (seo.h1Count === 0) lines.push('⚠ No <h1> on page — add a top-level heading')
-  else if (seo.h1Count > 1)
-    lines.push(`⚠ ${seo.h1Count} <h1> elements — keep exactly one per page`)
+  else if (seo.h1Count > 1) lines.push(`⚠ ${seo.h1Count} <h1> elements — keep exactly one per page`)
 
   if (seo.imagesMissingAlt > 0)
     lines.push(

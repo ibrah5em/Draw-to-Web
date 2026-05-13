@@ -2,8 +2,8 @@
  * Placeholder semantic-inference implementation used by the export pipeline
  * and the live preview while `src/engine/index.ts` is still WIP.
  *
- * Owned by: Ibrahim — this is *not* Luf8y's engine. It is a deterministic
- * type → tag mapping derived from `docs/element-model.md`. Once Luf8y's
+ * Owned by: Ibrahim — this is *not* Yousef's engine. It is a deterministic
+ * type → tag mapping derived from `docs/element-model.md`. Once Yousef's
  * implementation lands, the fallback in `src/export/index.ts` stops firing
  * and this file can be deleted.
  *

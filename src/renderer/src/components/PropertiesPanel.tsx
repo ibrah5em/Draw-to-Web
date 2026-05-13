@@ -1,4 +1,4 @@
-/** Right-side properties panel — owned by Yousef */
+/** Right-side properties panel — owned by Luf8y */
 export default function PropertiesPanel(): JSX.Element {
   return (
     <div

@@ -42,7 +42,10 @@ function setupElectronAPI(zipResult: MockIpcResult): {
   capturedBuffer: ArrayBuffer | null
   capturedFilename: string | null
 } {
-  const captured = { capturedBuffer: null as ArrayBuffer | null, capturedFilename: null as string | null }
+  const captured = {
+    capturedBuffer: null as ArrayBuffer | null,
+    capturedFilename: null as string | null,
+  }
   vi.stubGlobal('window', {
     electronAPI: {
       exportZip: vi.fn(async (buf: ArrayBuffer, filename: string) => {
@@ -62,7 +65,7 @@ describe('exportProject', () => {
   })
 
   it('falls back to the stub engine when the real engine throws', async () => {
-    // While Luf8y's inferSemantics is WIP, the pipeline transparently uses
+    // While Yousef's inferSemantics is WIP, the pipeline transparently uses
     // src/engine/stubInfer.ts so the rest of the app stays usable end-to-end.
     mockedInfer.mockImplementationOnce(() => {
       throw new Error('Not implemented')

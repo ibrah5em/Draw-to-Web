@@ -3,12 +3,7 @@ import { inferSemantics, type SemanticElement } from '../engine'
 import { stubInferSemantics } from '../engine/stubInfer'
 import { generate } from '../generator'
 import { generateFullReport, injectSEO } from '../seo'
-import type {
-  CanvasElement,
-  ExportResult,
-  FullExportReport,
-  SEOConfig,
-} from '../shared/types'
+import type { CanvasElement, ExportResult, FullExportReport, SEOConfig } from '../shared/types'
 
 /** Stages of the export pipeline — surfaced on errors so the UI can pinpoint the failure. */
 export type ExportStage = 'infer' | 'generate' | 'inject-seo' | 'a11y-gate' | 'bundle' | 'save'
@@ -27,9 +22,7 @@ const DEFAULT_PROJECT_NAME = 'project'
 
 function sanitizeFilename(name: string): string {
   // Allowlist: alnum, dash, underscore. Path separators, dots, and shell metas are dropped.
-  const cleaned = name
-    .replace(/[^a-zA-Z0-9_-]/g, '')
-    .slice(0, 64)
+  const cleaned = name.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
   return cleaned.length > 0 ? cleaned : DEFAULT_PROJECT_NAME
 }
 
@@ -55,7 +48,7 @@ export async function exportProject(
   seoConfig: SEOConfig,
   options: ExportOptions = {}
 ): Promise<ExportProjectResult> {
-  // 1. Engine — fall back to the local stub while Luf8y's real engine is WIP.
+  // 1. Engine — fall back to the local stub while Yousef's real engine is WIP.
   let semanticTree: SemanticElement[]
   try {
     semanticTree = runEngine(elements)
@@ -129,7 +122,7 @@ export async function exportProject(
 }
 
 /**
- * Tries Luf8y's real `inferSemantics` first; falls back to the local stub if
+ * Tries Yousef's real `inferSemantics` first; falls back to the local stub if
  * it throws (e.g. "Not implemented"). Once the real engine ships, the catch
  * never fires and the stub is dead code we can delete.
  */

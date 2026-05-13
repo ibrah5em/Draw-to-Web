@@ -1,4 +1,4 @@
-/** Top toolbar — owned by Yousef */
+/** Top toolbar — owned by Luf8y */
 export default function Toolbar(): JSX.Element {
   return (
     <div

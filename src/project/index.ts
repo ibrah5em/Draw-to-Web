@@ -7,12 +7,7 @@ export interface ProjectFile {
   elements: CanvasElement[]
 }
 
-const VALID_TYPES: ReadonlySet<ElementType> = new Set([
-  'rectangle',
-  'text',
-  'image',
-  'button',
-])
+const VALID_TYPES: ReadonlySet<ElementType> = new Set(['rectangle', 'text', 'image', 'button'])
 
 function isCanvasElement(value: unknown): value is CanvasElement {
   if (typeof value !== 'object' || value === null) return false

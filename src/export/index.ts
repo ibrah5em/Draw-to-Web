@@ -3,12 +3,7 @@ import { inferSemantics, type SemanticElement } from '../engine'
 import { stubInferSemantics } from '../engine/stubInfer'
 import { generate } from '../generator'
 import { generateFullReport, injectSEO } from '../seo'
-import type {
-  CanvasElement,
-  ExportResult,
-  FullExportReport,
-  SEOConfig,
-} from '../shared/types'
+import type { CanvasElement, ExportResult, FullExportReport, SEOConfig } from '../shared/types'
 
 /** Stages of the export pipeline — surfaced on errors so the UI can pinpoint the failure. */
 export type ExportStage = 'infer' | 'generate' | 'inject-seo' | 'a11y-gate' | 'bundle' | 'save'
@@ -27,9 +22,7 @@ const DEFAULT_PROJECT_NAME = 'project'
 
 function sanitizeFilename(name: string): string {
   // Allowlist: alnum, dash, underscore. Path separators, dots, and shell metas are dropped.
-  const cleaned = name
-    .replace(/[^a-zA-Z0-9_-]/g, '')
-    .slice(0, 64)
+  const cleaned = name.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
   return cleaned.length > 0 ? cleaned : DEFAULT_PROJECT_NAME
 }
 

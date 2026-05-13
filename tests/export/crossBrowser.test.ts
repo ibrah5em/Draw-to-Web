@@ -19,17 +19,73 @@ interface FeatureSupport {
 }
 
 const CSS_FEATURES: FeatureSupport[] = [
-  { pattern: /\bdisplay:\s*grid\b/i, name: 'CSS Grid', chrome: 57, firefox: 52, safari: 10.1, edge: 16 },
-  { pattern: /\bdisplay:\s*flex\b/i, name: 'Flexbox', chrome: 29, firefox: 28, safari: 9, edge: 12 },
-  { pattern: /\bdisplay:\s*inline-flex\b/i, name: 'inline-flex', chrome: 29, firefox: 28, safari: 9, edge: 12 },
-  { pattern: /\bgrid-template-columns\b/i, name: 'grid-template-columns', chrome: 57, firefox: 52, safari: 10.1, edge: 16 },
-  { pattern: /\bgrid-column\b/i, name: 'grid-column shorthand', chrome: 57, firefox: 52, safari: 10.1, edge: 16 },
+  {
+    pattern: /\bdisplay:\s*grid\b/i,
+    name: 'CSS Grid',
+    chrome: 57,
+    firefox: 52,
+    safari: 10.1,
+    edge: 16,
+  },
+  {
+    pattern: /\bdisplay:\s*flex\b/i,
+    name: 'Flexbox',
+    chrome: 29,
+    firefox: 28,
+    safari: 9,
+    edge: 12,
+  },
+  {
+    pattern: /\bdisplay:\s*inline-flex\b/i,
+    name: 'inline-flex',
+    chrome: 29,
+    firefox: 28,
+    safari: 9,
+    edge: 12,
+  },
+  {
+    pattern: /\bgrid-template-columns\b/i,
+    name: 'grid-template-columns',
+    chrome: 57,
+    firefox: 52,
+    safari: 10.1,
+    edge: 16,
+  },
+  {
+    pattern: /\bgrid-column\b/i,
+    name: 'grid-column shorthand',
+    chrome: 57,
+    firefox: 52,
+    safari: 10.1,
+    edge: 16,
+  },
   { pattern: /\brepeat\(/i, name: 'CSS repeat()', chrome: 57, firefox: 52, safari: 10.1, edge: 16 },
   { pattern: /\bclamp\(/i, name: 'clamp()', chrome: 79, firefox: 75, safari: 13.1, edge: 79 },
   { pattern: /\bgap:\s*\d/i, name: 'gap (flex)', chrome: 84, firefox: 63, safari: 14.1, edge: 84 },
-  { pattern: /\bmargin-inline\b/i, name: 'margin-inline', chrome: 87, firefox: 66, safari: 14.5, edge: 87 },
-  { pattern: /\bbox-sizing:\s*border-box\b/i, name: 'box-sizing', chrome: 10, firefox: 29, safari: 5.1, edge: 12 },
-  { pattern: /\bmin-height:\s*100vh\b/i, name: 'viewport units (vh)', chrome: 26, firefox: 19, safari: 6.1, edge: 12 },
+  {
+    pattern: /\bmargin-inline\b/i,
+    name: 'margin-inline',
+    chrome: 87,
+    firefox: 66,
+    safari: 14.5,
+    edge: 87,
+  },
+  {
+    pattern: /\bbox-sizing:\s*border-box\b/i,
+    name: 'box-sizing',
+    chrome: 10,
+    firefox: 29,
+    safari: 5.1,
+    edge: 12,
+  },
+  {
+    pattern: /\bmin-height:\s*100vh\b/i,
+    name: 'viewport units (vh)',
+    chrome: 26,
+    firefox: 19,
+    safari: 6.1,
+    edge: 12,
+  },
 ]
 
 /** Modern-baseline targets (evergreen browsers, 2022+). Anything ≤ these is safe. */
@@ -39,7 +95,10 @@ const TARGETS = { chrome: 100, firefox: 100, safari: 15, edge: 100 }
 const FORBIDDEN_CSS: { pattern: RegExp; reason: string }[] = [
   { pattern: /\bposition:\s*absolute\b/i, reason: 'absolute positioning is forbidden by design' },
   { pattern: /\bposition:\s*fixed\b/i, reason: 'fixed positioning not used by generator' },
-  { pattern: /-webkit-|-moz-|-ms-|-o-/i, reason: 'vendor prefixes — output must be standards-only' },
+  {
+    pattern: /-webkit-|-moz-|-ms-|-o-/i,
+    reason: 'vendor prefixes — output must be standards-only',
+  },
   { pattern: /@-webkit-|@-moz-/i, reason: 'vendor at-rules' },
   { pattern: /<script/i, reason: 'no JS in generated output' },
 ]
@@ -58,12 +117,8 @@ function runAudit(name: string, html: string, css: string) {
   // 1. Feature inventory
   const present = CSS_FEATURES.filter((f) => f.pattern.test(css))
   console.log(`\nCSS features detected (${present.length}):`)
-  console.log(
-    'Feature                  | Chrome | Firefox | Safari | Edge   | OK?'
-  )
-  console.log(
-    '-------------------------|--------|---------|--------|--------|-----'
-  )
+  console.log('Feature                  | Chrome | Firefox | Safari | Edge   | OK?')
+  console.log('-------------------------|--------|---------|--------|--------|-----')
   const unsupported: string[] = []
   for (const f of present) {
     const ok =

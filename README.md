@@ -31,17 +31,17 @@ npm run dev
 
 ## Commands
 
-| Command                | Description                                                |
-| ---------------------- | ---------------------------------------------------------- |
-| `npm run dev`          | Start Electron in dev mode (HMR for main + renderer)       |
-| `npm run compile`      | Build main + preload + renderer bundles (no installer)     |
-| `npm run build`        | Build + package for the current platform                   |
-| `npm run build:win`    | Build + package Windows NSIS installer                     |
-| `npm run build:linux`  | Build + package Linux AppImage and .deb                    |
-| `npm run build:dir`    | Build only (no installer, fast iteration)                  |
-| `npm test`             | Run the full Vitest suite                                  |
-| `npm run lint`         | ESLint + Prettier check                                    |
-| `npm run typecheck`    | TypeScript `tsc --noEmit` on every tsconfig                |
+| Command               | Description                                            |
+| --------------------- | ------------------------------------------------------ |
+| `npm run dev`         | Start Electron in dev mode (HMR for main + renderer)   |
+| `npm run compile`     | Build main + preload + renderer bundles (no installer) |
+| `npm run build`       | Build + package for the current platform               |
+| `npm run build:win`   | Build + package Windows NSIS installer                 |
+| `npm run build:linux` | Build + package Linux AppImage and .deb                |
+| `npm run build:dir`   | Build only (no installer, fast iteration)              |
+| `npm test`            | Run the full Vitest suite                              |
+| `npm run lint`        | ESLint + Prettier check                                |
+| `npm run typecheck`   | TypeScript `tsc --noEmit` on every tsconfig            |
 
 ## Architecture
 
@@ -101,14 +101,14 @@ artifacts and upload them to the workflow run.
 
 ## Testing
 
-| Suite                          | Coverage                                       |
-| ------------------------------ | ---------------------------------------------- |
-| `tests/generator/`             | HTML + CSS emitter snapshots                   |
-| `tests/seo/injectSEO.test.ts`  | Meta/OG/ARIA injection, escaping               |
-| `tests/seo/axeGate.test.ts`    | axe-core gate pass/fail behaviour              |
-| `tests/export/`                | Full pipeline including filename sanitization  |
-| `tests/project/`               | `.dtw` schema (de)serialization                |
-| `tests/main/ipc.test.ts`       | IPC round-trip — writes & reads real files     |
+| Suite                         | Coverage                                      |
+| ----------------------------- | --------------------------------------------- |
+| `tests/generator/`            | HTML + CSS emitter snapshots                  |
+| `tests/seo/injectSEO.test.ts` | Meta/OG/ARIA injection, escaping              |
+| `tests/seo/axeGate.test.ts`   | axe-core gate pass/fail behaviour             |
+| `tests/export/`               | Full pipeline including filename sanitization |
+| `tests/project/`              | `.dtw` schema (de)serialization               |
+| `tests/main/ipc.test.ts`      | IPC round-trip — writes & reads real files    |
 
 Run a single suite with `npm test -- --run tests/seo/`.
 

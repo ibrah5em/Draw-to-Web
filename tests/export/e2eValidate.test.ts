@@ -127,10 +127,7 @@ async function runFixture(name: string, elements: typeof SIMPLE_PAGE) {
     `\n=== Fixture: ${name} ===`,
     'Check                       | Status | Details',
     '----------------------------|--------|--------',
-    ...results.map(
-      (r) =>
-        `${r.name.padEnd(27)} | ${r.passed ? 'PASS  ' : 'FAIL  '} | ${r.detail}`
-    ),
+    ...results.map((r) => `${r.name.padEnd(27)} | ${r.passed ? 'PASS  ' : 'FAIL  '} | ${r.detail}`),
   ].join('\n')
   console.log(table)
   return results

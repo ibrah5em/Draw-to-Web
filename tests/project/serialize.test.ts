@@ -4,7 +4,15 @@ import type { CanvasElement } from '../../src/store/elementStore'
 
 const FIXTURE: CanvasElement[] = [
   { id: '1', type: 'rectangle', x: 0, y: 0, width: 12, height: 80, props: { background: '#000' } },
-  { id: '2', type: 'text', x: 1, y: 100, width: 10, height: 40, props: { text: 'Hi', fontSize: 24 } },
+  {
+    id: '2',
+    type: 'text',
+    x: 1,
+    y: 100,
+    width: 10,
+    height: 40,
+    props: { text: 'Hi', fontSize: 24 },
+  },
 ]
 
 describe('serializeProject', () => {

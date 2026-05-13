@@ -42,7 +42,10 @@ function setupElectronAPI(zipResult: MockIpcResult): {
   capturedBuffer: ArrayBuffer | null
   capturedFilename: string | null
 } {
-  const captured = { capturedBuffer: null as ArrayBuffer | null, capturedFilename: null as string | null }
+  const captured = {
+    capturedBuffer: null as ArrayBuffer | null,
+    capturedFilename: null as string | null,
+  }
   vi.stubGlobal('window', {
     electronAPI: {
       exportZip: vi.fn(async (buf: ArrayBuffer, filename: string) => {

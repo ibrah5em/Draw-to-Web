@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Stage, Layer, Rect, Text, Group, Line, Transformer } from 'react-konva'
+import { Stage, Layer, Rect, Text, Group, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useElementStore, useTemporalStore } from '../../../store/elementStore'
 import type { CanvasElement, ElementType } from '../../../store/elementStore'
 import type { ActiveTool } from '../../../shared/types'
+import GridOverlay from './GridOverlay'
 
 const COLS = 12
 
@@ -250,16 +251,6 @@ export default function Canvas({ activeTool, showGrid, onToolReset }: CanvasProp
     [elements, size.width, updateElement]
   )
 
-  const gridLines = Array.from({ length: COLS - 1 }, (_, i) => (
-    <Line
-      key={i}
-      points={[(i + 1) * cw, 0, (i + 1) * cw, size.height]}
-      stroke="rgba(255,255,255,0.07)"
-      strokeWidth={1}
-      listening={false}
-    />
-  ))
-
   return (
     <div
       ref={containerRef}
@@ -271,7 +262,7 @@ export default function Canvas({ activeTool, showGrid, onToolReset }: CanvasProp
       }}
     >
       <Stage width={size.width} height={size.height} onMouseDown={handleStageMouseDown}>
-        {showGrid && <Layer listening={false}>{gridLines}</Layer>}
+        {showGrid && <GridOverlay width={size.width} height={size.height} />}
         <Layer>
           {elements.map((el) => (
             <ElementShape

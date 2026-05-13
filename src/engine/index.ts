@@ -14,6 +14,7 @@ export type SemanticTag =
   | 'p'
   | 'img'
   | 'button'
+  | 'header'
 
 export interface SemanticElement extends CanvasElement {
   semanticTag: SemanticTag

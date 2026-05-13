@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import Canvas from './components/Canvas'
 import Toolbar from './components/Toolbar'
 import PropertiesPanel from './components/PropertiesPanel'
+import LayerPanel from './components/LayerPanel'
 import LivePreview from './components/LivePreview'
 import SEOConfigDialog from './components/SEOConfigDialog'
 import ExportReportDialog from './components/ExportReportDialog'
 import { useElementStore } from '../../store/elementStore'
 import { exportProject, type ExportProjectResult } from '../../export'
 import { deserializeProject, serializeProject } from '../../project'
-import type { SEOConfig } from '../../shared/types'
+import type { ActiveTool, SEOConfig } from '../../shared/types'
 
 type DialogState =
   | { kind: 'none' }
@@ -20,6 +21,8 @@ export default function App(): JSX.Element {
   const elements = useElementStore((s) => s.elements)
   const replaceElements = useElementStore((s) => s.replaceElements)
   const [dialog, setDialog] = useState<DialogState>({ kind: 'none' })
+  const [activeTool, setActiveTool] = useState<ActiveTool>('select')
+  const [showGrid, setShowGrid] = useState(true)
 
   const handleExportSubmit = useCallback(
     async (config: SEOConfig) => {
@@ -71,11 +74,24 @@ export default function App(): JSX.Element {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <Toolbar />
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <Canvas />
-        <LivePreview />
-        <PropertiesPanel />
+      <Toolbar
+        activeTool={activeTool}
+        onToolChange={setActiveTool}
+        showGrid={showGrid}
+        onToggleGrid={() => setShowGrid((v) => !v)}
+        onExport={() => setDialog({ kind: 'seo' })}
+      />
+      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          <Canvas
+            activeTool={activeTool}
+            showGrid={showGrid}
+            onToolReset={() => setActiveTool('select')}
+          />
+          <LivePreview />
+          <PropertiesPanel />
+        </div>
+        <LayerPanel />
       </div>
 
       <SEOConfigDialog

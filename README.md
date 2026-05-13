@@ -95,7 +95,7 @@ hydrating the store. The schema lives in `src/project/index.ts`.
 
 ## CI
 
-`.gitea/workflows/ci.yml` runs lint, typecheck, and unit tests on every push and
+`.github/workflows/ci.yml` runs lint, typecheck, and unit tests on every push and
 pull request. Tagged commits (`v*`) additionally package Linux AppImage + .deb
 artifacts and upload them to the workflow run.
 
@@ -128,7 +128,7 @@ src/
   shared/           Cross-process types
 tests/              Vitest suites mirroring src/
 docs/               architecture.md, element-model.md
-.gitea/workflows/   CI configuration
+.github/workflows/  CI configuration
 ```
 
 ## License

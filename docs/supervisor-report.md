@@ -253,7 +253,7 @@ even when most of the logic is already covered by unit tests.
 
 - **electron-builder** packages the app for Windows (NSIS) and Linux
   (AppImage + .deb). Build commands: `npm run build:win`, `npm run build:linux`.
-- **CI** runs in Gitea Actions on every push and pull request:
+- **CI** runs in GitHub Actions on every push and pull request:
   `lint → typecheck → test → compile`. On tagged commits `v*` it additionally
   packages Linux artifacts and attaches them to the workflow.
 

@@ -1,4 +1,4 @@
-// Semantic inference engine — owned by Luf8y. Do not edit without team sign-off.
+// Semantic inference engine — owned by Yousef. Do not edit without team sign-off.
 import type { CanvasElement } from '../store/elementStore'
 
 export type SemanticTag =
@@ -26,5 +26,5 @@ export interface SemanticElement extends CanvasElement {
  * @returns Annotated elements with semantic tags and nesting resolved
  */
 export function inferSemantics(_elements: CanvasElement[]): SemanticElement[] {
-  throw new Error('Not implemented — see src/engine/ (Luf8y)')
+  throw new Error('Not implemented — see src/engine/ (Yousef)')
 }

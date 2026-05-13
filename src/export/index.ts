@@ -48,7 +48,7 @@ export async function exportProject(
   seoConfig: SEOConfig,
   options: ExportOptions = {}
 ): Promise<ExportProjectResult> {
-  // 1. Engine — fall back to the local stub while Luf8y's real engine is WIP.
+  // 1. Engine — fall back to the local stub while Yousef's real engine is WIP.
   let semanticTree: SemanticElement[]
   try {
     semanticTree = runEngine(elements)
@@ -122,7 +122,7 @@ export async function exportProject(
 }
 
 /**
- * Tries Luf8y's real `inferSemantics` first; falls back to the local stub if
+ * Tries Yousef's real `inferSemantics` first; falls back to the local stub if
  * it throws (e.g. "Not implemented"). Once the real engine ships, the catch
  * never fires and the stub is dead code we can delete.
  */

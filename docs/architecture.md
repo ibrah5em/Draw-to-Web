@@ -36,9 +36,9 @@ Canvas Editor → Element Store → Inference Engine → Code Generator → SEO 
 | Module           | Owner   | Responsibility                         |
 | ---------------- | ------- | -------------------------------------- |
 | `src/main/`      | Ibrahim | Electron shell, IPC, native file ops   |
-| `src/renderer/`  | Yousef  | Canvas UI, toolbar, properties panel   |
-| `src/store/`     | Yousef  | Zustand element store, undo/redo       |
-| `src/engine/`    | Luf8y   | Spatial → semantic tag inference       |
+| `src/renderer/`  | Luf8y   | Canvas UI, toolbar, properties panel   |
+| `src/store/`     | Luf8y   | Zustand element store, undo/redo       |
+| `src/engine/`    | Yousef  | Spatial → semantic tag inference       |
 | `src/generator/` | Ibrahim | HTML/CSS emission from element tree    |
 | `src/seo/`       | Ibrahim | SEO meta tags, ARIA, heading structure |
 | `src/export/`    | Ibrahim | ZIP bundling, export pipeline          |

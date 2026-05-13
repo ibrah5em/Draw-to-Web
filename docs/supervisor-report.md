@@ -4,7 +4,7 @@
 **Author:** Ibrahim Haski (221116)
 **Modules covered:** Electron shell · IPC bridge · code generator · SEO injector · accessibility gate · export engine · build pipeline · CI/CD
 **Scope of this report:** the modules Ibrahim owns end-to-end. The semantic
-inference engine (Luf8y) and the canvas UI (Yousef) are referenced only at
+inference engine (Yousef) and the canvas UI (Luf8y) are referenced only at
 their interface boundaries.
 
 ## 1. Problem & goals
@@ -87,7 +87,7 @@ a failure occurred:
 ```
 ┌───────────────────┐  ┌───────────────┐  ┌───────────────┐  ┌─────────────────────┐
 │ 1. inferSemantics │─▶│ 2. generate() │─▶│ 3. injectSEO  │─▶│ 4. axe-core gate    │
-│  (engine — Luf8y) │  │  HTML + CSS   │  │ meta · ARIA   │  │ jsdom + axe.run()   │
+│  (engine — Yousef)│  │  HTML + CSS   │  │ meta · ARIA   │  │ jsdom + axe.run()   │
 └───────────────────┘  └───────────────┘  └───────────────┘  └─────────────────────┘
                                                                        │
                                                                        ▼ pass
@@ -129,7 +129,7 @@ Key choices:
 ### 3.1 Code generator (`src/generator/`)
 
 The generator is a **compiler**, not an inferer. The element tree it receives
-has already been classified by Luf8y's engine (or the local stub) into
+has already been classified by Yousef's engine (or the local stub) into
 `SemanticElement`s with explicit `semanticTag` fields. The generator's job is
 purely emission: walk the tree, render each tag, accumulate CSS Grid rules.
 
@@ -263,15 +263,15 @@ even when most of the logic is already covered by unit tests.
 | Spec item                                                         | What shipped                                     | Why                                                                                                                                         |
 | ----------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | Live preview via BrowserView / `<webview>` / hidden BrowserWindow | Sandboxed iframe with `srcdoc`                   | Generated output is zero-JS — the iframe is byte-identical to the export, simpler to wire, no separate process                              |
-| Real `inferSemantics`                                             | Local stub fallback in `src/engine/stubInfer.ts` | Luf8y's engine is still WIP; the stub lets the rest of the app run end-to-end and will be replaced transparently when the real engine lands |
+| Real `inferSemantics`                                             | Local stub fallback in `src/engine/stubInfer.ts` | Yousef's engine is still WIP; the stub lets the rest of the app run end-to-end and will be replaced transparently when the real engine lands |
 | Build targets macOS                                               | Not addressed                                    | macOS isn't a development target for the team                                                                                               |
 
 ## 7. Open items at handoff
 
-- Luf8y's `inferSemantics` — once it ships, the `runEngine` fallback in
+- Yousef's `inferSemantics` — once it ships, the `runEngine` fallback in
   `src/export/index.ts` will dead-stop firing and `src/engine/stubInfer.ts`
   can be deleted.
-- Yousef's canvas interactions (drag/resize/select) and undo/redo middleware.
+- Luf8y's canvas interactions (drag/resize/select) and undo/redo middleware.
 - Renderer bundle size — jsdom is bundled into the renderer because the
   axe-core gate runs there. A future optimisation is to move the gate into a
   worker or the main process; not done because the current 13 MB bundle

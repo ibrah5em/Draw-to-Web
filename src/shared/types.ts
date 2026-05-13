@@ -3,8 +3,24 @@
  * Generator, SEO, and export modules import from here rather than defining their own.
  */
 
-export type { CanvasElement, ElementType } from '../store/elementStore'
+export type { CanvasElement, ElementType, ElementProps } from '../store/elementStore'
 export type { SemanticElement, SemanticTag } from '../engine'
+
+/**
+ * CSS-property-named style values for a canvas element.
+ * Used by the Properties Panel and layer serialisation.
+ * The generator reads the same values via the ElementProps bag on CanvasElement.
+ */
+export interface ElementStyles {
+  backgroundColor?: string
+  color?: string
+  fontSize?: number
+  fontFamily?: string
+  borderRadius?: number
+  padding?: number
+  borderWidth?: number
+  borderColor?: string
+}
 
 /** Output produced by the code generator. */
 export interface GeneratedOutput {

@@ -110,11 +110,11 @@ export const useElementStore = create<ElementStore>()(
       partialize: (state) => ({ elements: state.elements }),
       limit: 100,
       equality: (a, b) => a.elements === b.elements,
-    },
-  ),
+    }
+  )
 )
 
 /** Hook into the temporal (undo/redo) store. Returns { undo, redo, pastStates, futureStates, clear }. */
-export const useTemporalStore = <T,>(
-  selector: (state: TemporalState<Pick<ElementStore, 'elements'>>) => T,
+export const useTemporalStore = <T>(
+  selector: (state: TemporalState<Pick<ElementStore, 'elements'>>) => T
 ): T => useStore(useElementStore.temporal, selector)

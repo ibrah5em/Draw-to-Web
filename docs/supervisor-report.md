@@ -260,11 +260,11 @@ even when most of the logic is already covered by unit tests.
 
 ## 6. Deviations from the original specification
 
-| Spec item                                                         | What shipped                                     | Why                                                                                                                                         |
-| ----------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Live preview via BrowserView / `<webview>` / hidden BrowserWindow | Sandboxed iframe with `srcdoc`                   | Generated output is zero-JS — the iframe is byte-identical to the export, simpler to wire, no separate process                              |
+| Spec item                                                         | What shipped                                     | Why                                                                                                                                          |
+| ----------------------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Live preview via BrowserView / `<webview>` / hidden BrowserWindow | Sandboxed iframe with `srcdoc`                   | Generated output is zero-JS — the iframe is byte-identical to the export, simpler to wire, no separate process                               |
 | Real `inferSemantics`                                             | Local stub fallback in `src/engine/stubInfer.ts` | Yousef's engine is still WIP; the stub lets the rest of the app run end-to-end and will be replaced transparently when the real engine lands |
-| Build targets macOS                                               | Not addressed                                    | macOS isn't a development target for the team                                                                                               |
+| Build targets macOS                                               | Not addressed                                    | macOS isn't a development target for the team                                                                                                |
 
 ## 7. Open items at handoff
 

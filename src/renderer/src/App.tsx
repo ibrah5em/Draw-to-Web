@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Canvas from './components/Canvas'
 import Toolbar from './components/Toolbar'
 import PropertiesPanel from './components/PropertiesPanel'
+import LayerPanel from './components/LayerPanel'
 import LivePreview from './components/LivePreview'
 import SEOConfigDialog from './components/SEOConfigDialog'
 import ExportReportDialog from './components/ExportReportDialog'
@@ -80,14 +81,17 @@ export default function App(): JSX.Element {
         onToggleGrid={() => setShowGrid((v) => !v)}
         onExport={() => setDialog({ kind: 'seo' })}
       />
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <Canvas
-          activeTool={activeTool}
-          showGrid={showGrid}
-          onToolReset={() => setActiveTool('select')}
-        />
-        <LivePreview />
-        <PropertiesPanel />
+      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          <Canvas
+            activeTool={activeTool}
+            showGrid={showGrid}
+            onToolReset={() => setActiveTool('select')}
+          />
+          <LivePreview />
+          <PropertiesPanel />
+        </div>
+        <LayerPanel />
       </div>
 
       <SEOConfigDialog

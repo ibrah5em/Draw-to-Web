@@ -8,7 +8,7 @@ import ExportReportDialog from './components/ExportReportDialog'
 import { useElementStore } from '../../store/elementStore'
 import { exportProject, type ExportProjectResult } from '../../export'
 import { deserializeProject, serializeProject } from '../../project'
-import type { SEOConfig } from '../../shared/types'
+import type { ActiveTool, SEOConfig } from '../../shared/types'
 
 type DialogState =
   | { kind: 'none' }
@@ -20,6 +20,8 @@ export default function App(): JSX.Element {
   const elements = useElementStore((s) => s.elements)
   const replaceElements = useElementStore((s) => s.replaceElements)
   const [dialog, setDialog] = useState<DialogState>({ kind: 'none' })
+  const [activeTool, setActiveTool] = useState<ActiveTool>('select')
+  const [showGrid, setShowGrid] = useState(true)
 
   const handleExportSubmit = useCallback(
     async (config: SEOConfig) => {
@@ -71,9 +73,19 @@ export default function App(): JSX.Element {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <Toolbar />
+      <Toolbar
+        activeTool={activeTool}
+        onToolChange={setActiveTool}
+        showGrid={showGrid}
+        onToggleGrid={() => setShowGrid((v) => !v)}
+        onExport={() => setDialog({ kind: 'seo' })}
+      />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <Canvas />
+        <Canvas
+          activeTool={activeTool}
+          showGrid={showGrid}
+          onToolReset={() => setActiveTool('select')}
+        />
         <LivePreview />
         <PropertiesPanel />
       </div>

@@ -3,6 +3,9 @@
  * Generator, SEO, and export modules import from here rather than defining their own.
  */
 
+/** Active drawing tool selected in the Toolbar. 'select' means the pointer/move tool. */
+export type ActiveTool = 'select' | 'rectangle' | 'text' | 'image' | 'button'
+
 export type { CanvasElement, ElementType, ElementProps } from '../store/elementStore'
 export type { SemanticElement, SemanticTag } from '../engine'
 

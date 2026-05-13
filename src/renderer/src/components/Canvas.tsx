@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Stage, Layer, Rect, Text, Group, Line, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useElementStore, useTemporalStore } from '../../../store/elementStore'
-import type { CanvasElement } from '../../../store/elementStore'
+import type { CanvasElement, ElementType } from '../../../store/elementStore'
+import type { ActiveTool } from '../../../shared/types'
 
 const COLS = 12
 
@@ -18,10 +19,37 @@ function snapColSpan(pixelW: number, cw: number, colIndex: number): number {
   return Math.min(Math.max(1, Math.round(pixelW / cw)), COLS - colIndex)
 }
 
+const TOOL_DEFAULTS: Record<
+  Exclude<ActiveTool, 'select'>,
+  { type: ElementType; width: number; height: number; props: CanvasElement['props'] }
+> = {
+  rectangle: { type: 'rectangle', width: 3, height: 80, props: { background: '#5a5a6a' } },
+  text: {
+    type: 'text',
+    width: 3,
+    height: 40,
+    props: { text: 'Text', fontSize: 16, color: '#ffffff', background: 'transparent' },
+  },
+  image: { type: 'image', width: 4, height: 120, props: { alt: '' } },
+  button: {
+    type: 'button',
+    width: 2,
+    height: 44,
+    props: {
+      text: 'Button',
+      fontSize: 14,
+      background: '#4a9eff',
+      color: '#ffffff',
+      borderRadius: 4,
+    },
+  },
+}
+
 interface ElementShapeProps {
   el: CanvasElement
   cw: number
   isSelected: boolean
+  inSelectMode: boolean
   onSelect: (id: string) => void
   onDragEnd: (id: string, pixelX: number, y: number) => void
   onTransformEnd: (id: string, pixelX: number, y: number, pixelW: number, h: number) => void
@@ -32,6 +60,7 @@ function ElementShape({
   el,
   cw,
   isSelected,
+  inSelectMode,
   onSelect,
   onDragEnd,
   onTransformEnd,
@@ -50,9 +79,13 @@ function ElementShape({
       ref={groupRef}
       x={pixelX}
       y={el.y}
-      draggable={!el.locked}
-      onClick={() => onSelect(el.id)}
-      onTap={() => onSelect(el.id)}
+      draggable={inSelectMode && !el.locked}
+      onClick={() => {
+        if (inSelectMode) onSelect(el.id)
+      }}
+      onTap={() => {
+        if (inSelectMode) onSelect(el.id)
+      }}
       onDragEnd={(e) => onDragEnd(el.id, e.target.x(), e.target.y())}
       onTransformEnd={(e) => {
         const node = e.target as Konva.Group
@@ -104,23 +137,30 @@ function ElementShape({
   )
 }
 
+export interface CanvasProps {
+  activeTool: ActiveTool
+  showGrid: boolean
+  onToolReset: () => void
+}
+
 /** Main canvas editing area — owned by Luf8y */
-export default function Canvas(): JSX.Element {
+export default function Canvas({ activeTool, showGrid, onToolReset }: CanvasProps): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
   const transformerRef = useRef<Konva.Transformer>(null)
   const groupRefs = useRef(new Map<string, Konva.Group>())
   const [size, setSize] = useState({ width: 800, height: 600 })
-  const [showGrid, setShowGrid] = useState(true)
 
   const elements = useElementStore((s) => s.elements)
   const selectedId = useElementStore((s) => s.selectedId)
   const setSelected = useElementStore((s) => s.setSelected)
+  const addElement = useElementStore((s) => s.addElement)
   const updateElement = useElementStore((s) => s.updateElement)
   const removeElement = useElementStore((s) => s.removeElement)
   const undo = useTemporalStore((s) => s.undo)
   const redo = useTemporalStore((s) => s.redo)
 
-  // Measure container via ResizeObserver so Stage fills available flex space
+  const inSelectMode = activeTool === 'select'
+
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -132,7 +172,6 @@ export default function Canvas(): JSX.Element {
     return () => observer.disconnect()
   }, [])
 
-  // Sync Transformer to selected node
   useEffect(() => {
     const tr = transformerRef.current
     if (!tr) return
@@ -141,7 +180,6 @@ export default function Canvas(): JSX.Element {
     tr.getLayer()?.batchDraw()
   }, [selectedId, elements])
 
-  // Keyboard shortcuts: Delete, Ctrl+Z, Ctrl+Shift+Z / Ctrl+Y
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent): void => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -160,6 +198,26 @@ export default function Canvas(): JSX.Element {
   }, [selectedId, removeElement, undo, redo])
 
   const cw = getColWidth(size.width)
+
+  const handleStageMouseDown = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      const stage = e.target.getStage()
+      const pos = stage?.getPointerPosition()
+      if (!pos) return
+
+      if (!inSelectMode && activeTool in TOOL_DEFAULTS) {
+        const defaults = TOOL_DEFAULTS[activeTool as Exclude<ActiveTool, 'select'>]
+        const cw = getColWidth(size.width)
+        const col = Math.min(snapColIndex(pos.x, cw), COLS - defaults.width)
+        addElement({ ...defaults, x: col, y: Math.max(0, Math.round(pos.y)) })
+        onToolReset()
+        return
+      }
+
+      if (e.target === stage) setSelected(null)
+    },
+    [activeTool, inSelectMode, size.width, addElement, setSelected, onToolReset]
+  )
 
   const handleDragEnd = useCallback(
     (id: string, pixelX: number, y: number) => {
@@ -205,33 +263,14 @@ export default function Canvas(): JSX.Element {
   return (
     <div
       ref={containerRef}
-      style={{ flex: 1, overflow: 'hidden', background: '#1e1e1e', cursor: 'default' }}
+      style={{
+        flex: 1,
+        overflow: 'hidden',
+        background: '#1e1e1e',
+        cursor: inSelectMode ? 'default' : 'crosshair',
+      }}
     >
-      <button
-        onClick={() => setShowGrid((v) => !v)}
-        style={{
-          position: 'absolute',
-          top: 56,
-          left: 8,
-          zIndex: 10,
-          background: showGrid ? '#4a9eff' : '#333',
-          color: '#fff',
-          border: 'none',
-          borderRadius: 4,
-          padding: '4px 8px',
-          fontSize: 11,
-          cursor: 'pointer',
-        }}
-      >
-        Grid
-      </button>
-      <Stage
-        width={size.width}
-        height={size.height}
-        onMouseDown={(e) => {
-          if (e.target === e.target.getStage()) setSelected(null)
-        }}
-      >
+      <Stage width={size.width} height={size.height} onMouseDown={handleStageMouseDown}>
         {showGrid && <Layer listening={false}>{gridLines}</Layer>}
         <Layer>
           {elements.map((el) => (
@@ -240,6 +279,7 @@ export default function Canvas(): JSX.Element {
               el={el}
               cw={cw}
               isSelected={el.id === selectedId}
+              inSelectMode={inSelectMode}
               onSelect={setSelected}
               onDragEnd={handleDragEnd}
               onTransformEnd={handleTransformEnd}

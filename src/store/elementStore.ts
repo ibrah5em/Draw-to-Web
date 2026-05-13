@@ -5,6 +5,26 @@ import { useStore } from 'zustand'
 
 export type ElementType = 'rectangle' | 'text' | 'image' | 'button'
 
+/** Typed property bag for canvas elements. Consumed by the HTML/CSS emitters. */
+export interface ElementProps {
+  /** Text content for text and button elements. */
+  text?: string
+  /** Image source URL or data URI. */
+  src?: string
+  /** Image alt text — required by the axe-core gate for non-decorative images. */
+  alt?: string
+  fontSize?: number
+  fontFamily?: string
+  /** Foreground/text colour (CSS colour string). */
+  color?: string
+  /** Background colour (CSS colour string). */
+  background?: string
+  borderRadius?: number
+  padding?: number
+  borderWidth?: number
+  borderColor?: string
+}
+
 export interface CanvasElement {
   id: string
   type: ElementType
@@ -12,11 +32,17 @@ export interface CanvasElement {
   x: number
   /** Pixel Y offset from canvas top */
   y: number
-  /** Grid column span */
+  /** Grid column span (1–12) */
   width: number
   /** Pixel height */
   height: number
-  props: Record<string, unknown>
+  props: ElementProps
+  /** When true the element is locked against accidental edits on the canvas. */
+  locked?: boolean
+  /** When false the element is hidden in the canvas and excluded from export. */
+  visible?: boolean
+  /** Display name shown in the layer panel. */
+  layerName?: string
 }
 
 interface ElementState {

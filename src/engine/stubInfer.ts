@@ -12,7 +12,7 @@
  * (largest remaining rectangle after header/footer/nav are claimed). True
  * tree nesting still lives in Yousef's engine — the stub returns a flat list.
  */
-import type { CanvasElement } from '../store/elementStore'
+import type { CanvasElement, ElementProps } from '../store/elementStore'
 import type { SemanticElement, SemanticTag } from './index'
 
 const HEADER_Y_THRESHOLD = 80
@@ -23,13 +23,8 @@ const H3_FONT_SIZE = 18
 const NAV_MIN_BUTTONS = 2
 const NAV_ROW_Y_TOLERANCE = 20 // pixels — buttons within this Y range count as a row
 
-function numProp(props: Record<string, unknown>, key: string): number | undefined {
-  const v = props[key]
-  return typeof v === 'number' ? v : undefined
-}
-
-function inferTextTag(props: Record<string, unknown>): SemanticTag {
-  const size = numProp(props, 'fontSize') ?? 16
+function inferTextTag(props: ElementProps): SemanticTag {
+  const size = props.fontSize ?? 16
   if (size >= H1_FONT_SIZE) return 'h1'
   if (size >= H2_FONT_SIZE) return 'h2'
   if (size >= H3_FONT_SIZE) return 'h3'
@@ -63,12 +58,8 @@ function annotate(el: CanvasElement, isBottom: boolean): SemanticElement {
       semanticTag = inferRectTag(el, isBottom)
       break
   }
-  const result: SemanticElement = { ...el, semanticTag }
-  // Containers default to no children — the stub does not perform nesting.
-  if (isContainerTag(semanticTag)) {
-    result.children = []
-  }
-  return result
+  // children is always present (required by SemanticElement contract).
+  return { ...el, semanticTag, children: [] }
 }
 
 function isContainerTag(tag: SemanticTag): boolean {

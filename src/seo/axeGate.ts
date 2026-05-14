@@ -1,5 +1,3 @@
-import { JSDOM } from 'jsdom'
-import * as axe from 'axe-core'
 import type { AccessibilityReport, AccessibilityViolation } from '../shared/types'
 
 /** Impacts that hard-block export. */
@@ -36,27 +34,42 @@ function normalizeViolation(v: RawAxeViolation): AccessibilityViolation {
 }
 
 /**
- * Runs axe-core against generated HTML in a jsdom environment and produces
- * a structured report. The export pipeline (T4.1) reads `passed` and blocks
- * the ZIP step if false.
+ * Runs axe-core against generated HTML and produces a structured report.
  *
- * Implementation notes (jsdom + axe quirks):
- *   - axe.run() expects a real window. We inject axe-core's bundled source into
- *     a jsdom window via window.eval(axe.source), then call window.axe.run().
- *   - runScripts: 'outside-only' allows our injection without executing any
- *     <script> tags that may be in the input HTML — the generator never emits
- *     scripts, but this is a defence-in-depth choice.
- *   - We disable colour-contrast: jsdom does not layout or compute styles, so
- *     contrast checks would either crash or produce false positives.
+ * In the Electron renderer process, execution is delegated to the main process
+ * via IPC so that jsdom (a Node.js-only package) never runs in the sandboxed
+ * browser context. In Node.js environments (tests, main process IPC handler),
+ * jsdom and axe-core are loaded via dynamic import and run locally.
  */
 export async function runAxeGate(html: string): Promise<AccessibilityReport> {
+  // Renderer path: delegate to main process where Node.js APIs are available.
+  if (typeof window !== 'undefined' && window.electronAPI?.runAxe) {
+    return window.electronAPI.runAxe(html)
+  }
+  return runAxeGateNode(html)
+}
+
+/**
+ * Node.js-only implementation. Uses dynamic imports so bundlers targeting
+ * browser environments (Vite renderer build) never include jsdom or axe-core.
+ */
+async function runAxeGateNode(html: string): Promise<AccessibilityReport> {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const { JSDOM } = await import(/* @vite-ignore */ 'jsdom')
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const axe = await import(/* @vite-ignore */ 'axe-core')
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
   const dom = new JSDOM(html, { runScripts: 'outside-only' })
-  const { window } = dom
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const { window: win } = dom
 
   try {
-    window.eval(axe.source)
-    const windowAxe = (window as unknown as { axe: typeof axe }).axe
-    const raw = (await windowAxe.run(window.document, {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    win.eval(axe.source)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const windowAxe = (win as unknown as { axe: typeof axe }).axe
+    const raw = (await windowAxe.run(win.document, {
       rules: { 'color-contrast': { enabled: false } },
     })) as unknown as RawAxeResults
 
@@ -67,7 +80,8 @@ export async function runAxeGate(html: string): Promise<AccessibilityReport> {
     const passed = !violations.some((v) => BLOCKING_IMPACTS.has(v.impact))
     return { passed, violations, counts }
   } finally {
-    window.close()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    win.close()
   }
 }
 

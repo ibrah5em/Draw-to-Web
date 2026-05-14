@@ -3,6 +3,7 @@ out/
 dist/
 .DS_Store
 *.log
+*:Zone.Identifier
 
 # Claude Code
 .claude/
@@ -11,3 +12,4 @@ CLAUDE.local.md
 .mcp.json
 
 cross-browser-out/
+draft/

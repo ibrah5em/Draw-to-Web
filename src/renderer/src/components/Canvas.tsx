@@ -259,8 +259,29 @@ export default function Canvas({ activeTool, showGrid, onToolReset }: CanvasProp
         overflow: 'hidden',
         background: '#1e1e1e',
         cursor: inSelectMode ? 'default' : 'crosshair',
+        position: 'relative',
       }}
     >
+      {elements.length === 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}
+        >
+          <span style={{ fontSize: 40, opacity: 0.15 }}>⬜</span>
+          <span style={{ fontSize: 13, color: '#555', textAlign: 'center', lineHeight: 1.6 }}>
+            Pick a tool above and click to place your first element.
+          </span>
+        </div>
+      )}
       <Stage width={size.width} height={size.height} onMouseDown={handleStageMouseDown}>
         {showGrid && <GridOverlay width={size.width} height={size.height} />}
         <Layer>

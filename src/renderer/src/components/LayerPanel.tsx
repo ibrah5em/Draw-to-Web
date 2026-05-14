@@ -7,10 +7,10 @@ import type { CanvasElement } from '../../../store/elementStore'
 // ---------------------------------------------------------------------------
 
 const TYPE_BADGE: Record<CanvasElement['type'], string> = {
-  rectangle: 'rect',
-  text: 'txt',
-  image: 'img',
-  button: 'btn',
+  rectangle: '□',
+  text: 'T',
+  image: '⬜',
+  button: '◉',
 }
 
 // ---------------------------------------------------------------------------
@@ -107,7 +107,7 @@ function LayerRow({
         }}
         style={iconBtnStyle(isLocked)}
       >
-        {isLocked ? 'L' : 'U'}
+        {isLocked ? '🔒' : '🔓'}
       </button>
 
       {/* Visibility toggle */}
@@ -119,7 +119,7 @@ function LayerRow({
         }}
         style={iconBtnStyle(!isVisible)}
       >
-        {isVisible ? 'V' : 'H'}
+        {isVisible ? '👁' : '—'}
       </button>
     </div>
   )

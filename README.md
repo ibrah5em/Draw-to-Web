@@ -95,9 +95,20 @@ hydrating the store. The schema lives in `src/project/index.ts`.
 
 ## CI
 
-`.github/workflows/ci.yml` runs lint, typecheck, and unit tests on every push and
-pull request. Tagged commits (`v*`) additionally package Linux AppImage + .deb
-artifacts and upload them to the workflow run.
+`.github/workflows/ci.yml` runs lint, typecheck, and unit tests on every push
+and pull request. Tagged commits matching `v*` additionally cross-build the
+Windows NSIS installer (via Wine on the Ubuntu runner) alongside the Linux
+AppImage + .deb and attach all three to a GitHub Release.
+
+To cut a release:
+
+```bash
+git tag v0.1.0 -m "release notes"
+git push origin v0.1.0
+```
+
+The workflow publishes the installers to
+`github.com/<owner>/<repo>/releases/tag/v0.1.0`.
 
 ## Testing
 

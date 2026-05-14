@@ -129,9 +129,9 @@ Key choices:
 ### 3.1 Code generator (`src/generator/`)
 
 The generator is a **compiler**, not an inferer. The element tree it receives
-has already been classified by Yousef's engine (or the local stub) into
-`SemanticElement`s with explicit `semanticTag` fields. The generator's job is
-purely emission: walk the tree, render each tag, accumulate CSS Grid rules.
+has already been classified by the engine into `SemanticElement`s with
+explicit `semanticTag` fields. The generator's job is purely emission: walk
+the tree, render each tag, accumulate CSS Grid rules.
 
 Design choices:
 
@@ -189,6 +189,25 @@ Decisions:
   report shows one entry per rule with a `nodes` count, so the dialog never
   becomes a wall of duplicates.
 
+**Execution boundary.** jsdom uses Node-only APIs and cannot run in the
+sandboxed renderer. `runAxeGate(html)` detects the renderer and delegates to
+the main process via the `a11y:run-axe` IPC handler, which calls the same
+`runAxeGateNode` implementation. In Node contexts (tests, main handler) the
+function runs locally. Three runtime details made this work on Electron 28's
+bundled Node 18:
+
+- `jsdom` and `axe-core` live in `dependencies` (not `devDependencies`) so
+  electron-vite's `externalizeDepsPlugin` keeps them out of the main bundle.
+  Inlining them caused Rollup to hoist `undici`'s lazy `require('node:sqlite')`
+  into a top-level eager require, which Node 18 rejects with
+  `ERR_UNKNOWN_BUILTIN_MODULE`.
+- `jsdom` is pinned to `^25.x` — 26+ pulls `html-encoding-sniffer@5`, which
+  uses ESM-only `@exodus/bytes` and cannot be `require()`d on Node 18.
+- The dynamic `import('axe-core')` is unwrapped via `axeMod.default ?? axeMod`.
+  Node's native CJS-from-ESM interop nests the export under `.default`;
+  Vitest's loader flattens it. Without the unwrap, `axe.source` was
+  `undefined` and `window.axe` was never populated.
+
 ### 3.4 Combined report (`generateFullReport`)
 
 The pre-/post-export dialog needs three things:
@@ -238,46 +257,58 @@ test suite explicitly verifies this case.
 
 The suite has three layers:
 
-| Layer         | Files                                                                                                 | Strategy                                                         |
-| ------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Unit          | `tests/generator/`, `tests/seo/injectSEO.test.ts`, `tests/project/`, `tests/engine/stubInfer.test.ts` | Pure functions, fast, deterministic                              |
-| Integration   | `tests/export/exportProject.test.ts`                                                                  | Mocks engine + IPC, exercises real pipeline                      |
-| Round-trip    | `tests/main/ipc.test.ts`                                                                              | Mocks `electron`, calls handlers, writes real files to a tempdir |
-| Real axe-core | `tests/seo/axeGate.test.ts`                                                                           | Drives jsdom + axe.run against known-good and known-bad HTML     |
+| Layer         | Files                                                                    | Strategy                                                         |
+| ------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| Unit          | `tests/generator/`, `tests/seo/injectSEO.test.ts`, `tests/project/`      | Pure functions, fast, deterministic                              |
+| Integration   | `tests/export/exportProject.test.ts`, `tests/export/e2eValidate.test.ts` | Mocks engine + IPC, exercises real pipeline                      |
+| Round-trip    | `tests/integration/ipcRoundTrip.test.ts`                                 | Mocks `electron`, calls handlers, writes real files to a tempdir |
+| Real axe-core | `tests/seo/axeGate.test.ts`                                              | Drives jsdom + axe.run against known-good and known-bad HTML     |
 
-Totals at the time of writing: **102 tests across 9 files, full suite under
+Totals at the v0.1.0 release: **167 tests across 17 files, full suite under
 3 s on a laptop.** The IPC suite uncovered the path-traversal bug noted in
 section 3.6 — a good example of why round-trip tests pay for themselves
 even when most of the logic is already covered by unit tests.
+
+One caveat surfaced post-v0.1.0: Vitest's CJS-to-ESM shim flattens the
+`axe-core` namespace, hiding the `axe.default` interop that the bundled
+main-process build needed. The lesson is that for code paths that only run
+in the packaged Electron main process, the test suite alone is not a
+sufficient integration check — an `npm run dev` smoke test against the
+real Electron runtime is the load-bearing validation.
 
 ## 5. Build & CI
 
 - **electron-builder** packages the app for Windows (NSIS) and Linux
   (AppImage + .deb). Build commands: `npm run build:win`, `npm run build:linux`.
-- **CI** runs in GitHub Actions on every push and pull request:
-  `lint → typecheck → test → compile`. On tagged commits `v*` it additionally
-  packages Linux artifacts and attaches them to the workflow.
+  Windows is cross-built from Linux through Wine; both targets produce
+  identical artifacts to native builds for unsigned installers.
+- **CI** (`.github/workflows/ci.yml`) runs on every push and pull request:
+  `lint → typecheck → test` (verify job) and `compile` (build job). On tag
+  pushes matching `v*` it additionally installs Wine, cross-builds the
+  Windows NSIS installer alongside the Linux AppImage + .deb, and attaches
+  all three to a GitHub Release via `softprops/action-gh-release`.
+  `electron-builder` is invoked with `--publish never` so it does not also
+  attempt to publish the artifacts independently.
+- Tag `v0.1.0` is the first end-to-end release; the artifacts are published
+  at `github.com/ibrah5em/Draw-to-Web/releases/tag/v0.1.0`.
 
 ## 6. Deviations from the original specification
 
-| Spec item                                                         | What shipped                                     | Why                                                                                                                                          |
-| ----------------------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Live preview via BrowserView / `<webview>` / hidden BrowserWindow | Sandboxed iframe with `srcdoc`                   | Generated output is zero-JS — the iframe is byte-identical to the export, simpler to wire, no separate process                               |
-| Real `inferSemantics`                                             | Local stub fallback in `src/engine/stubInfer.ts` | Yousef's engine is still WIP; the stub lets the rest of the app run end-to-end and will be replaced transparently when the real engine lands |
-| Build targets macOS                                               | Not addressed                                    | macOS isn't a development target for the team                                                                                                |
+| Spec item                                                         | What shipped                   | Why                                                                                                            |
+| ----------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Live preview via BrowserView / `<webview>` / hidden BrowserWindow | Sandboxed iframe with `srcdoc` | Generated output is zero-JS — the iframe is byte-identical to the export, simpler to wire, no separate process |
+| Build targets macOS                                               | Not addressed                  | macOS isn't a development target for the team                                                                  |
 
 ## 7. Open items at handoff
 
-- Yousef's `inferSemantics` — once it ships, the `runEngine` fallback in
-  `src/export/index.ts` will dead-stop firing and `src/engine/stubInfer.ts`
-  can be deleted.
-- Luf8y's canvas interactions (drag/resize/select) and undo/redo middleware.
-- Renderer bundle size — jsdom is bundled into the renderer because the
-  axe-core gate runs there. A future optimisation is to move the gate into a
-  worker or the main process; not done because the current 13 MB bundle
-  loads in well under a second on local disk.
 - Application icon — currently the default Electron icon. A 512×512 PNG in
   `build/icon.png` will be picked up automatically by electron-builder.
+- `actions/checkout@v4`, `actions/setup-node@v4`, and
+  `softprops/action-gh-release@v2` log Node 20 deprecation warnings on
+  GitHub Actions runners. Upgrades are due before June 2026 when Node 24
+  becomes the default runtime.
+- macOS target — not built; the team works on Linux/Windows only. The
+  electron-builder config does not list a `mac:` section.
 
 ## 8. Summary
 

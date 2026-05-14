@@ -40,10 +40,10 @@ function ToolButton({ label, title, active = false, onClick }: ToolButtonProps):
 }
 
 const DRAWING_TOOLS: { tool: Exclude<ActiveTool, 'select'>; label: string; title: string }[] = [
-  { tool: 'rectangle', label: 'Rect', title: 'Rectangle — click canvas to place' },
-  { tool: 'text', label: 'Text', title: 'Text — click canvas to place' },
-  { tool: 'image', label: 'Image', title: 'Image placeholder — click canvas to place' },
-  { tool: 'button', label: 'Button', title: 'Button — click canvas to place' },
+  { tool: 'rectangle', label: '□ Rect', title: 'Rectangle — click canvas to place' },
+  { tool: 'text', label: 'T Text', title: 'Text — click canvas to place' },
+  { tool: 'image', label: '⬜ Image', title: 'Image placeholder — click canvas to place' },
+  { tool: 'button', label: '◉ Button', title: 'Button — click canvas to place' },
 ]
 
 /** Top toolbar — tool selection, grid toggle, undo/redo, export — owned by Luf8y */
@@ -72,7 +72,7 @@ export default function Toolbar({
 
       {/* Pointer / select tool */}
       <ToolButton
-        label="Select"
+        label="↖ Select"
         title="Select / move tool (V)"
         active={activeTool === 'select'}
         onClick={() => onToolChange('select')}

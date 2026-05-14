@@ -14,11 +14,11 @@ export type SemanticTag =
   | 'p'
   | 'img'
   | 'button'
-  | 'header'
 
 export interface SemanticElement extends CanvasElement {
   semanticTag: SemanticTag
-  children?: SemanticElement[]
+  /** Always an array — empty for leaf nodes, never undefined. Ibrahim's generator relies on this. */
+  children: SemanticElement[]
 }
 
 /**

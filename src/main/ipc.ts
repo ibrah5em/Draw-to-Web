@@ -1,6 +1,7 @@
 import { ipcMain, dialog, app } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
 import { extname, join, normalize, isAbsolute } from 'path'
+import { runAxeGate } from '../seo/axeGate'
 
 const MAX_ZIP_BYTES = 50 * 1024 * 1024 // 50 MB
 const MAX_PROJECT_BYTES = 10 * 1024 * 1024 // 10 MB — well above expected element-tree size
@@ -101,6 +102,17 @@ export function registerIpcHandlers(): void {
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
     }
+  })
+
+  ipcMain.handle('a11y:run-axe', async (_event, html: unknown) => {
+    if (typeof html !== 'string') {
+      return {
+        passed: false,
+        violations: [],
+        counts: { critical: 0, serious: 0, moderate: 0, minor: 0 },
+      }
+    }
+    return runAxeGate(html)
   })
 
   // Synchronous — called once at preload startup to stamp the version into the bridge.

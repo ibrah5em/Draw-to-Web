@@ -22,5 +22,14 @@ export default defineConfig({
       },
     },
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        // jsdom and axe-core are Node.js-only; the renderer uses IPC instead.
+        external: ['jsdom', 'axe-core'],
+      },
+    },
+    optimizeDeps: {
+      exclude: ['jsdom', 'axe-core'],
+    },
   },
 })

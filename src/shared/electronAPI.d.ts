@@ -27,6 +27,8 @@ interface ElectronAPI {
   getAppVersion: () => string
   /** Subscribes to menu actions sent from the main process. Returns an unsubscribe function. */
   onMenuAction: (callback: (action: string) => void) => () => void
+  /** Runs axe-core against an HTML string in the main process and returns the accessibility report. */
+  runAxe: (html: string) => Promise<import('./types').AccessibilityReport>
 }
 
 declare interface Window {

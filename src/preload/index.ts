@@ -24,4 +24,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('menu:action', handler)
     return () => ipcRenderer.removeListener('menu:action', handler)
   },
+
+  runAxe: (html: string) => ipcRenderer.invoke('a11y:run-axe', html),
 })

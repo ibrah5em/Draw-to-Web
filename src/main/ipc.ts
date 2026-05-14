@@ -104,13 +104,12 @@ export function registerIpcHandlers(): void {
     }
   })
 
+  // Reject bad payloads instead of returning a synthetic "failed" report —
+  // a rejected promise lets the export pipeline distinguish transport errors
+  // from genuine a11y violations (which return `passed: false`).
   ipcMain.handle('a11y:run-axe', async (_event, html: unknown) => {
     if (typeof html !== 'string') {
-      return {
-        passed: false,
-        violations: [],
-        counts: { critical: 0, serious: 0, moderate: 0, minor: 0 },
-      }
+      throw new TypeError('a11y:run-axe expects an HTML string')
     }
     return runAxeGate(html)
   })

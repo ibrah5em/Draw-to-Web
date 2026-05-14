@@ -1,6 +1,5 @@
 import JSZip from 'jszip'
 import { inferSemantics, type SemanticElement } from '../engine'
-import { stubInferSemantics } from '../engine/stubInfer'
 import { generate } from '../generator'
 import { generateFullReport, injectSEO } from '../seo'
 import type { CanvasElement, ExportResult, FullExportReport, SEOConfig } from '../shared/types'
@@ -48,10 +47,10 @@ export async function exportProject(
   seoConfig: SEOConfig,
   options: ExportOptions = {}
 ): Promise<ExportProjectResult> {
-  // 1. Engine — fall back to the local stub while Yousef's real engine is WIP.
+  // 1. Engine
   let semanticTree: SemanticElement[]
   try {
-    semanticTree = runEngine(elements)
+    semanticTree = inferSemantics(elements)
   } catch (err) {
     return { success: false, stage: 'infer', error: toMessage(err) }
   }
@@ -122,26 +121,13 @@ export async function exportProject(
 }
 
 /**
- * Tries Yousef's real `inferSemantics` first; falls back to the local stub if
- * it throws (e.g. "Not implemented"). Once the real engine ships, the catch
- * never fires and the stub is dead code we can delete.
- */
-function runEngine(elements: CanvasElement[]): SemanticElement[] {
-  try {
-    return inferSemantics(elements)
-  } catch {
-    return stubInferSemantics(elements)
-  }
-}
-
-/**
  * Lightweight helper for the live-preview panel: runs only the renderer-pure
- * stages (no IPC, no axe gate). Returns `null` only if the generator itself
- * fails — the engine call is wrapped with the stub fallback.
+ * stages (no IPC, no axe gate). Returns `null` if the engine or generator
+ * throws — the preview panel should show nothing rather than a stale render.
  */
 export function buildPreview(elements: CanvasElement[]): { html: string; css: string } | null {
   try {
-    const tree = runEngine(elements)
+    const tree = inferSemantics(elements)
     return generate(tree)
   } catch {
     return null

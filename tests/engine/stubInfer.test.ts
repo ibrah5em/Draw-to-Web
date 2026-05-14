@@ -28,10 +28,14 @@ describe('stubInferSemantics', () => {
     const out = stubInferSemantics([
       el({ id: 'h', type: 'rectangle', y: 0, width: 12, height: 80 }),
       el({ id: 'mid', type: 'rectangle', y: 200, width: 8, height: 100 }),
+      el({ id: 'aside', type: 'rectangle', y: 200, width: 2, height: 60 }),
       el({ id: 'f', type: 'rectangle', y: 600, width: 12, height: 80 }),
     ])
     expect(out.find((e) => e.id === 'f')?.semanticTag).toBe('footer')
-    expect(out.find((e) => e.id === 'mid')?.semanticTag).toBe('div')
+    // 'mid' is the largest remaining rectangle, so it gets promoted to <main>;
+    // 'aside' is the only one left as a plain <div>.
+    expect(out.find((e) => e.id === 'mid')?.semanticTag).toBe('main')
+    expect(out.find((e) => e.id === 'aside')?.semanticTag).toBe('div')
   })
 
   it('maps text elements by font size: ≥36 → h1, ≥24 → h2, ≥18 → h3, else p', () => {
@@ -67,5 +71,76 @@ describe('stubInferSemantics', () => {
     ])
     expect(out[0].children).toEqual([])
     expect(out[1].children).toEqual([])
+  })
+
+  it('upgrades a rectangle containing a horizontal row of buttons to <nav>', () => {
+    const out = stubInferSemantics([
+      el({ id: 'bar', type: 'rectangle', x: 0, y: 120, width: 12, height: 50 }),
+      el({ id: 'b1', type: 'button', x: 1, y: 130, width: 2, height: 30 }),
+      el({ id: 'b2', type: 'button', x: 4, y: 130, width: 2, height: 30 }),
+      el({ id: 'b3', type: 'button', x: 7, y: 132, width: 2, height: 30 }),
+      el({ id: 'f', type: 'rectangle', x: 0, y: 600, width: 12, height: 60 }),
+    ])
+    expect(out.find((e) => e.id === 'bar')?.semanticTag).toBe('nav')
+    expect(out.find((e) => e.id === 'bar')?.children).toEqual([])
+  })
+
+  it('does not upgrade to <nav> when buttons are stacked vertically', () => {
+    const out = stubInferSemantics([
+      el({ id: 'col', type: 'rectangle', x: 0, y: 200, width: 4, height: 300 }),
+      el({ id: 'b1', type: 'button', x: 1, y: 210, width: 2, height: 30 }),
+      el({ id: 'b2', type: 'button', x: 1, y: 260, width: 2, height: 30 }),
+    ])
+    expect(out.find((e) => e.id === 'col')?.semanticTag).not.toBe('nav')
+  })
+
+  it('does not upgrade to <nav> when only one button is contained', () => {
+    const out = stubInferSemantics([
+      el({ id: 'r', type: 'rectangle', x: 0, y: 200, width: 6, height: 80 }),
+      el({ id: 'b1', type: 'button', x: 1, y: 220, width: 2, height: 30 }),
+    ])
+    expect(out.find((e) => e.id === 'r')?.semanticTag).not.toBe('nav')
+  })
+
+  it('keeps <header> tag even when it contains a button row', () => {
+    const out = stubInferSemantics([
+      el({ id: 'h', type: 'rectangle', x: 0, y: 0, width: 12, height: 70 }),
+      el({ id: 'b1', type: 'button', x: 6, y: 20, width: 2, height: 30 }),
+      el({ id: 'b2', type: 'button', x: 9, y: 20, width: 2, height: 30 }),
+    ])
+    expect(out.find((e) => e.id === 'h')?.semanticTag).toBe('header')
+  })
+
+  it('promotes the largest remaining rectangle to <main>', () => {
+    const out = stubInferSemantics([
+      el({ id: 'h', type: 'rectangle', y: 0, width: 12, height: 80 }),
+      el({ id: 'big', type: 'rectangle', y: 100, width: 10, height: 400 }),
+      el({ id: 'small', type: 'rectangle', y: 100, width: 4, height: 80 }),
+      el({ id: 'f', type: 'rectangle', y: 600, width: 12, height: 80 }),
+    ])
+    expect(out.find((e) => e.id === 'big')?.semanticTag).toBe('main')
+    expect(out.find((e) => e.id === 'small')?.semanticTag).toBe('div')
+  })
+
+  it('promotes at most one rectangle to <main>', () => {
+    const out = stubInferSemantics([
+      el({ id: 'a', type: 'rectangle', y: 100, width: 4, height: 100 }),
+      el({ id: 'b', type: 'rectangle', y: 250, width: 4, height: 100 }),
+      el({ id: 'c', type: 'rectangle', y: 400, width: 4, height: 100 }),
+    ])
+    const mains = out.filter((e) => e.semanticTag === 'main')
+    expect(mains).toHaveLength(1)
+  })
+
+  it('does not promote <nav> rectangles to <main>', () => {
+    const out = stubInferSemantics([
+      el({ id: 'navbar', type: 'rectangle', x: 0, y: 100, width: 12, height: 50 }),
+      el({ id: 'b1', type: 'button', x: 1, y: 110, width: 2, height: 30 }),
+      el({ id: 'b2', type: 'button', x: 4, y: 110, width: 2, height: 30 }),
+      el({ id: 'body', type: 'rectangle', x: 0, y: 200, width: 10, height: 300 }),
+      el({ id: 'f', type: 'rectangle', x: 0, y: 600, width: 12, height: 60 }),
+    ])
+    expect(out.find((e) => e.id === 'navbar')?.semanticTag).toBe('nav')
+    expect(out.find((e) => e.id === 'body')?.semanticTag).toBe('main')
   })
 })

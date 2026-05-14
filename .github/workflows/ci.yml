@@ -84,11 +84,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y wine64 wine32
 
+      # --publish never: electron-builder auto-detects CI + tag and tries to
+      # upload Releases itself, but we use softprops/action-gh-release below
+      # to attach all artifacts in a single step.
       - name: Package AppImage + deb
-        run: npm run build:linux
+        run: npm run build:linux -- --publish never
 
       - name: Package Windows installer
-        run: npm run build:win
+        run: npm run build:win -- --publish never
 
       - name: Attach installers to GitHub Release
         uses: softprops/action-gh-release@v2

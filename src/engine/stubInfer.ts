@@ -62,10 +62,6 @@ function annotate(el: CanvasElement, isBottom: boolean): SemanticElement {
   return { ...el, semanticTag, children: [] }
 }
 
-function isContainerTag(tag: SemanticTag): boolean {
-  return tag === 'header' || tag === 'footer' || tag === 'nav' || tag === 'main' || tag === 'div'
-}
-
 /** Grid-and-pixel containment: child sits fully inside parent's bounding box. */
 function rectContains(parent: CanvasElement, child: CanvasElement): boolean {
   return (

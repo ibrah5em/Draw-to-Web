@@ -64,17 +64,16 @@ describe('exportProject', () => {
     vi.unstubAllGlobals()
   })
 
-  it('falls back to the stub engine when the real engine throws', async () => {
-    // While Yousef's inferSemantics is WIP, the pipeline transparently uses
-    // src/engine/stubInfer.ts so the rest of the app stays usable end-to-end.
+  it('returns stage="infer" when the engine throws', async () => {
     mockedInfer.mockImplementationOnce(() => {
-      throw new Error('Not implemented')
+      throw new Error('engine boom')
     })
     setupElectronAPI({ success: true, filePath: '/tmp/x.zip' })
     const result = await exportProject(STUB_ELEMENTS, BASE_CONFIG)
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.report.accessibility.passed).toBe(true)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.stage).toBe('infer')
+      expect(result.error).toBe('engine boom')
     }
   })
 
@@ -181,12 +180,11 @@ describe('buildPreview', () => {
     expect(preview?.css.length).toBeGreaterThan(0)
   })
 
-  it('falls back to the stub engine when the real one throws', () => {
+  it('returns null when the engine throws', () => {
     mockedInfer.mockImplementationOnce(() => {
-      throw new Error('engine WIP')
+      throw new Error('engine boom')
     })
     const preview = buildPreview(STUB_ELEMENTS)
-    expect(preview).not.toBeNull()
-    expect(preview?.html).toContain('<!doctype html>')
+    expect(preview).toBeNull()
   })
 })

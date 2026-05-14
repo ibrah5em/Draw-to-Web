@@ -56,8 +56,10 @@ export async function runAxeGate(html: string): Promise<AccessibilityReport> {
 async function runAxeGateNode(html: string): Promise<AccessibilityReport> {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const { JSDOM } = await import(/* @vite-ignore */ 'jsdom')
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const axe = await import(/* @vite-ignore */ 'axe-core')
+  // Node's native CJS-from-ESM interop puts axe-core under `.default`; Vitest's
+  // loader flattens it onto the namespace. Unwrap so `.source` resolves either way.
+  const axeMod = (await import(/* @vite-ignore */ 'axe-core')) as Record<string, unknown>
+  const axe = (axeMod.default ?? axeMod) as unknown as { source: string }
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
   const dom = new JSDOM(html, { runScripts: 'outside-only' })
@@ -67,11 +69,12 @@ async function runAxeGateNode(html: string): Promise<AccessibilityReport> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     win.eval(axe.source)
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const windowAxe = (win as unknown as { axe: typeof axe }).axe
+    // axe-core's IIFE exposes itself as `window.axe` when run in a window context.
+    const windowAxe = (win as unknown as { axe: { run: (...args: unknown[]) => Promise<unknown> } })
+      .axe
     const raw = (await windowAxe.run(win.document, {
       rules: { 'color-contrast': { enabled: false } },
-    })) as unknown as RawAxeResults
+    })) as RawAxeResults
 
     const violations = raw.violations.map(normalizeViolation)
     const counts = { critical: 0, serious: 0, moderate: 0, minor: 0 }

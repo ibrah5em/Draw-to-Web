@@ -3,7 +3,8 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { generate } from '@generator'
 import { injectSEO } from '@seo'
-import { PAGE_WITH_NAV, SIMPLE_PAGE } from '../generator/fixtures'
+import { canvasElementsToDocument } from '../../src/export/legacyAdapter'
+import { PAGE_WITH_NAV, SIMPLE_PAGE } from '../fixtures/legacyElements'
 
 /**
  * Minimum browser versions where each CSS feature shipped unprefixed and stable.
@@ -149,12 +150,13 @@ function runAudit(name: string, html: string, css: string) {
 }
 
 async function buildAndAudit(name: string, elements: typeof SIMPLE_PAGE) {
-  const { html, css } = generate(elements)
-  const seoHtml = injectSEO(html, {
+  const seoConfig = {
     title: `Draw-to-Web Cross-browser Test — ${name}`,
     description: 'Generated output used for cross-browser validation.',
     canonicalUrl: 'https://example.com/',
-  })
+  }
+  const { html, css } = await generate(canvasElementsToDocument(elements, seoConfig))
+  const seoHtml = injectSEO(html, seoConfig)
   return { html: seoHtml, css, ...runAudit(name, seoHtml, css) }
 }
 

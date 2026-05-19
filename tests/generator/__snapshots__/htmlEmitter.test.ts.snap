@@ -1,9 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`emitHtml > matches snapshot 1`] = `
-"<header class="dtw-el-header-1"></header>
-<h1 class="dtw-el-h1-1">Hello World</h1>
-<img class="dtw-el-img-1" src="hero.jpg" alt="Hero image" />
-<button class="dtw-el-btn-1" type="button">Get started</button>
-<footer class="dtw-el-footer-1"></footer>"
-`;

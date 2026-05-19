@@ -1,14 +1,21 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { runAxeGate, formatViolation } from '@seo/axeGate'
 import { generateFullReport, injectSEO } from '@seo'
 import { generate } from '@generator'
-import { SIMPLE_PAGE } from '../generator/fixtures'
+import { canvasElementsToDocument } from '../../src/export/legacyAdapter'
+import { SIMPLE_PAGE } from '../fixtures/legacyElements'
 import type { SEOConfig } from '@seo'
 
 const BASE_CONFIG: SEOConfig = {
   title: 'Axe Gate Page',
   description: 'A test page used by the axe-core gate suite.',
 }
+
+let SIMPLE_HTML: string
+
+beforeAll(async () => {
+  SIMPLE_HTML = (await generate(canvasElementsToDocument(SIMPLE_PAGE, BASE_CONFIG))).html
+})
 
 /** Wraps an HTML body fragment in a minimal valid document. */
 function doc(body: string, opts: { lang?: string; title?: string } = {}): string {
@@ -19,7 +26,7 @@ function doc(body: string, opts: { lang?: string; title?: string } = {}): string
 
 describe('runAxeGate', () => {
   it('passes on a clean injectSEO output', async () => {
-    const html = injectSEO(generate(SIMPLE_PAGE).html, BASE_CONFIG)
+    const html = injectSEO(SIMPLE_HTML, BASE_CONFIG)
     const report = await runAxeGate(html)
     const blocking = report.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'
@@ -100,7 +107,7 @@ describe('formatViolation', () => {
 
 describe('generateFullReport', () => {
   it('returns SEO + accessibility + guidance for a clean page', async () => {
-    const html = injectSEO(generate(SIMPLE_PAGE).html, BASE_CONFIG)
+    const html = injectSEO(SIMPLE_HTML, BASE_CONFIG)
     const report = await generateFullReport(html, BASE_CONFIG)
 
     expect(report.seo.titleLength).toBe(BASE_CONFIG.title.length)
@@ -109,7 +116,7 @@ describe('generateFullReport', () => {
   })
 
   it('flags missing OG image and canonical in guidance', async () => {
-    const html = injectSEO(generate(SIMPLE_PAGE).html, BASE_CONFIG)
+    const html = injectSEO(SIMPLE_HTML, BASE_CONFIG)
     const report = await generateFullReport(html, BASE_CONFIG)
     expect(report.guidance.some((g) => g.includes('Open Graph'))).toBe(true)
     expect(report.guidance.some((g) => g.includes('canonical'))).toBe(true)
@@ -120,7 +127,10 @@ describe('generateFullReport', () => {
       title: 'x'.repeat(80),
       description: 'ok',
     }
-    const html = injectSEO(generate(SIMPLE_PAGE).html, longConfig)
+    const html = injectSEO(
+      (await generate(canvasElementsToDocument(SIMPLE_PAGE, longConfig))).html,
+      longConfig
+    )
     const report = await generateFullReport(html, longConfig)
     expect(report.guidance.some((g) => g.includes('truncated above 60'))).toBe(true)
   })

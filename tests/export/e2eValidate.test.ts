@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import { generate } from '@generator'
 import { injectSEO, runAxeGate } from '@seo'
-import { PAGE_WITH_NAV, SIMPLE_PAGE } from '../generator/fixtures'
+import { canvasElementsToDocument } from '../../src/export/legacyAdapter'
+import { PAGE_WITH_NAV, SIMPLE_PAGE } from '../fixtures/legacyElements'
 
 interface CheckResult {
   name: string
@@ -75,16 +76,21 @@ function checkWellFormed(html: string): CheckResult {
 }
 
 function checkClassesReferenced(html: string, css: string): CheckResult {
-  const used = collectClassNames(html)
+  // The new generator omits empty `.dtw-el-X {}` rules for elements that
+  // carry no style declarations (a class without styles is still a valid
+  // scoping hook). What we care about is the inverse: every selector
+  // defined in CSS must point at a class that actually appears in HTML —
+  // otherwise it's dead code or a renaming bug.
+  const used = new Set(collectClassNames(html))
   const defined = collectCssSelectors(css)
-  const missing = used.filter((c) => !defined.has(c))
+  const orphans = [...defined].filter((c) => c.startsWith('dtw-el-') && !used.has(c))
   return {
     name: 'CSS classes resolve',
-    passed: missing.length === 0,
+    passed: orphans.length === 0,
     detail:
-      missing.length === 0
-        ? `${used.length} class refs, all defined`
-        : `missing definitions for: ${missing.join(', ')}`,
+      orphans.length === 0
+        ? `${used.size} class refs, no orphan CSS rules`
+        : `orphan CSS rules: ${orphans.join(', ')}`,
   }
 }
 
@@ -98,13 +104,14 @@ function checkNoAbsolutePositioning(css: string): CheckResult {
 }
 
 async function runFixture(name: string, elements: typeof SIMPLE_PAGE) {
-  const { html, css } = generate(elements)
-  const seoHtml = injectSEO(html, {
+  const seoConfig = {
     title: 'Draw-to-Web E2E Test',
     description: 'End-to-end validation of the generator + SEO + axe pipeline.',
     ogImage: 'https://example.com/og.png',
     canonicalUrl: 'https://example.com/',
-  })
+  }
+  const { html, css } = await generate(canvasElementsToDocument(elements, seoConfig))
+  const seoHtml = injectSEO(html, seoConfig)
   const fullDoc = seoHtml.replace(
     '<link rel="stylesheet" href="styles.css" />',
     `<style>${css}</style>`

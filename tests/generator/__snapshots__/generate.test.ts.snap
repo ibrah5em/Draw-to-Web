@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`generate > matches snapshot 1`] = `
+exports[`generate(document) > matches the snapshot (catches accidental output drift) 1`] = `
 {
   "css": "*,
 *::before,
@@ -10,13 +10,20 @@ exports[`generate > matches snapshot 1`] = `
   padding: 0;
 }
 
+html {
+  text-size-adjust: 100%;
+}
+
 body {
   min-height: 100vh;
   line-height: 1.5;
+  font-family: var(--font-family-body, system-ui, sans-serif);
 }
 
 img,
-picture {
+picture,
+svg,
+video {
   display: block;
   max-width: 100%;
 }
@@ -26,73 +33,144 @@ input,
 select,
 textarea {
   font: inherit;
+  color: inherit;
 }
 
-.dtw-canvas {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  width: 100%;
-  max-width: 1440px;
-  margin-inline: auto;
+a {
+  color: inherit;
 }
 
-.dtw-el-header-1 {
-  grid-column: 1 / span 12;
-  min-height: 80px;
-  background-color: #1a1a2e;
+:root {
+  --color-bg: #ffffff;
+  --color-text: #111111;
+  --color-accent: #0066ff;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 32px;
+  --font-size-body: clamp(14px, 1rem + 0.2vw, 18px);
+  --font-size-h1: clamp(28px, 2rem + 2vw, 56px);
+  --font-family-body: system-ui, sans-serif;
+  --radius-sm: 4px;
 }
 
-.dtw-el-h1-1 {
-  grid-column: 2 / span 10;
-  min-height: 60px;
-  margin-top: 100px;
-  color: #333333;
-  font-size: clamp(27px, 2.250rem + 1vw, 45px);
+:root[data-theme="dark"] {
+  --color-bg: #0b0b10;
+  --color-text: #f5f5f5;
+  --color-accent: #5599ff;
 }
 
-.dtw-el-img-1 {
-  grid-column: 1 / span 6;
-  min-height: 300px;
-  margin-top: 200px;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-bg: #0b0b10;
+    --color-text: #f5f5f5;
+    --color-accent: #5599ff;
+  }
 }
 
-.dtw-el-btn-1 {
-  grid-column: 2 / span 2;
-  min-height: 48px;
-  margin-top: 540px;
-  display: inline-flex;
+.dtw-el-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding-top: var(--space-lg);
+  padding-right: var(--space-md);
+  padding-bottom: var(--space-lg);
+  padding-left: var(--space-md);
+  background-color: var(--color-bg);
+}
+
+.dtw-el-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  padding: 0.5em 1em;
-  border: none;
-  cursor: pointer;
-  background-color: #0066ff;
-  color: #ffffff;
-  border-radius: 4px;
 }
 
-.dtw-el-footer-1 {
-  grid-column: 1 / span 12;
-  min-height: 80px;
-  margin-top: 620px;
-  background-color: #111111;
-}",
+.dtw-el-title {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-h1);
+  color: var(--color-text);
+}
+
+.dtw-el-cta {
+  padding-top: var(--space-sm);
+  padding-right: var(--space-md);
+  padding-bottom: var(--space-sm);
+  padding-left: var(--space-md);
+  background-color: var(--color-accent);
+  border-radius: var(--radius-sm);
+  color: var(--color-bg);
+}
+
+.dtw-el-hero {
+  width: 100%;
+  max-width: 720px;
+  border-radius: var(--radius-sm);
+}
+
+.dtw-el-divider {
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.dtw-el-skills {
+  font-family: var(--font-family-body);
+  color: var(--color-text);
+}
+
+.dtw-el-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.dtw-el-footer-text {
+  color: var(--color-text);
+}
+
+@media (max-width: 768px) {
+  .dtw-el-root {
+    padding-top: var(--space-md);
+    padding-right: var(--space-sm);
+    padding-bottom: var(--space-md);
+    padding-left: var(--space-sm);
+  }
+}
+",
   "html": "<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="dtw-canvas">
-      <header class="dtw-el-header-1"></header>
-      <h1 class="dtw-el-h1-1">Hello World</h1>
-      <img class="dtw-el-img-1" src="hero.jpg" alt="Hero image" />
-      <button class="dtw-el-btn-1" type="button">Get started</button>
-      <footer class="dtw-el-footer-1"></footer>
-    </div>
+    <main class="dtw-el-root">
+      <header class="dtw-el-header">
+        <h1 class="dtw-el-title">Welcome, Ada Lovelace</h1>
+        <a class="dtw-el-cta" href="#contact" target="_blank" rel="noopener noreferrer"
+          >Contact me</a
+        >
+      </header>
+      <img
+        class="dtw-el-hero"
+        src="https://example.com/photo.jpg"
+        alt="A photo of the author at their desk"
+        loading="lazy"
+        decoding="async"
+      />
+      <hr class="dtw-el-divider" />
+      <ul class="dtw-el-skills">
+        <li>TypeScript</li>
+        <li>React</li>
+        <li>Electron</li>
+      </ul>
+      <footer class="dtw-el-footer">
+        <p class="dtw-el-footer-text">© 2026 Ada Lovelace</p>
+      </footer>
+    </main>
   </body>
-</html>",
+</html>
+",
+  "js": "",
 }
 `;

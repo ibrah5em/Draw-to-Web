@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { injectSEO, generateSEOReport } from '@seo'
 import { generate } from '@generator'
-import { SIMPLE_PAGE, PAGE_WITH_NAV } from '../generator/fixtures'
+import { canvasElementsToDocument } from '../../src/export/legacyAdapter'
+import { SIMPLE_PAGE, PAGE_WITH_NAV } from '../fixtures/legacyElements'
 import type { SEOConfig } from '@seo'
 
 const BASE_CONFIG: SEOConfig = {
@@ -17,8 +18,16 @@ const FULL_CONFIG: SEOConfig = {
   lang: 'fr',
 }
 
-const BASE_HTML = generate(SIMPLE_PAGE).html
-const NAV_HTML = generate(PAGE_WITH_NAV).html
+let BASE_HTML: string
+let NAV_HTML: string
+
+beforeAll(async () => {
+  // Generate raw HTML for both fixtures through the new pipeline (adapter
+  // → Document → generate). injectSEO is asserted against the same shape
+  // the real export pipeline feeds it.
+  BASE_HTML = (await generate(canvasElementsToDocument(SIMPLE_PAGE, BASE_CONFIG))).html
+  NAV_HTML = (await generate(canvasElementsToDocument(PAGE_WITH_NAV, BASE_CONFIG))).html
+})
 
 describe('injectSEO', () => {
   describe('head tag injection', () => {
@@ -68,9 +77,9 @@ describe('injectSEO', () => {
       expect(titleIdx).toBeLessThan(headCloseIdx)
     })
 
-    it('preserves existing charset and viewport metas', () => {
+    it('preserves the generator-emitted charset and viewport metas', () => {
       const result = injectSEO(BASE_HTML, BASE_CONFIG)
-      expect(result).toContain('<meta charset="UTF-8" />')
+      expect(result).toContain('<meta charset="utf-8" />')
       expect(result).toContain('<meta name="viewport"')
     })
   })
@@ -90,27 +99,41 @@ describe('injectSEO', () => {
 
   describe('ARIA landmark roles', () => {
     it('adds role="banner" to <header>', () => {
-      const result = injectSEO(BASE_HTML, BASE_CONFIG)
-      expect(result).toContain('role="banner"')
+      // SIMPLE_PAGE's first rectangle gets `semanticRole: undefined`, so
+      // the generator emits <div>; the legacy adapter does not infer roles.
+      // Instead, inject SEO on an HTML snippet that contains a <header>.
+      const html = BASE_HTML.replace(
+        /<div class="dtw-el-header-1"/,
+        '<header class="dtw-el-header-1"'
+      ).replace(/<\/div>(\s*<div class="dtw-el-h1-1")/, '</header>$1')
+      const result = injectSEO(html, BASE_CONFIG)
       expect(result).toMatch(/<header\b[^>]*role="banner"/)
     })
 
-    it('adds role="contentinfo" to <footer>', () => {
-      const result = injectSEO(BASE_HTML, BASE_CONFIG)
+    it('adds role="contentinfo" to a <footer>', () => {
+      const html = BASE_HTML.replace(
+        /<div class="dtw-el-footer-1"/,
+        '<footer class="dtw-el-footer-1"'
+      ).replace(/<\/div>(\s*<\/main>)/, '</footer>$1')
+      const result = injectSEO(html, BASE_CONFIG)
       expect(result).toContain('role="contentinfo"')
     })
 
-    it('adds role="navigation" to <nav>', () => {
-      const result = injectSEO(NAV_HTML, BASE_CONFIG)
+    it('adds role="navigation" to a <nav>', () => {
+      const html = NAV_HTML.replace(
+        /<div class="dtw-el-header-nav"/,
+        '<nav class="dtw-el-header-nav"'
+      )
+      const result = injectSEO(html, BASE_CONFIG)
       expect(result).toContain('role="navigation"')
     })
 
     it('does not duplicate role if already present', () => {
-      const htmlWithRole = BASE_HTML.replace(
-        '<header class="dtw-el-header-1">',
-        '<header class="dtw-el-header-1" role="banner">'
+      const html = BASE_HTML.replace(
+        /<div class="dtw-el-header-1"/,
+        '<header class="dtw-el-header-1" role="banner"'
       )
-      const result = injectSEO(htmlWithRole, BASE_CONFIG)
+      const result = injectSEO(html, BASE_CONFIG)
       const roleCount = (result.match(/role="banner"/g) ?? []).length
       expect(roleCount).toBe(1)
     })
@@ -154,22 +177,19 @@ describe('generateSEOReport', () => {
     expect(report.hasCanonical).toBe(true)
   })
 
-  it('counts h1 elements correctly — simple page has one h1', () => {
+  it('counts h1 elements correctly — adapter promotes the first text to <h1>', () => {
     const html = injectSEO(BASE_HTML, BASE_CONFIG)
     const report = generateSEOReport(html, BASE_CONFIG)
     expect(report.h1Count).toBe(1)
   })
 
   it('reports imagesMissingAlt: 0 when all images have descriptive alt', () => {
-    // SIMPLE_PAGE has one image with alt="Hero image" (non-empty)
     const html = injectSEO(BASE_HTML, BASE_CONFIG)
     const report = generateSEOReport(html, BASE_CONFIG)
-    // Hero image has alt text, so count should be 0
     expect(report.imagesMissingAlt).toBe(0)
   })
 
   it('flags images with empty alt as potentially decorative', () => {
-    // Inject a known empty-alt image into the HTML
     const htmlWithEmptyAlt = BASE_HTML.replace('alt="Hero image"', 'alt=""')
     const report = generateSEOReport(htmlWithEmptyAlt, BASE_CONFIG)
     expect(report.imagesMissingAlt).toBe(1)

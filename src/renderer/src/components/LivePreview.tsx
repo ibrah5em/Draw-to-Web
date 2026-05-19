@@ -27,7 +27,18 @@ export default function LivePreview({ open, onClose }: LivePreviewProps): JSX.El
     return () => clearTimeout(timer)
   }, [elements])
 
-  const preview = useMemo(() => buildPreview(debounced), [debounced])
+  const [preview, setPreview] = useState<{ html: string; css: string } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void buildPreview(debounced).then((next) => {
+      if (!cancelled) setPreview(next)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [debounced])
+
   const srcdoc = useMemo(() => buildSrcDoc(preview), [preview])
 
   const iframeRef = useRef<HTMLIFrameElement>(null)

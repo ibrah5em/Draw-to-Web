@@ -17,7 +17,7 @@ import { mkdtemp, readFile, rm } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import JSZip from 'jszip'
-import { SIMPLE_PAGE } from '../generator/fixtures'
+import { SIMPLE_PAGE } from '../fixtures/legacyElements'
 import type { CanvasElement } from '../../src/store/elementStore'
 import type { SEOConfig } from '../../src/shared/types'
 
@@ -49,28 +49,17 @@ const { handlers, electronMock } = vi.hoisted(() => {
 
 vi.mock('electron', () => electronMock)
 
-// Engine is mocked so the output is fully deterministic — we want to compare
-// bytes, not chase changes in inference logic.
-vi.mock('../../src/engine', () => ({
-  inferSemantics: vi.fn(),
-}))
-
 import { registerIpcHandlers } from '../../src/main/ipc'
-import { inferSemantics } from '../../src/engine'
 import { exportProject } from '../../src/export'
-
-const mockedInfer = vi.mocked(inferSemantics)
 
 const SEO: SEOConfig = {
   title: 'Round Trip Test',
   description: 'Verifies the renderer→IPC→disk path end-to-end.',
 }
 
-// The renderer passes this through; the engine mock ignores it and returns
-// SIMPLE_PAGE, so the exact shape doesn't matter.
-const ELEMENTS: CanvasElement[] = [
-  { id: 'a', type: 'rectangle', x: 0, y: 0, width: 12, height: 80, props: {} },
-]
+// The legacy adapter accepts real CanvasElement[] from the v0.1.0 fixture;
+// the new pipeline converts to a Document under the hood.
+const ELEMENTS: CanvasElement[] = SIMPLE_PAGE
 
 let tempDir: string
 
@@ -114,8 +103,6 @@ describe('IPC round-trip: exportProject → export:zip handler → disk', () => 
       canceled: false,
       filePath: outPath,
     })
-    mockedInfer.mockReturnValueOnce(SIMPLE_PAGE)
-
     // Intercept the buffer the renderer hands to the IPC layer so we can
     // compare it against what ended up on disk.
     let bufferSeenByIpc: ArrayBuffer | null = null
@@ -149,7 +136,6 @@ describe('IPC round-trip: exportProject → export:zip handler → disk', () => 
       canceled: false,
       filePath: outPath,
     })
-    mockedInfer.mockReturnValueOnce(SIMPLE_PAGE)
     wireRendererToMain()
 
     const result = await exportProject(ELEMENTS, SEO)
@@ -177,7 +163,6 @@ describe('IPC round-trip: exportProject → export:zip handler → disk', () => 
   it('surfaces stage="save" when the dialog is canceled — no file written', async () => {
     const outPath = join(tempDir, 'should-not-exist.zip')
     electronMock.dialog.showSaveDialog.mockResolvedValueOnce({ canceled: true })
-    mockedInfer.mockReturnValueOnce(SIMPLE_PAGE)
     wireRendererToMain()
 
     const result = await exportProject(ELEMENTS, SEO)

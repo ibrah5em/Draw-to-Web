@@ -1,15 +1,27 @@
 import { create } from 'zustand'
 
+import type { BreakpointKey, StateKey } from '@document/types'
+
 /**
- * Local mirrors of the breakpoint and state literals.
- *
- * These align with the eventual C1 types (`ResponsiveProperties` keys from
- * `I-DOC-01` and `StatesMap` keys from the same). When `src/document/types.ts`
- * lands, re-export those types from here and delete the local definitions —
- * the string set is stable per Section 4 of `docs/0.2.0v/plan.md`.
+ * The active breakpoint literal — re-exported from `@document/types` so
+ * the session store and the document model can never drift apart.
+ * `'base'` is the desktop default; the narrower keys correspond to
+ * `(max-width: ...)` rules in emitted CSS (tablet ≤ 1024, mobile ≤ 768,
+ * small ≤ 480).
  */
-export type Breakpoint = 'base' | 'tablet' | 'mobile' | 'small'
-export type ElementState = 'default' | 'hover' | 'focus' | 'active'
+export type Breakpoint = BreakpointKey
+
+/**
+ * The active pseudo-state literal. `'default'` means "no state mode" —
+ * property writes target the element's base style. The other values
+ * mirror `StateKey` from `@document/types` so writes can route into
+ * `element.states[state]` unchanged (`Y-STR-06`).
+ *
+ * Note: this is `'default' | StateKey` rather than its own enum so the
+ * narrowing `activeState !== 'default'` produces a `StateKey` directly,
+ * with no manual remap.
+ */
+export type ActiveState = 'default' | StateKey
 
 /** Editor theme override applied to the canvas preview. */
 export type ThemeMode = 'light' | 'dark'
@@ -30,7 +42,7 @@ interface SessionState {
   /** Active responsive breakpoint that property writes are routed to (Y-STR-07). */
   readonly activeBreakpoint: Breakpoint
   /** Active pseudo-state that property writes are routed to (Y-STR-06). */
-  readonly activeState: ElementState
+  readonly activeState: ActiveState
   /** Current resizable-pane sizes. */
   readonly panelSizes: PanelSizes
   /** Editor theme preview mode. Independent of the document's emitted theme. */
@@ -47,7 +59,7 @@ interface SessionActions {
   /** Switch the active responsive breakpoint. */
   setActiveBreakpoint: (bp: Breakpoint) => void
   /** Switch the active pseudo-state. */
-  setActiveState: (st: ElementState) => void
+  setActiveState: (st: ActiveState) => void
   /** Update the size of a single resizable pane. Other panes are left untouched. */
   setPanelSize: (panel: keyof PanelSizes, size: number) => void
   /** Set the editor preview theme explicitly. */

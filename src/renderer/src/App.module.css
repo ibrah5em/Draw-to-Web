@@ -3,24 +3,16 @@
 .app {
   display: grid;
   grid-template-areas:
-    'titlebar    titlebar  titlebar   titlebar'
-    'activitybar sidebar   canvas     properties'
-    'statusbar   statusbar statusbar  statusbar';
-  grid-template-columns:
-    var(--activity-bar-width)
-    var(--sidebar-w, var(--sidebar-width))
-    1fr
-    var(--props-w, 0px);
-  grid-template-rows:
-    var(--titlebar-height)
-    1fr
-    var(--statusbar-height);
+    'titlebar    titlebar'
+    'activitybar maincontent'
+    'statusbar   statusbar';
+  grid-template-columns: var(--activity-bar-width) 1fr;
+  grid-template-rows: var(--titlebar-height) 1fr var(--statusbar-height);
   height: 100vh;
   overflow: hidden;
   background: var(--bg-base);
   font-family: var(--font);
   color: var(--text-primary);
-  transition: grid-template-columns 200ms ease;
 }
 
 /* ── Title bar ──────────────────────────────────────────────────────────── */
@@ -105,22 +97,55 @@
   flex: 1;
 }
 
+/* ── Main content (PanelGroup host) ─────────────────────────────────────── */
+
+.mainContent {
+  grid-area: maincontent;
+  overflow: hidden;
+  display: flex;
+}
+
+/* ── Resize handle ───────────────────────────────────────────────────────── */
+
+.resizeHandle {
+  width: 5px;
+  flex-shrink: 0;
+  background: transparent;
+  cursor: col-resize;
+  position: relative;
+  transition: background 0.12s;
+}
+
+.resizeHandle:hover,
+.resizeHandle[data-resize-handle-active] {
+  background: var(--accent);
+}
+
+.resizeHandleInner {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 1px;
+  background: var(--border);
+  pointer-events: none;
+}
+
 /* ── Sidebar ────────────────────────────────────────────────────────────── */
 
 .sidebar {
-  grid-area: sidebar;
+  height: 100%;
   background: var(--bg-surface);
   border-right: 1px solid var(--border);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: width 200ms ease;
 }
 
 /* ── Canvas ─────────────────────────────────────────────────────────────── */
 
 .canvas {
-  grid-area: canvas;
+  height: 100%;
   background: var(--bg-base);
   overflow: hidden;
   position: relative;
@@ -131,24 +156,12 @@
 /* ── Properties panel ───────────────────────────────────────────────────── */
 
 .properties {
-  grid-area: properties;
+  height: 100%;
   background: var(--bg-surface);
-  border-left: 2px solid var(--border);
+  border-left: 1px solid var(--border);
   overflow: hidden;
-  transition: width 200ms ease;
-}
-
-@keyframes flashAccent {
-  0% {
-    border-left-color: var(--accent);
-  }
-  100% {
-    border-left-color: var(--border);
-  }
-}
-
-.propertiesFlash {
-  animation: flashAccent 0.3s ease-out forwards;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Status bar ─────────────────────────────────────────────────────────── */

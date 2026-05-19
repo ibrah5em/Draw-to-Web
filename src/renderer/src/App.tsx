@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
+import type { ImperativePanelHandle } from 'react-resizable-panels'
 import {
   Download,
   Grid3x3,
@@ -49,10 +51,10 @@ export default function App(): JSX.Element {
   const [dialog, setDialog] = useState<DialogState>({ kind: 'none' })
   const [activeTool, setActiveTool] = useState<ActiveTool>('select')
   const [showGrid, setShowGrid] = useState(true)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [previewOpen, setPreviewOpen] = useState(false)
-  const [flashProps, setFlashProps] = useState(false)
-  const prevSelectedIdRef = useRef<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const sidebarPanelRef = useRef<ImperativePanelHandle>(null)
+  const propsPanelRef = useRef<ImperativePanelHandle>(null)
 
   const handleExportSubmit = useCallback(
     async (config: SEOConfig) => {
@@ -101,18 +103,15 @@ export default function App(): JSX.Element {
     return window.electronAPI.onPreviewClosed(() => setPreviewOpen(false))
   }, [])
 
+  // Expand or collapse the properties panel based on selection.
   useEffect(() => {
-    if (selectedId && selectedId !== prevSelectedIdRef.current) {
-      setFlashProps(false)
-      const rafId = requestAnimationFrame(() => {
-        setFlashProps(true)
-        const timerId = setTimeout(() => setFlashProps(false), 320)
-        return () => clearTimeout(timerId)
-      })
-      return () => cancelAnimationFrame(rafId)
+    const panel = propsPanelRef.current
+    if (!panel) return
+    if (selectedId) {
+      panel.expand()
+    } else {
+      panel.collapse()
     }
-    prevSelectedIdRef.current = selectedId
-    return undefined
   }, [selectedId])
 
   useEffect(() => {
@@ -132,15 +131,7 @@ export default function App(): JSX.Element {
   }, [handleSaveProject, handleOpenProject])
 
   return (
-    <div
-      className={styles.app}
-      style={
-        {
-          '--sidebar-w': sidebarOpen ? 'var(--sidebar-width)' : '0px',
-          '--props-w': selectedId ? 'var(--panel-width)' : '0px',
-        } as React.CSSProperties
-      }
-    >
+    <div className={styles.app}>
       {/* ── Title bar ─────────────────────────────────────────────────── */}
       <header className={styles.titlebar}>
         <div className={styles.titlebarLeft}>
@@ -179,7 +170,15 @@ export default function App(): JSX.Element {
         {/* Sidebar toggle */}
         <button
           className={`${styles.activityBtn} ${sidebarOpen ? styles.activityBtnActive : ''}`}
-          onClick={() => setSidebarOpen((v) => !v)}
+          onClick={() => {
+            const panel = sidebarPanelRef.current
+            if (!panel) return
+            if (panel.isCollapsed()) {
+              panel.expand()
+            } else {
+              panel.collapse()
+            }
+          }}
           title="Toggle Layers Panel"
         >
           <PanelLeft size={ICON_SIZE} />
@@ -223,24 +222,58 @@ export default function App(): JSX.Element {
         </button>
       </div>
 
-      {/* ── Sidebar — Layers panel ─────────────────────────────────────── */}
-      <div className={styles.sidebar}>
-        <LayerPanel />
-      </div>
+      {/* ── Resizable main content ────────────────────────────────────── */}
+      <PanelGroup
+        direction="horizontal"
+        autoSaveId="dtw-main-layout"
+        className={styles.mainContent}
+      >
+        <Panel
+          ref={sidebarPanelRef}
+          defaultSize={18}
+          minSize={12}
+          maxSize={35}
+          collapsible
+          collapsedSize={0}
+          onCollapse={() => setSidebarOpen(false)}
+          onExpand={() => setSidebarOpen(true)}
+        >
+          <div className={styles.sidebar}>
+            <LayerPanel />
+          </div>
+        </Panel>
 
-      {/* ── Canvas ────────────────────────────────────────────────────── */}
-      <div className={styles.canvas}>
-        <Canvas
-          activeTool={activeTool}
-          showGrid={showGrid}
-          onToolReset={() => setActiveTool('select')}
-        />
-      </div>
+        <PanelResizeHandle className={styles.resizeHandle}>
+          <div className={styles.resizeHandleInner} />
+        </PanelResizeHandle>
 
-      {/* ── Properties panel ──────────────────────────────────────────── */}
-      <div className={`${styles.properties} ${flashProps ? styles.propertiesFlash : ''}`}>
-        <PropertiesPanel />
-      </div>
+        <Panel defaultSize={62} minSize={30}>
+          <div className={styles.canvas}>
+            <Canvas
+              activeTool={activeTool}
+              showGrid={showGrid}
+              onToolReset={() => setActiveTool('select')}
+            />
+          </div>
+        </Panel>
+
+        <PanelResizeHandle className={styles.resizeHandle}>
+          <div className={styles.resizeHandleInner} />
+        </PanelResizeHandle>
+
+        <Panel
+          ref={propsPanelRef}
+          defaultSize={20}
+          minSize={14}
+          maxSize={40}
+          collapsible
+          collapsedSize={0}
+        >
+          <div className={styles.properties}>
+            <PropertiesPanel />
+          </div>
+        </Panel>
+      </PanelGroup>
 
       {/* ── Status bar ────────────────────────────────────────────────── */}
       <div className={styles.statusbar}>

@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
-import type { ImperativePanelHandle } from 'react-resizable-panels'
+import { useCallback, useEffect, useState } from 'react'
+import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
 import {
   Download,
   Grid3x3,
@@ -53,8 +52,8 @@ export default function App(): JSX.Element {
   const [showGrid, setShowGrid] = useState(true)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const sidebarPanelRef = useRef<ImperativePanelHandle>(null)
-  const propsPanelRef = useRef<ImperativePanelHandle>(null)
+  const sidebarPanelRef = usePanelRef()
+  const propsPanelRef = usePanelRef()
 
   const handleExportSubmit = useCallback(
     async (config: SEOConfig) => {
@@ -223,29 +222,24 @@ export default function App(): JSX.Element {
       </div>
 
       {/* ── Resizable main content ────────────────────────────────────── */}
-      <PanelGroup
-        direction="horizontal"
-        autoSaveId="dtw-main-layout"
-        className={styles.mainContent}
-      >
+      <Group orientation="horizontal" className={styles.mainContent}>
         <Panel
-          ref={sidebarPanelRef}
+          panelRef={sidebarPanelRef}
           defaultSize={18}
           minSize={12}
           maxSize={35}
           collapsible
           collapsedSize={0}
-          onCollapse={() => setSidebarOpen(false)}
-          onExpand={() => setSidebarOpen(true)}
+          onResize={(size) => setSidebarOpen(size.asPercentage > 0)}
         >
           <div className={styles.sidebar}>
             <LayerPanel />
           </div>
         </Panel>
 
-        <PanelResizeHandle className={styles.resizeHandle}>
+        <Separator className={styles.resizeHandle}>
           <div className={styles.resizeHandleInner} />
-        </PanelResizeHandle>
+        </Separator>
 
         <Panel defaultSize={62} minSize={30}>
           <div className={styles.canvas}>
@@ -257,12 +251,12 @@ export default function App(): JSX.Element {
           </div>
         </Panel>
 
-        <PanelResizeHandle className={styles.resizeHandle}>
+        <Separator className={styles.resizeHandle}>
           <div className={styles.resizeHandleInner} />
-        </PanelResizeHandle>
+        </Separator>
 
         <Panel
-          ref={propsPanelRef}
+          panelRef={propsPanelRef}
           defaultSize={20}
           minSize={14}
           maxSize={40}
@@ -273,7 +267,7 @@ export default function App(): JSX.Element {
             <PropertiesPanel />
           </div>
         </Panel>
-      </PanelGroup>
+      </Group>
 
       {/* ── Status bar ────────────────────────────────────────────────── */}
       <div className={styles.statusbar}>

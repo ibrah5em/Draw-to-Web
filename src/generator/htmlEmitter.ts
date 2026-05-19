@@ -1,4 +1,5 @@
 import type { SemanticElement } from '../engine'
+import type { ElementProps } from '../store/elementStore'
 
 const INDENT = '  '
 
@@ -24,7 +25,7 @@ function escapeHtml(raw: string): string {
 }
 
 /** Safely reads a string value from the element props bag. */
-function strProp(props: Record<string, unknown>, key: string): string | undefined {
+function strProp(props: ElementProps, key: keyof ElementProps): string | undefined {
   const v = props[key]
   return typeof v === 'string' ? v : undefined
 }

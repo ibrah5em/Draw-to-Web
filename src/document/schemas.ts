@@ -238,7 +238,7 @@ const gradientStopSchema = z.object({
   position: z.string().optional(),
 })
 
-export const backgroundLayerSchema: z.ZodType<BackgroundLayer> = z.discriminatedUnion('kind', [
+export const backgroundLayerSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('solid'),
     color: bindable(z.string()),
@@ -445,12 +445,24 @@ const dividerNodeSchema = z.object({
 })
 
 /**
- * `ElementNode` is recursive through `ContainerNode.children`. The
- * forward declaration via `z.lazy` lets the container schema reference
- * the union before it is fully constructed. The TS annotation on the
- * `get` ties the lazy result back to the public type.
+ * `ElementNode` is recursive through `ContainerNode.children`.
+ * `containerNodeSchema` is declared first; its `children` field uses
+ * `z.lazy(() => elementNodeSchema)` to defer the forward reference.
+ * `elementNodeSchema` then builds the discriminated union over all node
+ * schemas without a wrapping `z.lazy`, avoiding the Zod v4 issue where
+ * `ZodLazy._output` resolves to `unknown` and breaks the type annotation.
  */
-export const elementNodeSchema: z.ZodType<ElementNode> = z.lazy(() =>
+const containerNodeSchema = z.object({
+  ...elementBaseShape,
+  type: z.literal('container'),
+  children: z.array(z.lazy(() => elementNodeSchema)),
+  layout: responsiveProperties(layoutConfigSchema),
+})
+
+// The explicit LHS annotation tells TypeScript the type of elementNodeSchema
+// without requiring it to infer through the circular reference to containerNodeSchema.
+// The `as unknown as` on the RHS makes the assignability check trivially pass.
+export const elementNodeSchema: z.ZodType<Writable<ElementNode>> = z.lazy(() =>
   z.discriminatedUnion('type', [
     containerNodeSchema,
     textNodeSchema,
@@ -461,14 +473,7 @@ export const elementNodeSchema: z.ZodType<ElementNode> = z.lazy(() =>
     listNodeSchema,
     dividerNodeSchema,
   ])
-)
-
-const containerNodeSchema: z.ZodType<ContainerNode> = z.object({
-  ...elementBaseShape,
-  type: z.literal('container'),
-  children: z.array(z.lazy(() => elementNodeSchema)),
-  layout: responsiveProperties(layoutConfigSchema),
-})
+) as unknown as z.ZodType<Writable<ElementNode>>
 
 // ---------------------------------------------------------------------------
 // SEO + JSON-LD
@@ -489,7 +494,7 @@ export const twitterCardConfigSchema = z.object({
   creator: z.string().optional(),
 })
 
-export const jsonLdConfigSchema: z.ZodType<JsonLdConfig> = z.discriminatedUnion('kind', [
+export const jsonLdConfigSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('Person'),
     name: z.string(),
@@ -513,7 +518,7 @@ export const jsonLdConfigSchema: z.ZodType<JsonLdConfig> = z.discriminatedUnion(
   }),
 ])
 
-export const faviconConfigSchema: z.ZodType<FaviconConfig> = z.discriminatedUnion('kind', [
+export const faviconConfigSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('svg-inline'), svg: z.string() }),
   z.object({ kind: z.literal('png'), assetId: assetIdSchema }),
 ])
@@ -564,7 +569,7 @@ export const assetManifestEntrySchema = z.object({
   originalFilename: z.string(),
   width: z.number(),
   height: z.number(),
-  srcset: z.record(z.string(), z.string()),
+  srcset: z.record(z.coerce.number(), z.string()),
 })
 
 export const documentSettingsSchema = z.object({

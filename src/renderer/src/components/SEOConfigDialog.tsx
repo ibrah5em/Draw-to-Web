@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { SEOConfig } from '@seo'
+import type { SEOConfig } from '../../../shared/types'
 
 export interface SEOConfigDialogProps {
   open: boolean

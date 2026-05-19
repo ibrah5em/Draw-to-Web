@@ -225,9 +225,9 @@ export default function App(): JSX.Element {
       <Group orientation="horizontal" className={styles.mainContent}>
         <Panel
           panelRef={sidebarPanelRef}
-          defaultSize={18}
-          minSize={12}
-          maxSize={35}
+          defaultSize="18"
+          minSize="12"
+          maxSize="35"
           collapsible
           collapsedSize={0}
           onResize={(size) => setSidebarOpen(size.asPercentage > 0)}
@@ -241,7 +241,7 @@ export default function App(): JSX.Element {
           <div className={styles.resizeHandleInner} />
         </Separator>
 
-        <Panel defaultSize={62} minSize={30}>
+        <Panel defaultSize="62" minSize="30">
           <div className={styles.canvas}>
             <Canvas
               activeTool={activeTool}
@@ -257,9 +257,9 @@ export default function App(): JSX.Element {
 
         <Panel
           panelRef={propsPanelRef}
-          defaultSize={20}
-          minSize={14}
-          maxSize={40}
+          defaultSize="20"
+          minSize="14"
+          maxSize="40"
           collapsible
           collapsedSize={0}
         >

@@ -1,4 +1,5 @@
 import type { SemanticElement } from '../engine'
+import type { ElementProps } from '../store/elementStore'
 
 /** Minimal modern CSS reset included at the top of every generated stylesheet. */
 const CSS_RESET = `\
@@ -39,13 +40,13 @@ const ROOT_GRID = `\
 }`
 
 /** Safely reads a string value from the element props bag. */
-function strProp(props: Record<string, unknown>, key: string): string | undefined {
+function strProp(props: ElementProps, key: keyof ElementProps): string | undefined {
   const v = props[key]
   return typeof v === 'string' ? v : undefined
 }
 
 /** Safely reads a number value from the element props bag. */
-function numProp(props: Record<string, unknown>, key: string): number | undefined {
+function numProp(props: ElementProps, key: keyof ElementProps): number | undefined {
   const v = props[key]
   return typeof v === 'number' ? v : undefined
 }

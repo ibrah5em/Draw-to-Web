@@ -6,7 +6,8 @@ dist/
 *:Zone.Identifier
 
 # Claude Code
-.claude/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
 CLAUDE.md
 CLAUDE.local.md
 .mcp.json

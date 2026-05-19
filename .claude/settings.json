@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "LS",
+      "Bash(npm run *)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc *)",
+      "Bash(git *)",
+      "Bash(npx electron-builder *)",
+      "Bash(npx playwright *)",
+      "Bash(npx prettier *)",
+      "Write(src/**)",
+      "Write(tests/**)",
+      "Write(docs/**)"
+    ],
+    "deny": ["Bash(rm -rf *)", "Write(.env*)", "Bash(curl *)", "Bash(npm publish *)"]
+  },
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "autoMemoryEnabled": true
+}

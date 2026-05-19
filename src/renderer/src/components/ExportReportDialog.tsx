@@ -1,4 +1,4 @@
-import type { ExportProjectResult } from '../../../export'
+import type { ExportProjectResult, ExportStage } from '../../../export'
 
 export interface ExportReportDialogProps {
   result: ExportProjectResult
@@ -89,7 +89,7 @@ export default function ExportReportDialog({
   )
 }
 
-function stageLabel(stage: ExportProjectResult extends { stage: infer S } ? S : never): string {
+function stageLabel(stage: ExportStage): string {
   switch (stage) {
     case 'infer':
       return 'Semantic inference'

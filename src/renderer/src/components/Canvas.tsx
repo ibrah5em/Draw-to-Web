@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { MousePointer } from 'lucide-react'
 import { Stage, Layer, Rect, Text, Group, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useElementStore, useTemporalStore } from '../../../store/elementStore'
@@ -257,7 +258,9 @@ export default function Canvas({ activeTool, showGrid, onToolReset }: CanvasProp
       style={{
         flex: 1,
         overflow: 'hidden',
-        background: '#1e1e1e',
+        backgroundColor: '#1e1e1e',
+        backgroundImage: 'radial-gradient(circle, #3c3c3c 1px, transparent 1px)',
+        backgroundSize: '20px 20px',
         cursor: inSelectMode ? 'default' : 'crosshair',
         position: 'relative',
       }}
@@ -276,10 +279,29 @@ export default function Canvas({ activeTool, showGrid, onToolReset }: CanvasProp
             userSelect: 'none',
           }}
         >
-          <span style={{ fontSize: 40, opacity: 0.15 }}>⬜</span>
-          <span style={{ fontSize: 13, color: '#555', textAlign: 'center', lineHeight: 1.6 }}>
-            Pick a tool above and click to place your first element.
-          </span>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 12,
+              padding: '28px 36px',
+              border: '1.5px dashed #474747',
+              borderRadius: 8,
+            }}
+          >
+            <MousePointer size={28} color="var(--text-secondary)" strokeWidth={1.5} />
+            <span
+              style={{
+                fontSize: 'var(--text-sm)',
+                color: 'var(--text-secondary)',
+                textAlign: 'center',
+                lineHeight: 1.6,
+              }}
+            >
+              Click a tool and draw on the canvas
+            </span>
+          </div>
         </div>
       )}
       <Stage width={size.width} height={size.height} onMouseDown={handleStageMouseDown}>

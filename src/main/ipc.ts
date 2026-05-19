@@ -1,7 +1,9 @@
-import { ipcMain, dialog, app } from 'electron'
+import { ipcMain, dialog, app, BrowserWindow } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
 import { extname, join, normalize, isAbsolute } from 'path'
 import { runAxeGate } from '../seo/axeGate'
+
+let previewWin: BrowserWindow | null = null
 
 const MAX_ZIP_BYTES = 50 * 1024 * 1024 // 50 MB
 const MAX_PROJECT_BYTES = 10 * 1024 * 1024 // 10 MB — well above expected element-tree size
@@ -112,6 +114,50 @@ export function registerIpcHandlers(): void {
       throw new TypeError('a11y:run-axe expects an HTML string')
     }
     return runAxeGate(html)
+  })
+
+  ipcMain.handle('preview:open', (event) => {
+    const senderContents = event.sender
+
+    if (previewWin && !previewWin.isDestroyed()) {
+      previewWin.focus()
+      return
+    }
+
+    previewWin = new BrowserWindow({
+      width: 800,
+      height: 600,
+      title: 'Live Preview — Draw to Web',
+      backgroundColor: '#1e1e1e',
+      resizable: true,
+      autoHideMenuBar: true,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    })
+
+    void previewWin.loadURL('about:blank')
+
+    previewWin.on('closed', () => {
+      if (!senderContents.isDestroyed()) {
+        senderContents.send('preview:closed')
+      }
+      previewWin = null
+    })
+  })
+
+  ipcMain.handle('preview:update', (_event, html: unknown, css: unknown) => {
+    if (!previewWin || previewWin.isDestroyed()) return
+    if (typeof html !== 'string' || typeof css !== 'string') return
+    const inlined = html.replace(
+      /<link rel="stylesheet" href="styles\.css" \/>/,
+      `<style>${css}</style>`
+    )
+    void previewWin.webContents.executeJavaScript(
+      `document.open('text/html','replace');document.write(${JSON.stringify(inlined)});document.close()`
+    )
   })
 
   // Synchronous — called once at preload startup to stamp the version into the bridge.

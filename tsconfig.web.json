@@ -29,6 +29,7 @@
     "src/generator/**/*",
     "src/seo/**/*",
     "src/export/**/*",
-    "src/shared/**/*"
+    "src/shared/**/*",
+    "src/project/**/*"
   ]
 }

@@ -26,4 +26,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   runAxe: (html: string) => ipcRenderer.invoke('a11y:run-axe', html),
+
+  openPreviewWindow: () => ipcRenderer.invoke('preview:open'),
+
+  updatePreview: (html: string, css: string) => ipcRenderer.invoke('preview:update', html, css),
+
+  onPreviewClosed: (callback: () => void) => {
+    const handler = () => callback()
+    ipcRenderer.on('preview:closed', handler)
+    return () => ipcRenderer.removeListener('preview:closed', handler)
+  },
 })

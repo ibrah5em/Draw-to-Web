@@ -1,0 +1,247 @@
+/* ── Grid shell ─────────────────────────────────────────────────────────── */
+
+.app {
+  display: grid;
+  grid-template-areas:
+    'titlebar    titlebar  titlebar   titlebar'
+    'activitybar sidebar   canvas     properties'
+    'statusbar   statusbar statusbar  statusbar';
+  grid-template-columns:
+    var(--activity-bar-width)
+    var(--sidebar-w, var(--sidebar-width))
+    1fr
+    var(--props-w, 0px);
+  grid-template-rows:
+    var(--titlebar-height)
+    1fr
+    var(--statusbar-height);
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-base);
+  font-family: var(--font);
+  color: var(--text-primary);
+  transition: grid-template-columns 200ms ease;
+}
+
+/* ── Title bar ──────────────────────────────────────────────────────────── */
+
+.titlebar {
+  grid-area: titlebar;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-3);
+  user-select: none;
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+}
+
+.titlebarLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  -webkit-app-region: no-drag;
+}
+
+.titlebarRight {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  -webkit-app-region: no-drag;
+}
+
+/* ── Activity bar ───────────────────────────────────────────────────────── */
+
+.activityBar {
+  grid-area: activitybar;
+  background: #333333;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--sp-2) 0;
+  gap: var(--sp-1);
+  overflow: hidden;
+}
+
+.activityBtn {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  border-radius: 0;
+  color: var(--icon);
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+
+.activityBtn:hover {
+  background: var(--bg-hover);
+  color: var(--icon-active);
+}
+
+.activityBtnActive {
+  color: var(--icon-active);
+  background: var(--bg-active);
+  border-left-color: var(--accent);
+}
+
+.activityDivider {
+  width: 24px;
+  height: 1px;
+  background: var(--border);
+  margin: var(--sp-1) 0;
+  flex-shrink: 0;
+}
+
+.activitySpacer {
+  flex: 1;
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────────────── */
+
+.sidebar {
+  grid-area: sidebar;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: width 200ms ease;
+}
+
+/* ── Canvas ─────────────────────────────────────────────────────────────── */
+
+.canvas {
+  grid-area: canvas;
+  background: var(--bg-base);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Properties panel ───────────────────────────────────────────────────── */
+
+.properties {
+  grid-area: properties;
+  background: var(--bg-surface);
+  border-left: 2px solid var(--border);
+  overflow: hidden;
+  transition: width 200ms ease;
+}
+
+@keyframes flashAccent {
+  0% {
+    border-left-color: var(--accent);
+  }
+  100% {
+    border-left-color: var(--border);
+  }
+}
+
+.propertiesFlash {
+  animation: flashAccent 0.3s ease-out forwards;
+}
+
+/* ── Status bar ─────────────────────────────────────────────────────────── */
+
+.statusbar {
+  grid-area: statusbar;
+  background: #007acc;
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-3);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  opacity: 0.9;
+}
+
+/* ── Shared button primitives ───────────────────────────────────────────── */
+
+.titlebarBtn {
+  height: 26px;
+  padding: var(--sp-1) var(--sp-2);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--text-xs);
+  font-family: var(--font);
+  color: var(--icon);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+
+.titlebarBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--icon-active);
+}
+
+.titlebarBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.exportBtn {
+  height: 26px;
+  padding: var(--sp-1) var(--sp-2);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--text-xs);
+  font-family: var(--font);
+  font-weight: 600;
+  color: var(--icon-active);
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.exportBtn:hover {
+  filter: brightness(1.15);
+}
+
+/* ── Overlay (export in progress) ───────────────────────────────────────── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.overlayCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: var(--sp-4) var(--sp-8);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-family: var(--font);
+}

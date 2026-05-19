@@ -1,15 +1,26 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Download,
+  Grid3x3,
+  Image,
+  MonitorSmartphone,
+  MousePointer,
+  PanelLeft,
+  Redo2,
+  Square,
+  Type,
+  Undo2,
+} from 'lucide-react'
 import Canvas from './components/Canvas'
-import Toolbar from './components/Toolbar'
 import PropertiesPanel from './components/PropertiesPanel'
 import LayerPanel from './components/LayerPanel'
-import LivePreview from './components/LivePreview'
 import SEOConfigDialog from './components/SEOConfigDialog'
 import ExportReportDialog from './components/ExportReportDialog'
-import { useElementStore } from '../../store/elementStore'
-import { exportProject, type ExportProjectResult } from '../../export'
+import { useElementStore, useTemporalStore } from '../../store/elementStore'
+import { exportProject, buildPreview, type ExportProjectResult } from '../../export'
 import { deserializeProject, serializeProject } from '../../project'
 import type { ActiveTool, SEOConfig } from '../../shared/types'
+import styles from './App.module.css'
 
 type DialogState =
   | { kind: 'none' }
@@ -17,12 +28,31 @@ type DialogState =
   | { kind: 'exporting' }
   | { kind: 'report'; result: ExportProjectResult }
 
+const ICON_SIZE = 20
+
+const TOOLS: { tool: ActiveTool; icon: JSX.Element; title: string }[] = [
+  { tool: 'select', icon: <MousePointer size={ICON_SIZE} />, title: 'Select (V)' },
+  { tool: 'rectangle', icon: <Square size={ICON_SIZE} />, title: 'Rectangle' },
+  { tool: 'text', icon: <Type size={ICON_SIZE} />, title: 'Text' },
+  { tool: 'image', icon: <Image size={ICON_SIZE} />, title: 'Image' },
+]
+
 export default function App(): JSX.Element {
   const elements = useElementStore((s) => s.elements)
   const replaceElements = useElementStore((s) => s.replaceElements)
+  const selectedId = useElementStore((s) => s.selectedId)
+  const undo = useTemporalStore((s) => s.undo)
+  const redo = useTemporalStore((s) => s.redo)
+  const canUndo = useTemporalStore((s) => s.pastStates.length > 0)
+  const canRedo = useTemporalStore((s) => s.futureStates.length > 0)
+
   const [dialog, setDialog] = useState<DialogState>({ kind: 'none' })
   const [activeTool, setActiveTool] = useState<ActiveTool>('select')
   const [showGrid, setShowGrid] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [flashProps, setFlashProps] = useState(false)
+  const prevSelectedIdRef = useRef<string | null>(null)
 
   const handleExportSubmit = useCallback(
     async (config: SEOConfig) => {
@@ -56,6 +86,35 @@ export default function App(): JSX.Element {
     replaceElements(parsed.elements)
   }, [replaceElements])
 
+  // Sync preview window content whenever elements change (debounced 300 ms).
+  useEffect(() => {
+    if (!previewOpen) return
+    const timer = setTimeout(() => {
+      const preview = buildPreview(elements)
+      if (preview) void window.electronAPI.updatePreview(preview.html, preview.css)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [elements, previewOpen])
+
+  // When the preview window is closed by the user, clear the active state.
+  useEffect(() => {
+    return window.electronAPI.onPreviewClosed(() => setPreviewOpen(false))
+  }, [])
+
+  useEffect(() => {
+    if (selectedId && selectedId !== prevSelectedIdRef.current) {
+      setFlashProps(false)
+      const rafId = requestAnimationFrame(() => {
+        setFlashProps(true)
+        const timerId = setTimeout(() => setFlashProps(false), 320)
+        return () => clearTimeout(timerId)
+      })
+      return () => cancelAnimationFrame(rafId)
+    }
+    prevSelectedIdRef.current = selectedId
+    return undefined
+  }, [selectedId])
+
   useEffect(() => {
     return window.electronAPI.onMenuAction((action) => {
       switch (action) {
@@ -73,27 +132,126 @@ export default function App(): JSX.Element {
   }, [handleSaveProject, handleOpenProject])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <Toolbar
-        activeTool={activeTool}
-        onToolChange={setActiveTool}
-        showGrid={showGrid}
-        onToggleGrid={() => setShowGrid((v) => !v)}
-        onExport={() => setDialog({ kind: 'seo' })}
-      />
-      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          <Canvas
-            activeTool={activeTool}
-            showGrid={showGrid}
-            onToolReset={() => setActiveTool('select')}
-          />
-          <LivePreview />
-          <PropertiesPanel />
+    <div
+      className={styles.app}
+      style={
+        {
+          '--sidebar-w': sidebarOpen ? 'var(--sidebar-width)' : '0px',
+          '--props-w': selectedId ? 'var(--panel-width)' : '0px',
+        } as React.CSSProperties
+      }
+    >
+      {/* ── Title bar ─────────────────────────────────────────────────── */}
+      <header className={styles.titlebar}>
+        <div className={styles.titlebarLeft}>
+          <button
+            className={styles.titlebarBtn}
+            disabled={!canUndo}
+            onClick={() => undo()}
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 size={ICON_SIZE} />
+          </button>
+          <button
+            className={styles.titlebarBtn}
+            disabled={!canRedo}
+            onClick={() => redo()}
+            title="Redo (Ctrl+Shift+Z)"
+          >
+            <Redo2 size={ICON_SIZE} />
+          </button>
         </div>
+
+        <div className={styles.titlebarRight}>
+          <button
+            className={styles.exportBtn}
+            onClick={() => setDialog({ kind: 'seo' })}
+            title="Export to ZIP (Ctrl+E)"
+          >
+            <Download size={16} />
+            Export
+          </button>
+        </div>
+      </header>
+
+      {/* ── Activity bar ──────────────────────────────────────────────── */}
+      <div className={styles.activityBar}>
+        {/* Sidebar toggle */}
+        <button
+          className={`${styles.activityBtn} ${sidebarOpen ? styles.activityBtnActive : ''}`}
+          onClick={() => setSidebarOpen((v) => !v)}
+          title="Toggle Layers Panel"
+        >
+          <PanelLeft size={ICON_SIZE} />
+        </button>
+
+        <div className={styles.activityDivider} />
+
+        {/* Drawing tools */}
+        {TOOLS.map(({ tool, icon, title }) => (
+          <button
+            key={tool}
+            className={`${styles.activityBtn} ${activeTool === tool ? styles.activityBtnActive : ''}`}
+            onClick={() => setActiveTool(tool)}
+            title={title}
+          >
+            {icon}
+          </button>
+        ))}
+
+        <div className={styles.activitySpacer} />
+
+        {/* Live preview toggle */}
+        <button
+          className={`${styles.activityBtn} ${previewOpen ? styles.activityBtnActive : ''}`}
+          onClick={() => {
+            void window.electronAPI.openPreviewWindow()
+            setPreviewOpen(true)
+          }}
+          title="Live Preview"
+        >
+          <MonitorSmartphone size={ICON_SIZE} />
+        </button>
+
+        {/* Grid toggle */}
+        <button
+          className={`${styles.activityBtn} ${showGrid ? styles.activityBtnActive : ''}`}
+          onClick={() => setShowGrid((v) => !v)}
+          title="Toggle Grid (G)"
+        >
+          <Grid3x3 size={ICON_SIZE} />
+        </button>
+      </div>
+
+      {/* ── Sidebar — Layers panel ─────────────────────────────────────── */}
+      <div className={styles.sidebar}>
         <LayerPanel />
       </div>
 
+      {/* ── Canvas ────────────────────────────────────────────────────── */}
+      <div className={styles.canvas}>
+        <Canvas
+          activeTool={activeTool}
+          showGrid={showGrid}
+          onToolReset={() => setActiveTool('select')}
+        />
+      </div>
+
+      {/* ── Properties panel ──────────────────────────────────────────── */}
+      <div className={`${styles.properties} ${flashProps ? styles.propertiesFlash : ''}`}>
+        <PropertiesPanel />
+      </div>
+
+      {/* ── Status bar ────────────────────────────────────────────────── */}
+      <div className={styles.statusbar}>
+        <span className={styles.statusItem}>
+          {elements.length} element{elements.length !== 1 ? 's' : ''}
+        </span>
+        <span className={styles.statusItem}>100%</span>
+        <span className={styles.statusItem}>Draw to Web v1.0</span>
+      </div>
+
+      {/* ── Dialogs ───────────────────────────────────────────────────── */}
       <SEOConfigDialog
         open={dialog.kind === 'seo'}
         onClose={() => setDialog({ kind: 'none' })}
@@ -101,8 +259,8 @@ export default function App(): JSX.Element {
       />
 
       {dialog.kind === 'exporting' && (
-        <div style={overlayStyle}>
-          <div style={spinnerCardStyle}>Generating export…</div>
+        <div className={styles.overlay}>
+          <div className={styles.overlayCard}>Generating export…</div>
         </div>
       )}
 
@@ -115,23 +273,4 @@ export default function App(): JSX.Element {
       )}
     </div>
   )
-}
-
-const overlayStyle: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0,0,0,0.7)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1000,
-}
-
-const spinnerCardStyle: React.CSSProperties = {
-  background: '#242424',
-  border: '1px solid #444',
-  borderRadius: 8,
-  padding: '20px 32px',
-  color: '#f0f0f0',
-  fontSize: 14,
 }

@@ -1,0 +1,59 @@
+:root {
+  /* Colors */
+  --bg-base: #1e1e1e;
+  --bg-surface: #252526;
+  --bg-input: #3c3c3c;
+  --bg-hover: #2a2d2e;
+  --bg-active: #37373d;
+  --border: #474747;
+  --text-primary: #cccccc;
+  --text-secondary: #858585;
+  --accent: #0078d4;
+  --danger: #f44747;
+  --success: #89d185;
+  --icon: #c5c5c5;
+  --icon-active: #ffffff;
+
+  /* Spacing */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* Typography */
+  --font: 'Segoe UI', sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', monospace;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 13px;
+  --text-lg: 16px;
+
+  /* Fixed dimensions */
+  --activity-bar-width: 48px;
+  --sidebar-width: 240px;
+  --panel-width: 280px;
+  --titlebar-height: 35px;
+  --statusbar-height: 22px;
+}
+
+/* ── Scrollbars ──────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-input);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

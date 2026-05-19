@@ -1,48 +1,73 @@
+import { useState } from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useElementStore } from '../../../store/elementStore'
 import type { CanvasElement, ElementProps } from '../../../store/elementStore'
+import styles from './PropertiesPanel.module.css'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Convert any stored CSS colour to a 6-digit hex string for <input type="color">. */
+const TYPE_NAMES: Record<CanvasElement['type'], string> = {
+  rectangle: 'Rectangle',
+  text: 'Text',
+  image: 'Image',
+  button: 'Button',
+}
+
+const FONT_FAMILIES = ['Arial', 'Helvetica', 'Georgia', 'Times New Roman', 'Courier New', 'Verdana']
+
 function toHex(color: string | undefined): string {
   if (!color) return '#000000'
   if (/^#[0-9a-f]{6}$/i.test(color)) return color
   if (/^#[0-9a-f]{3}$/i.test(color)) {
-    const r = color[1]
-    const g = color[2]
-    const b = color[3]
+    const [, r, g, b] = color
     return `#${r}${r}${g}${g}${b}${b}`
   }
   return '#000000'
 }
 
-const FONT_FAMILIES = [
-  'sans-serif',
-  'serif',
-  'monospace',
-  'Arial',
-  'Georgia',
-  'Verdana',
-  'Courier New',
-]
-
 // ---------------------------------------------------------------------------
-// Primitive field components
+// Collapsible section
 // ---------------------------------------------------------------------------
 
-interface RowProps {
-  label: string
+interface SectionProps {
+  title: string
+  defaultOpen?: boolean
   children: React.ReactNode
 }
 
-function Row({ label, children }: RowProps): JSX.Element {
+function Section({ title, defaultOpen = true, children }: SectionProps): JSX.Element {
+  const [open, setOpen] = useState(defaultOpen)
   return (
-    <div style={rowStyle}>
-      <span style={labelStyle}>{label}</span>
-      <div style={controlStyle}>{children}</div>
+    <div className={styles.section}>
+      <button className={styles.sectionHeader} onClick={() => setOpen((v) => !v)}>
+        {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        {title}
+      </button>
+      {open && <div className={styles.sectionContent}>{children}</div>}
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Field primitives
+// ---------------------------------------------------------------------------
+
+function Field({ label, children }: { label: string; children: React.ReactNode }): JSX.Element {
+  return (
+    <div className={styles.field}>
+      <span className={styles.label}>{label}</span>
+      {children}
+    </div>
+  )
+}
+
+function ReadonlyField({ label, value }: { label: string; value: number | string }): JSX.Element {
+  return (
+    <Field label={label}>
+      <div className={styles.readonlyValue}>{value}</div>
+    </Field>
   )
 }
 
@@ -50,215 +75,222 @@ interface NumberFieldProps {
   label: string
   value: number
   min: number
-  max: number
-  step?: number
+  max?: number
   onChange: (v: number) => void
+  suffix?: string
 }
 
-function NumberField({
+function NumberField({ label, value, min, max, onChange, suffix }: NumberFieldProps): JSX.Element {
+  return (
+    <Field label={label}>
+      <div className={styles.inputRow}>
+        <input
+          type="number"
+          className={styles.input}
+          value={value}
+          min={min}
+          max={max}
+          onChange={(e) => {
+            const n = Number(e.target.value)
+            if (!Number.isNaN(n)) {
+              const clamped = max !== undefined ? Math.max(min, Math.min(max, n)) : Math.max(min, n)
+              onChange(clamped)
+            }
+          }}
+        />
+        {suffix && <span className={styles.suffix}>{suffix}</span>}
+      </div>
+    </Field>
+  )
+}
+
+function RangeField({
   label,
   value,
   min,
   max,
-  step = 1,
   onChange,
-}: NumberFieldProps): JSX.Element {
+}: {
+  label: string
+  value: number
+  min: number
+  max: number
+  onChange: (v: number) => void
+}): JSX.Element {
   return (
-    <Row label={label}>
+    <Field label={`${label}: ${value}`}>
       <input
-        type="number"
+        type="range"
+        className={styles.range}
         value={value}
         min={min}
         max={max}
-        step={step}
-        onChange={(e) => {
-          const n = Number(e.target.value)
-          if (!Number.isNaN(n)) onChange(Math.max(min, Math.min(max, n)))
-        }}
-        style={inputStyle}
+        onChange={(e) => onChange(Number(e.target.value))}
       />
-    </Row>
+    </Field>
   )
 }
 
-interface ColorFieldProps {
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
   label: string
   value: string | undefined
   onChange: (v: string) => void
-}
-
-function ColorField({ label, value, onChange }: ColorFieldProps): JSX.Element {
+}): JSX.Element {
+  const hex = toHex(value)
   return (
-    <Row label={label}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <Field label={label}>
+      <div className={styles.colorRow}>
         <input
           type="color"
-          value={toHex(value)}
+          className={styles.colorSwatch}
+          value={hex}
           onChange={(e) => onChange(e.target.value)}
-          style={{
-            width: 28,
-            height: 24,
-            padding: 0,
-            border: 'none',
-            cursor: 'pointer',
-            background: 'none',
+        />
+        <input
+          type="text"
+          className={styles.hexInput}
+          value={hex}
+          maxLength={7}
+          onChange={(e) => {
+            if (/^#[0-9a-f]{6}$/i.test(e.target.value)) onChange(e.target.value)
           }}
         />
-        <span style={{ fontSize: 10, color: '#888', fontFamily: 'monospace' }}>
-          {value ?? '#000000'}
-        </span>
       </div>
-    </Row>
+    </Field>
   )
 }
 
-interface TextFieldProps {
-  label: string
-  value: string
-  placeholder?: string
-  onChange: (v: string) => void
-}
-
-function TextField({ label, value, placeholder, onChange }: TextFieldProps): JSX.Element {
-  return (
-    <Row label={label}>
-      <input
-        type="text"
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        style={inputStyle}
-      />
-    </Row>
-  )
-}
-
-interface TextareaFieldProps {
-  label: string
-  value: string
-  onChange: (v: string) => void
-}
-
-function TextareaField({ label, value, onChange }: TextareaFieldProps): JSX.Element {
-  return (
-    <div style={{ marginBottom: 8 }}>
-      <div style={{ ...labelStyle, marginBottom: 4, display: 'block' }}>{label}</div>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={3}
-        style={{
-          ...inputStyle,
-          width: '100%',
-          resize: 'vertical',
-          fontFamily: 'sans-serif',
-          lineHeight: 1.4,
-          boxSizing: 'border-box',
-        }}
-      />
-    </div>
-  )
-}
-
-interface SelectFieldProps {
+function SelectField({
+  label,
+  value,
+  options,
+  onChange,
+}: {
   label: string
   value: string
   options: string[]
   onChange: (v: string) => void
-}
-
-function SelectField({ label, value, options, onChange }: SelectFieldProps): JSX.Element {
+}): JSX.Element {
   return (
-    <Row label={label}>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{ ...inputStyle, cursor: 'pointer' }}
-      >
+    <Field label={label}>
+      <select className={styles.select} value={value} onChange={(e) => onChange(e.target.value)}>
         {options.map((o) => (
           <option key={o} value={o}>
             {o}
           </option>
         ))}
       </select>
-    </Row>
+    </Field>
   )
 }
 
-interface CheckboxFieldProps {
+function TextareaField({
+  label,
+  value,
+  onChange,
+}: {
   label: string
-  checked: boolean
-  onChange: (v: boolean) => void
-}
-
-function CheckboxField({ label, checked, onChange }: CheckboxFieldProps): JSX.Element {
+  value: string
+  onChange: (v: string) => void
+}): JSX.Element {
   return (
-    <label
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        fontSize: 12,
-        color: '#ccc',
-        cursor: 'pointer',
-      }}
-    >
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      {label}
-    </label>
-  )
-}
-
-function SectionHeader({ title }: { title: string }): JSX.Element {
-  return (
-    <div
-      style={{
-        fontSize: 10,
-        fontWeight: 700,
-        color: '#666',
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-        marginBottom: 6,
-        marginTop: 14,
-      }}
-    >
-      {title}
-    </div>
+    <Field label={label}>
+      <textarea
+        className={styles.textarea}
+        value={value}
+        rows={3}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </Field>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Type-specific field groups
+// Section groups
 // ---------------------------------------------------------------------------
 
-interface FieldGroupProps {
+interface GroupProps {
   el: CanvasElement
   updateProps: (patch: Partial<ElementProps>) => void
   updateEl: (patch: Partial<Omit<CanvasElement, 'id'>>) => void
 }
 
-function RectangleFields({ el, updateProps }: FieldGroupProps): JSX.Element {
+function PositionSection({ el, updateEl }: GroupProps): JSX.Element {
   return (
-    <>
-      <SectionHeader title="Appearance" />
+    <Section title="Position">
+      <div className={styles.grid2}>
+        <ReadonlyField label="X" value={el.x} />
+        <ReadonlyField label="Y" value={el.y} />
+        <NumberField
+          label="Column"
+          value={el.x}
+          min={0}
+          max={11}
+          onChange={(v) => updateEl({ x: v })}
+        />
+        <NumberField label="Row" value={el.y} min={0} onChange={(v) => updateEl({ y: v })} />
+      </div>
+      <RangeField
+        label="Span"
+        value={el.width}
+        min={1}
+        max={12 - el.x}
+        onChange={(v) => updateEl({ width: v })}
+      />
+    </Section>
+  )
+}
+
+function SizeSection({ el, updateEl }: GroupProps): JSX.Element {
+  return (
+    <Section title="Size">
+      <div className={styles.grid2}>
+        <NumberField
+          label="Width"
+          value={el.width}
+          min={1}
+          max={12}
+          onChange={(v) => updateEl({ width: v })}
+        />
+        <NumberField
+          label="Height"
+          value={el.height}
+          min={20}
+          onChange={(v) => updateEl({ height: v })}
+          suffix="px"
+        />
+      </div>
+    </Section>
+  )
+}
+
+function AppearanceSection({ el, updateProps }: GroupProps): JSX.Element {
+  return (
+    <Section title="Appearance">
       <ColorField
         label="Background"
         value={el.props.background}
         onChange={(v) => updateProps({ background: v })}
       />
       <NumberField
-        label="Radius"
+        label="Border radius"
         value={el.props.borderRadius ?? 0}
         min={0}
         max={200}
         onChange={(v) => updateProps({ borderRadius: v })}
+        suffix="px"
       />
       <NumberField
-        label="Border"
+        label="Border width"
         value={el.props.borderWidth ?? 0}
         min={0}
         max={20}
         onChange={(v) => updateProps({ borderWidth: v })}
+        suffix="px"
       />
       {(el.props.borderWidth ?? 0) > 0 && (
         <ColorField
@@ -267,101 +299,38 @@ function RectangleFields({ el, updateProps }: FieldGroupProps): JSX.Element {
           onChange={(v) => updateProps({ borderColor: v })}
         />
       )}
-    </>
+    </Section>
   )
 }
 
-function TextFields({ el, updateProps }: FieldGroupProps): JSX.Element {
+function TypographySection({ el, updateProps }: GroupProps): JSX.Element {
   return (
-    <>
-      <SectionHeader title="Text" />
-      <TextareaField
-        label="Content"
-        value={el.props.text ?? ''}
-        onChange={(v) => updateProps({ text: v })}
-      />
+    <Section title="Typography">
       <NumberField
         label="Font size"
         value={el.props.fontSize ?? 16}
         min={8}
         max={120}
         onChange={(v) => updateProps({ fontSize: v })}
+        suffix="px"
       />
       <SelectField
-        label="Font"
-        value={el.props.fontFamily ?? 'sans-serif'}
+        label="Font family"
+        value={el.props.fontFamily ?? 'Arial'}
         options={FONT_FAMILIES}
         onChange={(v) => updateProps({ fontFamily: v })}
-      />
-      <ColorField
-        label="Color"
-        value={el.props.color}
-        onChange={(v) => updateProps({ color: v })}
-      />
-      <ColorField
-        label="Background"
-        value={el.props.background}
-        onChange={(v) => updateProps({ background: v })}
-      />
-    </>
-  )
-}
-
-function ButtonFields({ el, updateProps }: FieldGroupProps): JSX.Element {
-  return (
-    <>
-      <SectionHeader title="Button" />
-      <TextField
-        label="Label"
-        value={el.props.text ?? 'Button'}
-        onChange={(v) => updateProps({ text: v })}
-      />
-      <NumberField
-        label="Font size"
-        value={el.props.fontSize ?? 14}
-        min={8}
-        max={72}
-        onChange={(v) => updateProps({ fontSize: v })}
-      />
-      <ColorField
-        label="Background"
-        value={el.props.background}
-        onChange={(v) => updateProps({ background: v })}
       />
       <ColorField
         label="Text color"
         value={el.props.color}
         onChange={(v) => updateProps({ color: v })}
       />
-      <NumberField
-        label="Radius"
-        value={el.props.borderRadius ?? 4}
-        min={0}
-        max={100}
-        onChange={(v) => updateProps({ borderRadius: v })}
+      <TextareaField
+        label="Content"
+        value={el.props.text ?? ''}
+        onChange={(v) => updateProps({ text: v })}
       />
-      <NumberField
-        label="Padding"
-        value={el.props.padding ?? 0}
-        min={0}
-        max={64}
-        onChange={(v) => updateProps({ padding: v })}
-      />
-    </>
-  )
-}
-
-function ImageFields({ el, updateProps }: FieldGroupProps): JSX.Element {
-  return (
-    <>
-      <SectionHeader title="Image" />
-      <TextField
-        label="Alt text"
-        value={el.props.alt ?? ''}
-        placeholder="Describe the image…"
-        onChange={(v) => updateProps({ alt: v })}
-      />
-    </>
+    </Section>
   )
 }
 
@@ -379,10 +348,8 @@ export default function PropertiesPanel(): JSX.Element {
 
   if (!el) {
     return (
-      <div style={panelStyle}>
-        <p style={{ fontSize: 12, color: '#555', marginTop: 8 }}>
-          Select an element to edit its properties.
-        </p>
+      <div className={styles.panel}>
+        <p className={styles.empty}>Select an element to edit its properties.</p>
       </div>
     )
   }
@@ -392,163 +359,16 @@ export default function PropertiesPanel(): JSX.Element {
   const updateProps = (patch: Partial<ElementProps>): void =>
     updateElement(el.id, { props: { ...el.props, ...patch } })
 
-  const fieldGroupProps: FieldGroupProps = { el, updateProps, updateEl }
+  const groupProps: GroupProps = { el, updateProps, updateEl }
+  const hasTypography = el.type === 'text' || el.type === 'button'
 
   return (
-    <div style={panelStyle}>
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 12,
-        }}
-      >
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#eee' }}>Properties</span>
-        <span
-          style={{
-            fontSize: 10,
-            color: '#666',
-            background: '#222',
-            padding: '2px 6px',
-            borderRadius: 3,
-          }}
-        >
-          {el.type}
-        </span>
-      </div>
-
-      {/* Layout section */}
-      <SectionHeader title="Layout" />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 4 }}>
-        <div>
-          <div style={{ ...labelStyle, marginBottom: 2 }}>Column</div>
-          <input
-            type="number"
-            value={el.x}
-            min={0}
-            max={11}
-            onChange={(e) => {
-              const n = Math.max(0, Math.min(11, Number(e.target.value)))
-              if (!Number.isNaN(n)) updateEl({ x: n })
-            }}
-            style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
-          />
-        </div>
-        <div>
-          <div style={{ ...labelStyle, marginBottom: 2 }}>Span (1–12)</div>
-          <input
-            type="number"
-            value={el.width}
-            min={1}
-            max={12 - el.x}
-            onChange={(e) => {
-              const n = Math.max(1, Math.min(12 - el.x, Number(e.target.value)))
-              if (!Number.isNaN(n)) updateEl({ width: n })
-            }}
-            style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
-          />
-        </div>
-        <div>
-          <div style={{ ...labelStyle, marginBottom: 2 }}>Y (px)</div>
-          <input
-            type="number"
-            value={el.y}
-            min={0}
-            onChange={(e) => {
-              const n = Number(e.target.value)
-              if (!Number.isNaN(n) && n >= 0) updateEl({ y: n })
-            }}
-            style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
-          />
-        </div>
-        <div>
-          <div style={{ ...labelStyle, marginBottom: 2 }}>Height (px)</div>
-          <input
-            type="number"
-            value={el.height}
-            min={20}
-            onChange={(e) => {
-              const n = Number(e.target.value)
-              if (!Number.isNaN(n) && n >= 20) updateEl({ height: n })
-            }}
-            style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
-          />
-        </div>
-      </div>
-
-      {/* Type-specific sections */}
-      {el.type === 'rectangle' && <RectangleFields {...fieldGroupProps} />}
-      {el.type === 'text' && <TextFields {...fieldGroupProps} />}
-      {el.type === 'button' && <ButtonFields {...fieldGroupProps} />}
-      {el.type === 'image' && <ImageFields {...fieldGroupProps} />}
-
-      {/* Layer section */}
-      <SectionHeader title="Layer" />
-      <TextField
-        label="Name"
-        value={el.layerName ?? ''}
-        placeholder={el.type}
-        onChange={(v) => updateEl({ layerName: v })}
-      />
-      <div style={{ display: 'flex', gap: 16, marginTop: 6 }}>
-        <CheckboxField
-          label="Locked"
-          checked={el.locked ?? false}
-          onChange={(v) => updateEl({ locked: v })}
-        />
-        <CheckboxField
-          label="Visible"
-          checked={el.visible !== false}
-          onChange={(v) => updateEl({ visible: v })}
-        />
-      </div>
+    <div className={styles.panel}>
+      <div className={styles.header}>{TYPE_NAMES[el.type]}</div>
+      <PositionSection {...groupProps} />
+      <SizeSection {...groupProps} />
+      <AppearanceSection {...groupProps} />
+      {hasTypography && <TypographySection {...groupProps} />}
     </div>
   )
-}
-
-// ---------------------------------------------------------------------------
-// Shared styles
-// ---------------------------------------------------------------------------
-
-const panelStyle: React.CSSProperties = {
-  width: 260,
-  background: '#111',
-  borderLeft: '1px solid #333',
-  padding: '12px 14px',
-  flexShrink: 0,
-  overflowY: 'auto',
-}
-
-const rowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  marginBottom: 6,
-  gap: 8,
-}
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 11,
-  color: '#999',
-  flexShrink: 0,
-  minWidth: 60,
-}
-
-const controlStyle: React.CSSProperties = {
-  flex: 1,
-  display: 'flex',
-  justifyContent: 'flex-end',
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  background: '#1e1e1e',
-  border: '1px solid #333',
-  borderRadius: 3,
-  color: '#ddd',
-  fontSize: 12,
-  padding: '3px 6px',
-  outline: 'none',
 }

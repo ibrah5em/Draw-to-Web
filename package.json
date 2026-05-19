@@ -18,7 +18,8 @@
     "test": "vitest run",
     "test:a11y": "vitest run tests/a11y",
     "lint": "eslint . --ext .ts,.tsx && prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -73,6 +74,7 @@
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "husky": "^9.1.7",
     "prettier": "^3.2.4",
     "typescript": "~5.3.3",
     "vitest": "^1.2.2"

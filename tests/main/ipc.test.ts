@@ -202,3 +202,160 @@ describe('app:version sync IPC', () => {
     expect(event.returnValue).toBe('0.1.0-test')
   })
 })
+
+// ───────────── image:upload (C11 stub until I-ELE-05) ─────────────
+
+describe('image:upload IPC handler', () => {
+  it('rejects non-ArrayBuffer payloads', async () => {
+    const result = await invoke<{ success: boolean; error?: string }>(
+      'image:upload',
+      'not-a-buffer',
+      'photo.png'
+    )
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Invalid arguments')
+  })
+
+  it('rejects empty buffers', async () => {
+    const result = await invoke<{ success: boolean; error?: string }>(
+      'image:upload',
+      new ArrayBuffer(0),
+      'photo.png'
+    )
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Empty image buffer')
+  })
+
+  it('rejects buffers larger than 50 MB', async () => {
+    // Allocate a buffer that *starts* with a valid PNG magic, so we exercise
+    // the size check rather than the MIME sniff.
+    const tooBig = new Uint8Array(51 * 1024 * 1024)
+    tooBig.set([0x89, 0x50, 0x4e, 0x47])
+    const result = await invoke<{ success: boolean; error?: string }>(
+      'image:upload',
+      tooBig.buffer,
+      'photo.png'
+    )
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('50 MB')
+  })
+
+  it('rejects unsupported magic numbers (e.g. a PDF header)', async () => {
+    const pdf = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]) // "%PDF-"
+    const result = await invoke<{ success: boolean; error?: string }>(
+      'image:upload',
+      pdf.buffer,
+      'doc.pdf'
+    )
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Unsupported image format')
+  })
+
+  it('accepts PNG magic and returns the not-installed sentinel error', async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    const result = await invoke<{ success: boolean; error?: string }>(
+      'image:upload',
+      png.buffer,
+      'photo.png'
+    )
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('I-ELE-05')
+  })
+
+  it('accepts JPEG magic and returns the not-installed sentinel error', async () => {
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46])
+    const result = await invoke<{ success: boolean; error?: string }>(
+      'image:upload',
+      jpeg.buffer,
+      'photo.jpg'
+    )
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('I-ELE-05')
+  })
+
+  it('accepts WebP magic and returns the not-installed sentinel error', async () => {
+    const webp = new Uint8Array([
+      0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+    ])
+    const result = await invoke<{ success: boolean; error?: string }>(
+      'image:upload',
+      webp.buffer,
+      'photo.webp'
+    )
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('I-ELE-05')
+  })
+
+  it('accepts SVG by text prefix and returns the not-installed sentinel error', async () => {
+    const svg = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
+    const result = await invoke<{ success: boolean; error?: string }>(
+      'image:upload',
+      svg.buffer,
+      'logo.svg'
+    )
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('I-ELE-05')
+  })
+})
+
+// ───────────── recent:list / recent:add ─────────────
+
+describe('recent files IPC', () => {
+  beforeEach(() => {
+    // Redirect userData to the per-test tempDir so recent.json lands somewhere
+    // we can assert against and clean up.
+    electronMock.app.getPath.mockImplementation((name: string) =>
+      name === 'userData' ? tempDir : '/tmp'
+    )
+  })
+
+  it('returns an empty list when no recent.json exists', async () => {
+    const list = await invoke<readonly { path: string }[]>('recent:list')
+    expect(list).toEqual([])
+  })
+
+  it('adds a file, MRU-sorts it, and persists it to disk', async () => {
+    const projectPath = join(tempDir, 'demo.dtw')
+    await writeFile(projectPath, '{}', 'utf8')
+
+    const list = await invoke<readonly { path: string; name: string }[]>('recent:add', projectPath)
+    expect(list).toHaveLength(1)
+    expect(list[0].path).toBe(projectPath)
+    expect(list[0].name).toBe('demo.dtw')
+
+    // The follow-up `recent:list` reads the file from disk.
+    const reloaded = await invoke<readonly { path: string }[]>('recent:list')
+    expect(reloaded).toHaveLength(1)
+    expect(reloaded[0].path).toBe(projectPath)
+  })
+
+  it('dedupes by path and keeps the MRU entry on top', async () => {
+    const a = join(tempDir, 'a.dtw')
+    const b = join(tempDir, 'b.dtw')
+    await invoke('recent:add', a)
+    await invoke('recent:add', b)
+    const list = await invoke<readonly { path: string }[]>('recent:add', a)
+    expect(list.map((e) => e.path)).toEqual([a, b])
+  })
+
+  it('caps the list at 10 entries', async () => {
+    for (let i = 0; i < 12; i += 1) {
+      await invoke('recent:add', join(tempDir, `p${i}.dtw`))
+    }
+    const list = await invoke<readonly { path: string }[]>('recent:list')
+    expect(list).toHaveLength(10)
+    // Most recent insert is at the front.
+    expect(list[0].path).toBe(join(tempDir, 'p11.dtw'))
+  })
+
+  it('rejects non-string filePath arguments without throwing', async () => {
+    const list = await invoke<readonly unknown[]>('recent:add', 42)
+    expect(list).toEqual([])
+  })
+
+  it('survives a malformed recent.json on disk', async () => {
+    await writeFile(join(tempDir, 'recent.json'), 'not-json', 'utf8')
+    const list = await invoke<readonly unknown[]>('recent:list')
+    expect(list).toEqual([])
+  })
+})

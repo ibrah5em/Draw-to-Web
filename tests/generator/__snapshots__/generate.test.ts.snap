@@ -127,6 +127,10 @@ a {
   color: var(--color-text);
 }
 
+.dtw-el-cta:hover {
+  opacity: 0.85;
+}
+
 @media (max-width: 768px) {
   .dtw-el-root {
     padding-top: var(--space-md);

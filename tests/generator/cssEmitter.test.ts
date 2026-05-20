@@ -72,4 +72,94 @@ describe('emitCss(document)', () => {
     expect(out).toContain('box-sizing: border-box')
     expect(out).not.toContain(':root {')
   })
+
+  describe('state pseudo-class blocks (I-GEN-07)', () => {
+    it('emits a :hover rule containing only the overridden properties', () => {
+      // The portfolio CTA has `states.hover.opacity = 0.85` and nothing else.
+      const hoverBlock = css.match(/\.dtw-el-cta:hover \{[\s\S]*?\}/)?.[0] ?? ''
+      expect(hoverBlock).toContain('opacity: 0.85;')
+      // Base-only declarations (e.g. typography.color from base) must NOT
+      // appear in the state block — only overrides do.
+      expect(hoverBlock).not.toContain('color:')
+      expect(hoverBlock).not.toContain('background-color:')
+      expect(hoverBlock).not.toContain('padding-')
+    })
+
+    it('places state blocks after base rules and before @media breakpoints', () => {
+      const hoverIdx = css.indexOf('.dtw-el-cta:hover')
+      const baseCtaIdx = css.indexOf('.dtw-el-cta {')
+      const mediaIdx = css.indexOf('@media (max-width:')
+      expect(hoverIdx).toBeGreaterThan(baseCtaIdx)
+      expect(hoverIdx).toBeLessThan(mediaIdx)
+    })
+
+    it('emits each declared state in the LVHA order hover → focus-visible → active', () => {
+      const doc: Document = JSON.parse(JSON.stringify(PORTFOLIO_DOCUMENT))
+      const cta = findById(doc.tree, 'cta')
+      expect(cta).not.toBeNull()
+      // Author the states in scrambled order so we prove the emitter sorts
+      // them, not just that JSON preserves declaration order.
+      cta!.states = {
+        active: { opacity: 0.7 },
+        'focus-visible': { opacity: 0.8 },
+        hover: { opacity: 0.9 },
+      }
+
+      const out = emitCss(doc)
+      const hoverIdx = out.indexOf('.dtw-el-cta:hover')
+      const focusIdx = out.indexOf('.dtw-el-cta:focus-visible')
+      const activeIdx = out.indexOf('.dtw-el-cta:active')
+      expect(hoverIdx).toBeGreaterThan(-1)
+      expect(focusIdx).toBeGreaterThan(hoverIdx)
+      expect(activeIdx).toBeGreaterThan(focusIdx)
+    })
+
+    it('omits state blocks when no element declares any states', () => {
+      const doc: Document = JSON.parse(JSON.stringify(PORTFOLIO_DOCUMENT))
+      stripStates(doc.tree)
+      const out = emitCss(doc)
+      expect(out).not.toMatch(/:hover\s*\{/)
+      expect(out).not.toMatch(/:focus-visible\s*\{/)
+      expect(out).not.toMatch(/:active\s*\{/)
+    })
+
+    it('uses the literal `:focus-visible` selector (not `:focus`)', () => {
+      const doc: Document = JSON.parse(JSON.stringify(PORTFOLIO_DOCUMENT))
+      const cta = findById(doc.tree, 'cta') as { states?: Record<string, unknown> } | null
+      cta!.states = { 'focus-visible': { opacity: 0.5 } }
+      const out = emitCss(doc)
+      expect(out).toContain('.dtw-el-cta:focus-visible')
+      // Must not silently downgrade to plain `:focus`.
+      expect(out).not.toMatch(/\.dtw-el-cta:focus\s*\{/)
+    })
+  })
 })
+
+// ---------------------------------------------------------------------------
+// Helpers — kept here so test cases stay self-documenting
+// ---------------------------------------------------------------------------
+
+interface MutableNode {
+  id: string
+  states?: unknown
+  children?: MutableNode[]
+}
+
+function findById(root: unknown, id: string): MutableNode | null {
+  const stack: MutableNode[] = [root as MutableNode]
+  while (stack.length > 0) {
+    const node = stack.pop()!
+    if (node.id === id) return node
+    if (Array.isArray(node.children)) stack.push(...node.children)
+  }
+  return null
+}
+
+function stripStates(root: unknown): void {
+  const stack: MutableNode[] = [root as MutableNode]
+  while (stack.length > 0) {
+    const node = stack.pop()!
+    delete node.states
+    if (Array.isArray(node.children)) stack.push(...node.children)
+  }
+}

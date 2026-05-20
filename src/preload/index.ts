@@ -36,4 +36,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('preview:closed', handler)
     return () => ipcRenderer.removeListener('preview:closed', handler)
   },
+
+  uploadImage: (buffer: ArrayBuffer, filename: string) =>
+    ipcRenderer.invoke('image:upload', buffer, filename),
+
+  onFileChanged: (callback: (filePath: string) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, filePath: string) => callback(filePath)
+    ipcRenderer.on('file:changed', handler)
+    return () => ipcRenderer.removeListener('file:changed', handler)
+  },
+
+  listRecentFiles: () => ipcRenderer.invoke('recent:list'),
+
+  addRecentFile: (filePath: string) => ipcRenderer.invoke('recent:add', filePath),
 })

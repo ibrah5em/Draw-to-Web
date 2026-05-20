@@ -15,13 +15,12 @@
  *     properties.
  *   - emits one `@media (max-width: ...)` block per breakpoint key with the
  *     element rules whose `responsive[bp]` carries an override (I-GEN-08).
+ *   - emits `:hover` / `:focus-visible` / `:active` rule blocks containing
+ *     only the properties each state overrides (I-GEN-07).
  *
  * Layout is Flex / Grid / clamp() only — no `position: absolute` (Invariant
  * 5.4 in plan.md). A regex guard in `tests/generator/determinism.test.ts`
  * enforces the no-`position: absolute` rule on every generated stylesheet.
- *
- * States (`:hover` / `:focus-visible` / `:active`) are I-GEN-07 and are not
- * yet wired here.
  */
 
 import type {
@@ -35,6 +34,7 @@ import type {
   ResponsiveProperties,
   ShadowLayer,
   SpacingBox,
+  StateKey,
   StyleBlock,
   TokenCategory,
   Tokens,
@@ -50,6 +50,13 @@ const BREAKPOINT_ORDER: ReadonlyArray<Exclude<BreakpointKey, 'base'>> = [
   'mobile',
   'small',
 ]
+
+/**
+ * Order in which state pseudo-class blocks are emitted. Fixed so the
+ * generator stays deterministic — `:active` last matches the LVHA
+ * convention (interactive states cascade in that order).
+ */
+const STATE_ORDER: ReadonlyArray<StateKey> = ['hover', 'focus-visible', 'active']
 
 /** Max-width pixel threshold for each breakpoint (matches I-DOC type docs). */
 const BREAKPOINT_MAX_WIDTH: Readonly<Record<Exclude<BreakpointKey, 'base'>, number>> = {
@@ -385,6 +392,22 @@ function emitElementBase(el: ElementNode): string {
   return formatRule(selectorFor(el.id), decls)
 }
 
+function emitElementStates(el: ElementNode): string {
+  if (!el.states) return ''
+  const blocks: string[] = []
+  for (const state of STATE_ORDER) {
+    const override = el.states[state]
+    if (!override) continue
+    // Every StyleBlock field is optional, so a state's Partial<StyleBlock>
+    // is structurally identical — we pass it through unchanged. Layout is
+    // container-only at base/breakpoint level, never on a state override.
+    const decls = styleBlockDecls(override)
+    if (decls.length === 0) continue
+    blocks.push(formatRule(`${selectorFor(el.id)}:${state}`, decls))
+  }
+  return blocks.join('\n\n')
+}
+
 function emitElementBreakpoint(el: ElementNode, bp: Exclude<BreakpointKey, 'base'>): string {
   const styleOverride = el.style[bp]
   const layoutOverride = el.type === 'container' ? el.layout[bp] : undefined
@@ -433,6 +456,12 @@ export function emitCss(doc: Document): string {
   // Root element rule + descendants.
   const baseRules = walkElements(doc.tree, emitElementBase).filter((s) => s.length > 0)
   if (baseRules.length > 0) sections.push(baseRules.join('\n\n'))
+
+  // State pseudo-class rules (`:hover`, `:focus-visible`, `:active`).
+  // Emitted after base rules so they take precedence at equal specificity;
+  // only properties the state actually overrides are emitted (I-GEN-07).
+  const stateRules = walkElements(doc.tree, emitElementStates).filter((s) => s.length > 0)
+  if (stateRules.length > 0) sections.push(stateRules.join('\n\n'))
 
   // One @media block per breakpoint. Skip the block entirely when no
   // element has an override at that breakpoint.

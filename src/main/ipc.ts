@@ -4,6 +4,7 @@ import { existsSync } from 'fs'
 import { extname, join, normalize, isAbsolute, basename } from 'path'
 import { runAxeGate } from '../seo/axeGate'
 import type { RecentFile } from '../shared/electronAPI'
+import { IMAGE_ASSETS_DIRNAME, processImage } from './imagePipeline'
 
 let previewWin: BrowserWindow | null = null
 
@@ -264,10 +265,9 @@ export function registerIpcHandlers(): void {
     )
   })
 
-  // C11 — image upload pipeline. The sharp/WebP variant step lands with
-  // I-ELE-05; until then the handler validates the payload, sniffs the
-  // MIME, and returns a structured "not installed" error so renderer code
-  // exercises the real error path rather than crashing on a stub manifest.
+  // C11 — image upload pipeline. Validates the payload, sniffs the MIME,
+  // hands the buffer to `processImage` (sharp → WebP variants under
+  // `<userData>/dtw-assets/`), and returns the resulting manifest entry.
   ipcMain.handle('image:upload', async (_event, buffer: unknown, filename: unknown) => {
     if (!(buffer instanceof ArrayBuffer) || typeof filename !== 'string') {
       return { success: false, error: 'Invalid arguments' }
@@ -283,9 +283,18 @@ export function registerIpcHandlers(): void {
     if (mime === null || !SUPPORTED_IMAGE_MIMES.has(mime)) {
       return { success: false, error: 'Unsupported image format' }
     }
-    return {
-      success: false,
-      error: 'Image processing pipeline not yet installed (I-ELE-05)',
+    // Strip any directory component the renderer may have included — we
+    // only use the filename for alt-text suggestions, never on disk.
+    const safeFilename = basename(filename).slice(0, 255) || 'upload'
+    const outputDir = join(app.getPath('userData'), IMAGE_ASSETS_DIRNAME)
+    try {
+      const asset = await processImage(buf, mime, safeFilename, outputDir)
+      return { success: true, asset }
+    } catch (err) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Image processing failed',
+      }
     }
   })
 

@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtemp, readFile, rm, writeFile } from 'fs/promises'
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
+import sharp from 'sharp'
 
 // ───────────── Electron mock ─────────────
 // vi.mock() is hoisted above imports, so the mock factory cannot close over
@@ -203,9 +204,9 @@ describe('app:version sync IPC', () => {
   })
 })
 
-// ───────────── image:upload (C11 stub until I-ELE-05) ─────────────
+// ───────────── image:upload (C11 / I-ELE-05) ─────────────
 
-describe('image:upload IPC handler', () => {
+describe('image:upload IPC handler — validation', () => {
   it('rejects non-ArrayBuffer payloads', async () => {
     const result = await invoke<{ success: boolean; error?: string }>(
       'image:upload',
@@ -250,51 +251,104 @@ describe('image:upload IPC handler', () => {
     expect(result.success).toBe(false)
     expect(result.error).toBe('Unsupported image format')
   })
+})
 
-  it('accepts PNG magic and returns the not-installed sentinel error', async () => {
-    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-    const result = await invoke<{ success: boolean; error?: string }>(
-      'image:upload',
-      png.buffer,
-      'photo.png'
+describe('image:upload IPC handler — pipeline', () => {
+  beforeEach(() => {
+    electronMock.app.getPath.mockImplementation((name: string) =>
+      name === 'userData' ? tempDir : '/tmp'
     )
-    expect(result.success).toBe(false)
-    expect(result.error).toContain('I-ELE-05')
   })
 
-  it('accepts JPEG magic and returns the not-installed sentinel error', async () => {
-    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46])
-    const result = await invoke<{ success: boolean; error?: string }>(
+  it('writes WebP variants and returns a populated manifest entry', async () => {
+    const png = await sharp({
+      create: { width: 1600, height: 900, channels: 3, background: { r: 10, g: 60, b: 120 } },
+    })
+      .png()
+      .toBuffer()
+
+    const result = await invoke<{
+      success: boolean
+      asset?: {
+        id: string
+        mimeType: string
+        originalFilename: string
+        width: number
+        height: number
+        srcset: Record<number, string>
+      }
+      error?: string
+    }>(
       'image:upload',
-      jpeg.buffer,
-      'photo.jpg'
+      png.buffer.slice(png.byteOffset, png.byteOffset + png.byteLength),
+      'hero.png'
     )
-    expect(result.success).toBe(false)
-    expect(result.error).toContain('I-ELE-05')
+
+    expect(result.success).toBe(true)
+    expect(result.asset).toBeDefined()
+    const asset = result.asset!
+    expect(asset.mimeType).toBe('image/png')
+    expect(asset.originalFilename).toBe('hero.png')
+    expect(asset.width).toBe(1600)
+    expect(asset.height).toBe(900)
+    expect(
+      Object.keys(asset.srcset)
+        .map(Number)
+        .sort((a, b) => a - b)
+    ).toEqual([400, 800, 1200, 1600])
+
+    const dtwAssetsDir = join(tempDir, 'dtw-assets')
+    const onDisk = (await readdir(dtwAssetsDir)).sort()
+    expect(onDisk).toEqual([400, 800, 1200, 1600].map((w) => `${asset.id}-${w}.webp`).sort())
   })
 
-  it('accepts WebP magic and returns the not-installed sentinel error', async () => {
-    const webp = new Uint8Array([
-      0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
-    ])
-    const result = await invoke<{ success: boolean; error?: string }>(
+  it('strips path components from the supplied filename', async () => {
+    const png = await sharp({
+      create: { width: 400, height: 400, channels: 3, background: { r: 0, g: 0, b: 0 } },
+    })
+      .png()
+      .toBuffer()
+
+    const result = await invoke<{ success: boolean; asset?: { originalFilename: string } }>(
       'image:upload',
-      webp.buffer,
-      'photo.webp'
+      png.buffer.slice(png.byteOffset, png.byteOffset + png.byteLength),
+      '../../etc/passwd.png'
     )
-    expect(result.success).toBe(false)
-    expect(result.error).toContain('I-ELE-05')
+
+    expect(result.success).toBe(true)
+    expect(result.asset?.originalFilename).toBe('passwd.png')
   })
 
-  it('accepts SVG by text prefix and returns the not-installed sentinel error', async () => {
-    const svg = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
+  it('passes SVG bytes through unchanged', async () => {
+    const svg = new TextEncoder().encode(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><circle cx="24" cy="24" r="20"/></svg>'
+    )
+
+    const result = await invoke<{
+      success: boolean
+      asset?: { mimeType: string; width: number; srcset: Record<number, string>; id: string }
+    }>('image:upload', svg.buffer, 'icon.svg')
+
+    expect(result.success).toBe(true)
+    expect(result.asset?.mimeType).toBe('image/svg+xml')
+    expect(result.asset?.width).toBe(48)
+    expect(result.asset?.srcset[48]).toBe(`assets/${result.asset!.id}.svg`)
+    const written = await readFile(join(tempDir, 'dtw-assets', `${result.asset!.id}.svg`))
+    expect(written.toString('utf8')).toContain('<svg')
+  })
+
+  it('returns a structured error when sharp cannot decode the input', async () => {
+    // A buffer that passes the PNG magic sniff but has no valid IHDR chunk
+    // — sharp will reject it during metadata extraction.
+    const fakePng = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00])
     const result = await invoke<{ success: boolean; error?: string }>(
       'image:upload',
-      svg.buffer,
-      'logo.svg'
+      fakePng.buffer,
+      'broken.png'
     )
     expect(result.success).toBe(false)
-    expect(result.error).toContain('I-ELE-05')
+    expect(typeof result.error).toBe('string')
+    expect(result.error?.length).toBeGreaterThan(0)
   })
 })
 

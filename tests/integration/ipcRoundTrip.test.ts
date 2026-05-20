@@ -50,7 +50,7 @@ const { handlers, electronMock } = vi.hoisted(() => {
 vi.mock('electron', () => electronMock)
 
 import { registerIpcHandlers } from '../../src/main/ipc'
-import { exportProject } from '../../src/export'
+import { legacyExportProject as exportProject } from '../../src/export'
 
 const SEO: SEOConfig = {
   title: 'Round Trip Test',

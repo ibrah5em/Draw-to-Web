@@ -18,7 +18,7 @@ import LayerPanel from './components/LayerPanel'
 import SEOConfigDialog from './components/SEOConfigDialog'
 import ExportReportDialog from './components/ExportReportDialog'
 import { useElementStore, useTemporalStore } from '../../store/elementStore'
-import { exportProject, buildPreview, type ExportProjectResult } from '../../export'
+import { legacyExportProject, buildPreview, type ExportProjectResult } from '../../export'
 import { deserializeProject, serializeProject } from '../../project'
 import type { ActiveTool, SEOConfig } from '../../shared/types'
 import styles from './App.module.css'
@@ -58,7 +58,7 @@ export default function App(): JSX.Element {
   const handleExportSubmit = useCallback(
     async (config: SEOConfig) => {
       setDialog({ kind: 'exporting' })
-      const result = await exportProject(elements, config)
+      const result = await legacyExportProject(elements, config)
       setDialog({ kind: 'report', result })
     },
     [elements]

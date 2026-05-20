@@ -3,7 +3,7 @@ import JSZip from 'jszip'
 import { SIMPLE_PAGE } from '../fixtures/legacyElements'
 import type { CanvasElement } from '../../src/store/elementStore'
 import type { SEOConfig } from '../../src/shared/types'
-import { exportProject, buildPreview } from '../../src/export'
+import { legacyExportProject as exportProject, buildPreview } from '../../src/export'
 
 const BASE_CONFIG: SEOConfig = {
   title: 'Test Page',

@@ -1,36 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import JSZip from 'jszip'
-import { SIMPLE_PAGE } from '../generator/fixtures'
+import { SIMPLE_PAGE } from '../fixtures/legacyElements'
 import type { CanvasElement } from '../../src/store/elementStore'
 import type { SEOConfig } from '../../src/shared/types'
-
-// Mock the engine before the export module is imported so inferSemantics is replaced.
-vi.mock('../../src/engine', () => ({
-  inferSemantics: vi.fn(),
-}))
-
-import { inferSemantics } from '../../src/engine'
 import { exportProject, buildPreview } from '../../src/export'
-
-const mockedInfer = vi.mocked(inferSemantics)
 
 const BASE_CONFIG: SEOConfig = {
   title: 'Test Page',
   description: 'A page used by the export pipeline tests.',
 }
-
-// Minimal element — content doesn't matter because we mock the engine.
-const STUB_ELEMENTS: CanvasElement[] = [
-  {
-    id: 'a',
-    type: 'rectangle',
-    x: 0,
-    y: 0,
-    width: 12,
-    height: 80,
-    props: {},
-  },
-]
 
 interface MockIpcResult {
   success: boolean
@@ -64,24 +42,10 @@ describe('exportProject', () => {
     vi.unstubAllGlobals()
   })
 
-  it('returns stage="infer" when the engine throws', async () => {
-    mockedInfer.mockImplementationOnce(() => {
-      throw new Error('engine boom')
-    })
-    setupElectronAPI({ success: true, filePath: '/tmp/x.zip' })
-    const result = await exportProject(STUB_ELEMENTS, BASE_CONFIG)
-    expect(result.success).toBe(false)
-    if (!result.success) {
-      expect(result.stage).toBe('infer')
-      expect(result.error).toBe('engine boom')
-    }
-  })
-
   it('runs the full pipeline and writes a valid ZIP on success', async () => {
-    mockedInfer.mockReturnValueOnce(SIMPLE_PAGE)
     const captured = setupElectronAPI({ success: true, filePath: '/tmp/project.zip' })
 
-    const result = await exportProject(STUB_ELEMENTS, BASE_CONFIG, { projectName: 'my-site' })
+    const result = await exportProject(SIMPLE_PAGE, BASE_CONFIG, { projectName: 'my-site' })
 
     expect(result.success).toBe(true)
     if (result.success) {
@@ -99,27 +63,25 @@ describe('exportProject', () => {
     expect(zip.file('styles.css')).not.toBeNull()
     const html = await zip.file('index.html')!.async('string')
     expect(html).toContain('<title>Test Page</title>')
-    expect(html).toContain('role="banner"')
   })
 
   it('blocks export with stage="a11y-gate" when a11y violations are critical', async () => {
-    // A button with no text becomes <button></button> — axe-core flags button-name (serious).
-    const badTree = [
+    // Add a button with no text to the input — axe-core flags button-name (serious).
+    const elementsWithBadButton: CanvasElement[] = [
+      ...SIMPLE_PAGE,
       {
         id: 'empty-btn',
-        type: 'button' as const,
+        type: 'button',
         x: 0,
         y: 0,
         width: 4,
         height: 40,
-        semanticTag: 'button' as const,
         props: {}, // no text
       },
     ]
-    mockedInfer.mockReturnValueOnce(badTree)
     const captured = setupElectronAPI({ success: true })
 
-    const result = await exportProject(STUB_ELEMENTS, BASE_CONFIG)
+    const result = await exportProject(elementsWithBadButton, BASE_CONFIG)
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -132,10 +94,9 @@ describe('exportProject', () => {
   })
 
   it('returns stage="save" when the IPC handler reports failure', async () => {
-    mockedInfer.mockReturnValueOnce(SIMPLE_PAGE)
     setupElectronAPI({ success: false, error: 'Disk full' })
 
-    const result = await exportProject(STUB_ELEMENTS, BASE_CONFIG)
+    const result = await exportProject(SIMPLE_PAGE, BASE_CONFIG)
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -146,10 +107,9 @@ describe('exportProject', () => {
   })
 
   it('sanitizes the project name for the zip filename', async () => {
-    mockedInfer.mockReturnValueOnce(SIMPLE_PAGE)
     const captured = setupElectronAPI({ success: true, filePath: '/tmp/x.zip' })
 
-    await exportProject(STUB_ELEMENTS, BASE_CONFIG, {
+    await exportProject(SIMPLE_PAGE, BASE_CONFIG, {
       projectName: '../../etc/passwd',
     })
 
@@ -159,10 +119,9 @@ describe('exportProject', () => {
   })
 
   it('falls back to "project.zip" when the project name is only invalid chars', async () => {
-    mockedInfer.mockReturnValueOnce(SIMPLE_PAGE)
     const captured = setupElectronAPI({ success: true, filePath: '/tmp/x.zip' })
 
-    await exportProject(STUB_ELEMENTS, BASE_CONFIG, { projectName: '///' })
+    await exportProject(SIMPLE_PAGE, BASE_CONFIG, { projectName: '///' })
     expect(captured.capturedFilename).toBe('project.zip')
   })
 })
@@ -172,19 +131,16 @@ describe('buildPreview', () => {
     vi.clearAllMocks()
   })
 
-  it('returns html+css when the engine succeeds', () => {
-    mockedInfer.mockReturnValueOnce(SIMPLE_PAGE)
-    const preview = buildPreview(STUB_ELEMENTS)
+  it('returns html+css for a valid element list', async () => {
+    const preview = await buildPreview(SIMPLE_PAGE)
     expect(preview).not.toBeNull()
     expect(preview?.html).toContain('<!doctype html>')
     expect(preview?.css.length).toBeGreaterThan(0)
   })
 
-  it('returns null when the engine throws', () => {
-    mockedInfer.mockImplementationOnce(() => {
-      throw new Error('engine boom')
-    })
-    const preview = buildPreview(STUB_ELEMENTS)
-    expect(preview).toBeNull()
+  it('returns html+css even for an empty element list', async () => {
+    const preview = await buildPreview([])
+    expect(preview).not.toBeNull()
+    expect(preview?.html).toContain('<!doctype html>')
   })
 })

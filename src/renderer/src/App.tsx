@@ -90,11 +90,17 @@ export default function App(): JSX.Element {
   // Sync preview window content whenever elements change (debounced 300 ms).
   useEffect(() => {
     if (!previewOpen) return
+    let cancelled = false
     const timer = setTimeout(() => {
-      const preview = buildPreview(elements)
-      if (preview) void window.electronAPI.updatePreview(preview.html, preview.css)
+      void buildPreview(elements).then((preview) => {
+        if (cancelled || !preview) return
+        void window.electronAPI.updatePreview(preview.html, preview.css)
+      })
     }, 300)
-    return () => clearTimeout(timer)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
   }, [elements, previewOpen])
 
   // When the preview window is closed by the user, clear the active state.

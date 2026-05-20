@@ -1,11 +1,11 @@
 import JSZip from 'jszip'
-import { inferSemantics, type SemanticElement } from '../engine'
 import { generate } from '../generator'
 import { generateFullReport, injectSEO } from '../seo'
 import type { CanvasElement, ExportResult, FullExportReport, SEOConfig } from '../shared/types'
+import { canvasElementsToDocument } from './legacyAdapter'
 
 /** Stages of the export pipeline — surfaced on errors so the UI can pinpoint the failure. */
-export type ExportStage = 'infer' | 'generate' | 'inject-seo' | 'a11y-gate' | 'bundle' | 'save'
+export type ExportStage = 'adapt' | 'generate' | 'inject-seo' | 'a11y-gate' | 'bundle' | 'save'
 
 export interface ExportOptions {
   /** Optional name for the produced zip (no extension). Falls back to "project". */
@@ -30,40 +30,45 @@ function toMessage(err: unknown): string {
 }
 
 /**
- * Orchestrates the full export pipeline:
- *   1. `inferSemantics(elements)` → SemanticElement tree
- *   2. `generate(tree)` → { html, css }
- *   3. `injectSEO(html, config)` → enriched HTML
- *   4. axe-core gate via `generateFullReport` → block on critical/serious violations
- *   5. Bundle index.html + styles.css with JSZip
+ * Orchestrates the export pipeline. Public signature is preserved from
+ * v0.1.0 — the renderer still drives canvas state through `useElementStore`
+ * and hands `CanvasElement[]` + legacy `SEOConfig` in. Internally the
+ * pipeline now:
+ *
+ *   1. `canvasElementsToDocument(elements, seoConfig)` → schema-valid `Document`
+ *   2. `generate(doc)` → `{ html, css, js }` (prettier-formatted)
+ *   3. `injectSEO(html, seoConfig)` → enriched HTML (existing SEO module)
+ *   4. axe-core gate via `generateFullReport` — blocks on critical/serious
+ *   5. Bundle `index.html` + `styles.css` (+ `scripts.js` when present) with JSZip
  *   6. Hand the ZIP buffer to the main process for the native save dialog
  *
- * Each stage is wrapped so the UI can show *which* stage failed. The a11y gate
- * still returns its report on failure so the renderer can render the violation
- * list — the export is blocked but the diagnostics are not.
+ * The full C12 8-stage pipeline (validate → generate → SEO → image opt →
+ * minify → sitemap/robots → ZIP → IPC) and the structured progress
+ * events land with I-EXP-01 once the renderer migrates to `useDocumentStore`.
  */
 export async function exportProject(
   elements: CanvasElement[],
   seoConfig: SEOConfig,
   options: ExportOptions = {}
 ): Promise<ExportProjectResult> {
-  // 1. Engine
-  let semanticTree: SemanticElement[]
+  // 1. Adapter — v0.1.0 elements → v0.2.0 Document
+  let doc
   try {
-    semanticTree = inferSemantics(elements)
+    doc = canvasElementsToDocument(elements, seoConfig)
   } catch (err) {
-    return { success: false, stage: 'infer', error: toMessage(err) }
+    return { success: false, stage: 'adapt', error: toMessage(err) }
   }
 
   // 2. Generator
   let generated
   try {
-    generated = generate(semanticTree)
+    generated = await generate(doc)
   } catch (err) {
     return { success: false, stage: 'generate', error: toMessage(err) }
   }
 
-  // 3. SEO injection
+  // 3. SEO injection (still consumes the legacy SEOConfig shape —
+  //    rewriting this against `document.seo` is PR 3 territory).
   let enrichedHtml: string
   try {
     enrichedHtml = injectSEO(generated.html, seoConfig)
@@ -94,6 +99,9 @@ export async function exportProject(
     const zip = new JSZip()
     zip.file('index.html', enrichedHtml)
     zip.file('styles.css', generated.css)
+    if (generated.js.length > 0) {
+      zip.file('scripts.js', generated.js)
+    }
     buffer = await zip.generateAsync({ type: 'arraybuffer' })
   } catch (err) {
     return { success: false, stage: 'bundle', error: toMessage(err), report }
@@ -121,14 +129,20 @@ export async function exportProject(
 }
 
 /**
- * Lightweight helper for the live-preview panel: runs only the renderer-pure
- * stages (no IPC, no axe gate). Returns `null` if the engine or generator
- * throws — the preview panel should show nothing rather than a stale render.
+ * Lightweight helper for the live-preview panel: runs the generator on
+ * an adapter-built Document and returns the strings without going
+ * through IPC or the axe gate. Returns `null` when the adapter or
+ * generator throws — the preview panel shows nothing rather than a
+ * stale render.
  */
-export function buildPreview(elements: CanvasElement[]): { html: string; css: string } | null {
+export async function buildPreview(
+  elements: CanvasElement[]
+): Promise<{ html: string; css: string } | null> {
   try {
-    const tree = inferSemantics(elements)
-    return generate(tree)
+    const placeholderSeo: SEOConfig = { title: 'Preview', description: '' }
+    const doc = canvasElementsToDocument(elements, placeholderSeo)
+    const { html, css } = await generate(doc)
+    return { html, css }
   } catch {
     return null
   }

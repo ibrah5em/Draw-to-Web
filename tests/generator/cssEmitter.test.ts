@@ -1,88 +1,75 @@
 import { describe, it, expect } from 'vitest'
-import { emitCss } from '@generator/cssEmitter'
-import { SIMPLE_PAGE, PAGE_WITH_NAV } from './fixtures'
+import { emitCss } from '../../src/generator/cssEmitter'
+import { PORTFOLIO_DOCUMENT } from '../fixtures/portfolioDocument'
+import type { Document } from '../../src/document/types'
 
-describe('emitCss', () => {
-  it('includes a CSS reset', () => {
-    const css = emitCss(SIMPLE_PAGE)
+describe('emitCss(document)', () => {
+  const css = emitCss(PORTFOLIO_DOCUMENT)
+
+  it('includes a CSS reset at the top', () => {
+    expect(css.startsWith('*')).toBe(true)
     expect(css).toContain('box-sizing: border-box')
-    expect(css).toContain('margin: 0')
-    expect(css).toContain('padding: 0')
   })
 
-  it('includes the root 12-column grid', () => {
-    const css = emitCss(SIMPLE_PAGE)
-    expect(css).toContain('.dtw-canvas')
-    expect(css).toContain('grid-template-columns: repeat(12, 1fr)')
+  it('emits a :root token block with custom properties for every token', () => {
+    expect(css).toMatch(/:root \{[\s\S]*--color-bg: #ffffff;[\s\S]*\}/)
+    expect(css).toContain('--space-md: 16px;')
+    expect(css).toContain('--font-size-h1: clamp(28px, 2rem + 2vw, 56px);')
+    expect(css).toContain('--radius-sm: 4px;')
   })
 
-  it('emits scoped selectors for every element', () => {
-    const css = emitCss(SIMPLE_PAGE)
-    expect(css).toContain('.dtw-el-header-1')
-    expect(css).toContain('.dtw-el-h1-1')
-    expect(css).toContain('.dtw-el-img-1')
-    expect(css).toContain('.dtw-el-btn-1')
-    expect(css).toContain('.dtw-el-footer-1')
+  it('emits a [data-theme="dark"] override block for colour tokens only (I-GEN-04, I-GEN-06)', () => {
+    expect(css).toMatch(/:root\[data-theme="dark"\] \{[\s\S]*--color-bg: #0b0b10;[\s\S]*\}/)
+    // Non-colour tokens (spacing, font sizes) do not vary by theme, so they
+    // must not appear in the dark override.
+    const darkBlock = css.match(/:root\[data-theme="dark"\] \{[\s\S]*?\}/)?.[0] ?? ''
+    expect(darkBlock).toContain('--color-')
+    expect(darkBlock).not.toContain('--space-')
+    expect(darkBlock).not.toContain('--font-size-')
   })
 
-  it('maps x and width to grid-column placement', () => {
-    const css = emitCss(SIMPLE_PAGE)
-    // header: x=0, width=12 → grid-column: 1 / span 12
-    expect(css).toContain('.dtw-el-header-1')
-    expect(css).toMatch(/\.dtw-el-header-1 \{[^}]*grid-column: 1 \/ span 12/)
-    // h1: x=1, width=10 → grid-column: 2 / span 10
-    expect(css).toMatch(/\.dtw-el-h1-1 \{[^}]*grid-column: 2 \/ span 10/)
+  it('emits the prefers-color-scheme dark fallback so OS preference wins until toggled', () => {
+    expect(css).toContain('@media (prefers-color-scheme: dark)')
+    expect(css).toContain(':root:not([data-theme])')
   })
 
-  it('emits min-height from element height', () => {
-    const css = emitCss(SIMPLE_PAGE)
-    expect(css).toMatch(/\.dtw-el-header-1 \{[^}]*min-height: 80px/)
+  it('references tokens via var() rather than the resolved value (I-GEN-05)', () => {
+    // The CTA link has `typography.color = color.bg` — must come out as a var(), not the hex.
+    const ctaBlock = css.match(/\.dtw-el-cta \{[\s\S]*?\}/)?.[0] ?? ''
+    expect(ctaBlock).toContain('color: var(--color-bg);')
+    expect(ctaBlock).toContain('background-color: var(--color-accent);')
+    expect(ctaBlock).not.toContain('#ffffff')
   })
 
-  it('emits margin-top for non-zero y positions', () => {
-    const css = emitCss(SIMPLE_PAGE)
-    // h1 has y=100, should have margin-top
-    expect(css).toMatch(/\.dtw-el-h1-1 \{[^}]*margin-top: 100px/)
-    // header has y=0, should NOT have margin-top
-    const headerBlock = css.match(/\.dtw-el-header-1 \{[^}]*\}/s)?.[0] ?? ''
-    expect(headerBlock).not.toContain('margin-top')
+  it('emits per-breakpoint @media blocks for elements with responsive overrides (I-GEN-08)', () => {
+    // The root has a `mobile` padding override — must surface inside the
+    // 768px max-width block.
+    expect(css).toContain('@media (max-width: 768px) {')
+    const mobileBlock = css.match(/@media \(max-width: 768px\) \{[\s\S]*?\n\}/)?.[0] ?? ''
+    expect(mobileBlock).toContain('.dtw-el-root')
+    expect(mobileBlock).toContain('padding-top: var(--space-md);')
   })
 
-  it('emits background-color from props', () => {
-    const css = emitCss(SIMPLE_PAGE)
-    expect(css).toContain('background-color: #1a1a2e')
-    expect(css).toContain('background-color: #111111')
+  it('emits Flexbox + Grid for layout — never position: absolute', () => {
+    expect(css).not.toMatch(/position\s*:\s*absolute/)
+    expect(css).toContain('display: flex')
   })
 
-  it('emits font-size as clamp() for responsive sizing', () => {
-    const css = emitCss(SIMPLE_PAGE)
-    // h1 has fontSize: 36
-    expect(css).toMatch(/\.dtw-el-h1-1 \{[^}]*font-size: clamp\(/)
-  })
-
-  it('emits border-radius from props', () => {
-    const css = emitCss(SIMPLE_PAGE)
-    expect(css).toMatch(/\.dtw-el-btn-1 \{[^}]*border-radius: 4px/)
-  })
-
-  it('emits flexbox for nav containers', () => {
-    const css = emitCss(PAGE_WITH_NAV)
-    expect(css).toMatch(/\.dtw-el-nav-1 \{[^}]*display: flex/)
-    expect(css).toMatch(/\.dtw-el-nav-1 \{[^}]*align-items: center/)
-    expect(css).toMatch(/\.dtw-el-nav-1 \{[^}]*gap: 1rem/)
-  })
-
-  it('emits nested child selectors in the stylesheet', () => {
-    const css = emitCss(PAGE_WITH_NAV)
-    expect(css).toContain('.dtw-el-nav-link-1')
-    expect(css).toContain('.dtw-el-nav-link-2')
-  })
-
-  it('produces deterministic output for the same input', () => {
-    expect(emitCss(SIMPLE_PAGE)).toBe(emitCss(SIMPLE_PAGE))
-  })
-
-  it('matches snapshot', () => {
-    expect(emitCss(SIMPLE_PAGE)).toMatchSnapshot()
+  it('handles an empty-tokens document without crashing', () => {
+    const doc: Document = {
+      ...PORTFOLIO_DOCUMENT,
+      tokens: {
+        color: [],
+        spacing: [],
+        fontSize: [],
+        fontFamily: [],
+        lineHeight: [],
+        radius: [],
+        shadow: [],
+      },
+    }
+    const out = emitCss(doc)
+    expect(out).toContain('box-sizing: border-box')
+    expect(out).not.toContain(':root {')
   })
 })

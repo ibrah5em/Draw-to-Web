@@ -31,6 +31,7 @@ import type { Document } from '../document/types'
 import { emitHtml } from './htmlEmitter'
 import { emitCss } from './cssEmitter'
 import { emitJs } from './jsEmitter'
+import { THEME_TOGGLE_FOUC_GUARD } from '../runtime'
 
 /** Output strings produced by `generate`. */
 export interface GeneratedOutput {
@@ -63,11 +64,21 @@ function composeHtml(doc: Document, body: string, hasJs: boolean): string {
   const charset = escapeAttr(doc.seo.charset)
   const viewport = escapeAttr(doc.seo.viewport)
 
-  const headLines = [
-    `    <meta charset="${charset}" />`,
+  const headLines: string[] = [`    <meta charset="${charset}" />`]
+  // FOUC guard (I-RUN-01) must run before any stylesheet so the saved
+  // theme is on `<html>` by the time CSS evaluates `[data-theme="dark"]`.
+  // Placed right after `<meta charset>` to stay within the 1024-byte
+  // window the charset directive requires, but ahead of every other tag.
+  if (doc.runtime.themeToggle) {
+    const indented = THEME_TOGGLE_FOUC_GUARD.split('\n')
+      .map((line) => (line.length === 0 ? line : `      ${line}`))
+      .join('\n')
+    headLines.push(`    <script>\n${indented}\n    </script>`)
+  }
+  headLines.push(
     `    <meta name="viewport" content="${viewport}" />`,
-    `    <link rel="stylesheet" href="styles.css" />`,
-  ]
+    `    <link rel="stylesheet" href="styles.css" />`
+  )
   if (hasJs) {
     headLines.push(`    <script src="scripts.js" defer></script>`)
   }

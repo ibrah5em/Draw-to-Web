@@ -16,6 +16,13 @@ files:
   - '!.eslintrc.*'
   - '!.prettierrc'
 
+# sharp ships prebuilt libvips binaries under `@img/sharp-*` and
+# `@img/sharp-libvips-*` that must live outside the asar archive — the
+# native loader dlopens them at runtime.
+asarUnpack:
+  - node_modules/sharp/**/*
+  - node_modules/@img/**/*
+
 win:
   executableName: draw-to-web
   target:

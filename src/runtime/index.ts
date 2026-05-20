@@ -24,18 +24,22 @@
  */
 
 import type { RuntimeFlags } from '../document/types'
+import { THEME_TOGGLE_FOUC_GUARD, THEME_TOGGLE_SNIPPET } from './themeToggle'
 
 /**
  * Source code of each runtime snippet keyed by its flag name. Entries are
  * raw JS strings (no `<script>` wrapper) that run inside one shared IIFE.
  */
-export const RUNTIME_SNIPPETS: Partial<Record<keyof RuntimeFlags, string>> = {}
+export const RUNTIME_SNIPPETS: Partial<Record<keyof RuntimeFlags, string>> = {
+  themeToggle: THEME_TOGGLE_SNIPPET,
+}
 
 /**
  * Inline `<head>` script for the theme toggle's FOUC guard (I-RUN-01).
  * Runs *before* the body renders so the saved theme is applied without a
- * flash. Returns the raw JS body, not a `<script>` tag.
+ * flash. Raw JS body, not a `<script>` tag — the generator wraps it.
  *
- * Empty until I-RUN-01 lands.
+ * Re-exported here so the generator can resolve it through one runtime
+ * entry point rather than reaching into individual snippet files.
  */
-export const THEME_TOGGLE_FOUC_GUARD: string | null = null
+export { THEME_TOGGLE_FOUC_GUARD }

@@ -30,16 +30,52 @@ describe('generate(document)', () => {
   })
 
   it('does not inject <script> for enabled flags whose snippet is not yet authored', async () => {
-    // The I-RUN-* snippets are not implemented yet. Enabling a flag must
-    // not crash and must not inject a link to a file we will never write.
-    // The script tag only appears once a snippet contributes real code.
+    // Flags whose I-RUN-* tasks have not landed yet (everything except
+    // themeToggle as of I-RUN-01) must opt-in without contributing JS.
     const doc = {
       ...PORTFOLIO_DOCUMENT,
-      runtime: { ...PORTFOLIO_DOCUMENT.runtime, themeToggle: true },
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, scrollSpy: true, mobileNav: true },
     }
     const { html, js } = await generate(doc)
     expect(js).toBe('')
     expect(html).not.toContain('scripts.js')
+  })
+
+  describe('theme toggle (I-RUN-01)', () => {
+    const docWithToggle = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, themeToggle: true },
+    }
+
+    it('emits the FOUC guard inline <script> in <head> when themeToggle is on', async () => {
+      const { html } = await generate(docWithToggle)
+      const headSlice = html.split('</head>')[0]
+      expect(headSlice).toContain('<script>')
+      expect(headSlice).toMatch(/localStorage\.getItem\(["']dtw-theme["']\)/)
+      expect(headSlice).toMatch(/setAttribute\(["']data-theme["']/)
+    })
+
+    it('orders the FOUC guard after charset and before the stylesheet link', async () => {
+      const { html } = await generate(docWithToggle)
+      const charsetIdx = html.indexOf('<meta charset=')
+      const guardIdx = html.search(/localStorage\.getItem\(["']dtw-theme["']\)/)
+      const stylesheetIdx = html.indexOf('<link rel="stylesheet"')
+      expect(charsetIdx).toBeGreaterThan(-1)
+      expect(guardIdx).toBeGreaterThan(charsetIdx)
+      expect(guardIdx).toBeLessThan(stylesheetIdx)
+    })
+
+    it('emits the body snippet and a <script src="scripts.js"> tag when themeToggle is on', async () => {
+      const { html, js } = await generate(docWithToggle)
+      expect(js).toContain('data-dtw-theme-toggle')
+      expect(js).toMatch(/["']dtw-theme["']/)
+      expect(html).toContain('<script src="scripts.js" defer></script>')
+    })
+
+    it('omits the FOUC guard when themeToggle is false', async () => {
+      const { html } = await generate(PORTFOLIO_DOCUMENT)
+      expect(html).not.toMatch(/localStorage\.getItem\(["']dtw-theme["']\)/)
+    })
   })
 
   it('drives container tags from element.semanticRole', async () => {

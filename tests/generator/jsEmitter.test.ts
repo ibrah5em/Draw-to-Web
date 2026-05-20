@@ -7,13 +7,34 @@ describe('emitJs(document)', () => {
     expect(emitJs(PORTFOLIO_DOCUMENT)).toBe('')
   })
 
-  it('returns an empty string when flags are enabled but the snippets have not yet been authored', () => {
-    // The I-RUN-* snippets are not implemented yet; toggling a flag must
-    // not crash and must not inject placeholder code.
+  it('returns an empty string when only unauthored flags are enabled', () => {
+    // Only `themeToggle` has shipped a snippet (I-RUN-01). Enabling
+    // I-RUN-02..08 flags must still produce no JS until those tasks land.
     const doc = {
       ...PORTFOLIO_DOCUMENT,
-      runtime: { ...PORTFOLIO_DOCUMENT.runtime, themeToggle: true, scrollSpy: true },
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, scrollSpy: true, mobileNav: true },
     }
     expect(emitJs(doc)).toBe('')
+  })
+
+  it('emits the theme toggle snippet wrapped in an outer IIFE when themeToggle is on', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, themeToggle: true },
+    }
+    const js = emitJs(doc)
+    expect(js).toMatch(/^\(function \(\) \{/)
+    expect(js).toContain('/* themeToggle */')
+    expect(js).toContain('data-dtw-theme-toggle')
+    expect(js).toMatch(/["']dtw-theme["']/)
+    expect(js).toMatch(/\}\)\(\);\s*$/)
+  })
+
+  it('produces deterministic output across repeated calls', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, themeToggle: true },
+    }
+    expect(emitJs(doc)).toBe(emitJs(doc))
   })
 })

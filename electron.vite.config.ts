@@ -19,6 +19,7 @@ export default defineConfig({
         '@generator': resolve('src/generator'),
         '@seo': resolve('src/seo'),
         '@export': resolve('src/export'),
+        '@templates': resolve('src/templates'),
         '@shared': resolve('src/shared'),
       },
     },

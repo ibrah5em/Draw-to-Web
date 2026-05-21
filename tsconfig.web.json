@@ -18,6 +18,7 @@
       "@generator/*": ["./src/generator/*"],
       "@seo/*": ["./src/seo/*"],
       "@export/*": ["./src/export/*"],
+      "@templates/*": ["./src/templates/*"],
       "@shared/*": ["./src/shared/*"]
     }
   },
@@ -29,6 +30,7 @@
     "src/generator/**/*",
     "src/seo/**/*",
     "src/export/**/*",
+    "src/templates/**/*",
     "src/shared/**/*",
     "src/project/**/*"
   ]

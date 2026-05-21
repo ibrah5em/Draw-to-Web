@@ -59,12 +59,44 @@ function escapeAttr(raw: string): string {
     .replace(/>/g, '&gt;')
 }
 
+/**
+ * Default Content-Security-Policy emitted when `doc.seo.csp` is
+ * undefined (I-GEN-20). `'unsafe-inline'` is granted to `style-src`
+ * because the generator emits scoped element classes and any author-
+ * embedded `<style>`/style attribute. `script-src` is `'self'` only
+ * unless the theme-toggle FOUC guard runs inline (added by
+ * `defaultCsp` below); the document opts in by setting
+ * `doc.seo.csp = '<custom policy>'`.
+ */
+function defaultCsp(doc: Document): string {
+  const scriptSrc = doc.runtime.themeToggle ? `'self' 'unsafe-inline'` : `'self'`
+  return [
+    `default-src 'self'`,
+    `style-src 'self' 'unsafe-inline'`,
+    `img-src 'self' data:`,
+    `font-src 'self'`,
+    `script-src ${scriptSrc}`,
+    `connect-src 'self'`,
+    `base-uri 'self'`,
+    `form-action 'self'`,
+    `object-src 'none'`,
+  ].join('; ')
+}
+
 function composeHtml(doc: Document, body: string, hasJs: boolean): string {
   const lang = escapeAttr(doc.seo.lang)
   const charset = escapeAttr(doc.seo.charset)
   const viewport = escapeAttr(doc.seo.viewport)
 
   const headLines: string[] = [`    <meta charset="${charset}" />`]
+  // CSP meta (I-GEN-20). Emitted right after charset so the policy
+  // applies to every subsequent tag, including the FOUC guard.
+  if (doc.seo.csp !== false) {
+    const policy = typeof doc.seo.csp === 'string' ? doc.seo.csp : defaultCsp(doc)
+    headLines.push(
+      `    <meta http-equiv="Content-Security-Policy" content="${escapeAttr(policy)}" />`
+    )
+  }
   // FOUC guard (I-RUN-01) must run before any stylesheet so the saved
   // theme is on `<html>` by the time CSS evaluates `[data-theme="dark"]`.
   // Placed right after `<meta charset>` to stay within the 1024-byte

@@ -92,13 +92,26 @@ const CSS_FEATURES: FeatureSupport[] = [
 /** Modern-baseline targets (evergreen browsers, 2022+). Anything ≤ these is safe. */
 const TARGETS = { chrome: 100, firefox: 100, safari: 15, edge: 100 }
 
-/** Patterns we explicitly forbid in generated CSS for cross-browser hygiene. */
+/**
+ * Patterns we explicitly forbid in generated CSS for cross-browser
+ * hygiene. `position: fixed` is allowed because the skip-to-content
+ * link (I-GEN-19) and decorative `body::before/::after` (I-GEN-09)
+ * legitimately need it. `-webkit-print-color-adjust` is allowed
+ * because Safari ≤ 15 still requires the prefixed property (the
+ * standards-only `print-color-adjust` is also emitted alongside).
+ */
 const FORBIDDEN_CSS: { pattern: RegExp; reason: string }[] = [
   { pattern: /\bposition:\s*absolute\b/i, reason: 'absolute positioning is forbidden by design' },
-  { pattern: /\bposition:\s*fixed\b/i, reason: 'fixed positioning not used by generator' },
   {
-    pattern: /-webkit-|-moz-|-ms-|-o-/i,
+    // Match vendor prefixes other than the Safari-required
+    // `-webkit-print-color-adjust` allowlist entry.
+    pattern: /(?<!print-color-adjust)(-moz-|-ms-|-o-)/i,
     reason: 'vendor prefixes — output must be standards-only',
+  },
+  {
+    // -webkit- is allowed only on the print-color-adjust legacy property.
+    pattern: /-webkit-(?!print-color-adjust)/i,
+    reason: '-webkit- vendor prefix outside the print-color-adjust allowlist',
   },
   { pattern: /@-webkit-|@-moz-/i, reason: 'vendor at-rules' },
   { pattern: /<script/i, reason: 'no JS in generated output' },

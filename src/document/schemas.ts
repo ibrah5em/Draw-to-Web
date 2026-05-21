@@ -544,6 +544,7 @@ export const seoConfigSchema = z.object({
   favicon: faviconConfigSchema.optional(),
   preconnect: z.array(z.string()).optional(),
   robots: z.string().optional(),
+  csp: z.union([z.literal(false), z.string()]).optional(),
 })
 
 // ---------------------------------------------------------------------------
@@ -572,11 +573,25 @@ export const assetManifestEntrySchema = z.object({
   srcset: z.record(z.coerce.number(), z.string()),
 })
 
+export const decorativePseudoElementSchema = z.object({
+  background: z.array(backgroundLayerSchema).optional(),
+  opacity: z.number().optional(),
+  mixBlendMode: z.string().optional(),
+  maskImage: z.string().optional(),
+  filter: z.string().optional(),
+})
+
 export const documentSettingsSchema = z.object({
   contrastTarget: z.enum(['AA', 'AAA']),
   defaultTheme: z.enum(['auto', 'light', 'dark']),
   gridVisible: z.boolean(),
   baseUnit: z.number().optional(),
+  decorativeBackdrop: z
+    .object({
+      before: decorativePseudoElementSchema.optional(),
+      after: decorativePseudoElementSchema.optional(),
+    })
+    .optional(),
 })
 
 export const documentMetaSchema = z.object({

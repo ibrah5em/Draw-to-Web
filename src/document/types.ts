@@ -566,6 +566,13 @@ export interface SEOConfig {
   readonly preconnect?: ReadonlyArray<string>
   /** Robots directive (e.g. `'index, follow'`). */
   readonly robots?: string
+  /**
+   * Content-Security-Policy emitted as a `<meta http-equiv>` (I-GEN-20).
+   * `undefined` → emit the generator's default strict policy.
+   * `false` → omit the meta tag entirely.
+   * `string` → emit verbatim as the policy value.
+   */
+  readonly csp?: false | string
 }
 
 // ---------------------------------------------------------------------------
@@ -612,6 +619,30 @@ export interface AssetManifestEntry {
   readonly srcset: Readonly<Record<number, string>>
 }
 
+/**
+ * Single decorative pseudo-element. Emitted by the generator as either
+ * `body::before` or `body::after` (I-GEN-09) when the author has opted
+ * in via `DocumentSettings.decorativeBackdrop`. The element is full-
+ * bleed, pointer-events: none, and lives behind page content
+ * (`z-index: -1`), so it cannot interfere with focus or hit-testing.
+ *
+ * Designed for grid overlays, noise textures, animated gradients,
+ * subtle vignettes — anything that should sit behind the page without
+ * needing a real DOM element.
+ */
+export interface DecorativePseudoElement {
+  /** Background layers — same shape as element-level backgrounds (I-GEN-09). */
+  readonly background?: ReadonlyArray<BackgroundLayer>
+  /** Optional opacity override (0..1). */
+  readonly opacity?: number
+  /** CSS `mix-blend-mode` (useful for noise textures). */
+  readonly mixBlendMode?: string
+  /** Optional `mask-image` for cut-out effects. */
+  readonly maskImage?: string
+  /** Optional `filter` (e.g. `blur(40px)`). */
+  readonly filter?: string
+}
+
 /** Per-document author settings; mostly editor-facing toggles. */
 export interface DocumentSettings {
   /** WCAG contrast target enforced by validation (I-DOC-05). */
@@ -622,6 +653,14 @@ export interface DocumentSettings {
   readonly gridVisible: boolean
   /** Spacing scale base unit; informational. */
   readonly baseUnit?: number
+  /**
+   * Optional decorative `body::before` / `body::after` pseudo-elements
+   * (I-GEN-09). Both omitted → no pseudo-element rules emitted.
+   */
+  readonly decorativeBackdrop?: {
+    readonly before?: DecorativePseudoElement
+    readonly after?: DecorativePseudoElement
+  }
 }
 
 /** Document-level metadata. Timestamps are ISO-8601 UTC strings. */

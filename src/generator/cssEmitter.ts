@@ -24,10 +24,12 @@
  */
 
 import type {
+  AnimationSpec,
   BackgroundLayer,
   BorderRadius,
   BorderSpec,
   BreakpointKey,
+  DecorativePseudoElement,
   Document,
   ElementNode,
   LayoutConfig,
@@ -112,7 +114,123 @@ textarea {
 
 a {
   color: inherit;
+}
+
+.dtw-skip-link {
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding: 8px 12px;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  z-index: 9999;
+  transform: translateY(-200%);
+  transition: transform 120ms ease;
+}
+
+.dtw-skip-link:focus {
+  transform: translateY(0);
 }`
+
+// ---------------------------------------------------------------------------
+// Keyframe library (I-GEN-11)
+// ---------------------------------------------------------------------------
+
+/**
+ * Built-in keyframe library. The generator owns these so authors only
+ * reference an animation by name on `element.animation` and the runtime
+ * concerns (timing, decoration flag, gate-on-view) flow through one
+ * place. Order is stable — entries are emitted in array order so the
+ * output stays deterministic regardless of which animations the document
+ * happens to use.
+ *
+ * `defaultDecorative` controls the default classification of each
+ * animation when the author has not explicitly set `decorative` on the
+ * `AnimationSpec`. Anything decorative is disabled under
+ * `prefers-reduced-motion: reduce`. Truly essential motion (e.g. focus
+ * affordances) should opt out by setting `decorative: false`.
+ */
+interface KeyframeDef {
+  readonly name: string
+  readonly body: string
+  readonly defaultDecorative: boolean
+}
+
+const KEYFRAME_LIBRARY: ReadonlyArray<KeyframeDef> = [
+  {
+    name: 'fadeUp',
+    defaultDecorative: true,
+    body: `from {
+  opacity: 0;
+  transform: translateY(16px);
+}
+to {
+  opacity: 1;
+  transform: translateY(0);
+}`,
+  },
+  {
+    name: 'pulse-dot',
+    defaultDecorative: true,
+    body: `0%,
+100% {
+  transform: scale(1);
+  opacity: 1;
+}
+50% {
+  transform: scale(1.08);
+  opacity: 0.85;
+}`,
+  },
+  {
+    name: 'blink-cursor',
+    defaultDecorative: true,
+    body: `0%,
+100% {
+  opacity: 1;
+}
+50% {
+  opacity: 0;
+}`,
+  },
+  {
+    name: 'typing-line',
+    defaultDecorative: true,
+    body: `from {
+  width: 0;
+}
+to {
+  width: 100%;
+}`,
+  },
+  {
+    name: 'shimmer',
+    defaultDecorative: true,
+    body: `from {
+  background-position: 200% 0;
+}
+to {
+  background-position: -200% 0;
+}`,
+  },
+  {
+    name: 'accent-glow',
+    defaultDecorative: true,
+    body: `0%,
+100% {
+  box-shadow: 0 0 0 0 var(--color-accent, currentColor);
+}
+50% {
+  box-shadow: 0 0 24px 4px var(--color-accent, currentColor);
+}`,
+  },
+]
+
+/** Lookup keyed by name for fast `isDecorative` resolution. */
+const KEYFRAME_BY_NAME: ReadonlyMap<string, KeyframeDef> = new Map(
+  KEYFRAME_LIBRARY.map((k) => [k.name, k])
+)
 
 // ---------------------------------------------------------------------------
 // Helpers — token-aware value rendering
@@ -224,6 +342,44 @@ function borderDecls(b: BorderSpec): Declaration[] {
       value: `${renderValue(b.width)} ${b.style} ${renderValue(b.color)}`,
     },
   ]
+}
+
+/**
+ * Render an `AnimationSpec` as `animation` shorthand declarations.
+ * Includes `animation-play-state: paused` when `gateOnView` is true so
+ * the runtime (I-RUN-07) only has to flip it to `running` once the
+ * element scrolls into view.
+ */
+function animationDecls(spec: AnimationSpec): Declaration[] {
+  const duration = spec.duration ?? '600ms'
+  const easing = spec.easing ?? 'ease'
+  const delay = spec.delay ?? '0ms'
+  const iter = spec.iterationCount === undefined ? '1' : String(spec.iterationCount)
+  const fill = spec.fillMode ?? 'both'
+  const direction = spec.direction ?? 'normal'
+  const out: Declaration[] = [
+    {
+      prop: 'animation',
+      value: `${spec.name} ${duration} ${easing} ${delay} ${iter} ${direction} ${fill}`,
+    },
+  ]
+  if (spec.gateOnView === true) {
+    out.push({ prop: 'animation-play-state', value: 'paused' })
+  }
+  return out
+}
+
+/**
+ * True when this animation should be disabled under
+ * `prefers-reduced-motion: reduce`. The author's explicit `decorative`
+ * flag wins; otherwise we defer to the keyframe library's default.
+ * Unknown keyframe names are treated as decorative (conservative — if
+ * the animation isn't ours, assume removing it is safer than running it
+ * for motion-sensitive users).
+ */
+function isAnimationDecorative(spec: AnimationSpec): boolean {
+  if (spec.decorative !== undefined) return spec.decorative
+  return KEYFRAME_BY_NAME.get(spec.name)?.defaultDecorative ?? true
 }
 
 function shadowDecls(layers: ReadonlyArray<ShadowLayer>): Declaration[] {
@@ -389,6 +545,12 @@ function emitElementBase(el: ElementNode): string {
   if (el.hiddenAt?.includes('base')) {
     decls.push({ prop: 'display', value: 'none' })
   }
+  // Animation shorthand (I-GEN-11). The reduced-motion override is
+  // emitted from `emitReducedMotionBlock`, not here, so the base rule
+  // stays a single self-contained declaration.
+  if (el.animation) {
+    decls.push(...animationDecls(el.animation))
+  }
   return formatRule(selectorFor(el.id), decls)
 }
 
@@ -416,6 +578,105 @@ function emitElementBreakpoint(el: ElementNode, bp: Exclude<BreakpointKey, 'base
   const decls = styleBlockDecls(styleOverride ?? {}, layoutOverride)
   if (hidden) decls.push({ prop: 'display', value: 'none' })
   return formatRule(selectorFor(el.id), decls, INDENT)
+}
+
+/**
+ * Walk the tree and return the element ids whose animation is decorative
+ * (i.e. should be disabled under `prefers-reduced-motion: reduce`).
+ * Order matches walk order so emitted rules stay deterministic.
+ */
+function collectDecorativeAnimatedIds(root: ElementNode): readonly string[] {
+  const ids: string[] = []
+  const stack: ElementNode[] = [root]
+  while (stack.length > 0) {
+    const node = stack.pop()!
+    if (node.animation && isAnimationDecorative(node.animation)) ids.push(node.id)
+    if (node.type === 'container') {
+      for (let i = node.children.length - 1; i >= 0; i -= 1) stack.push(node.children[i])
+    }
+  }
+  return ids
+}
+
+/**
+ * Collect the set of keyframe names referenced by any element animation
+ * in the tree. Preserves library order so the emitted `@keyframes` blocks
+ * are deterministic. Unknown names (the document references an
+ * animation the generator does not own) are dropped silently — the
+ * resulting CSS will fall back to no animation rather than break.
+ */
+function collectKeyframeNames(root: ElementNode): readonly string[] {
+  const referenced = new Set<string>()
+  const stack: ElementNode[] = [root]
+  while (stack.length > 0) {
+    const node = stack.pop()!
+    if (node.animation && KEYFRAME_BY_NAME.has(node.animation.name)) {
+      referenced.add(node.animation.name)
+    }
+    if (node.type === 'container') {
+      for (let i = node.children.length - 1; i >= 0; i -= 1) stack.push(node.children[i])
+    }
+  }
+  return KEYFRAME_LIBRARY.filter((k) => referenced.has(k.name)).map((k) => k.name)
+}
+
+function emitKeyframesBlock(names: ReadonlyArray<string>): string {
+  if (names.length === 0) return ''
+  return names
+    .map((name) => {
+      const def = KEYFRAME_BY_NAME.get(name)!
+      const body = def.body
+        .split('\n')
+        .map((line) => (line.length === 0 ? line : INDENT + line))
+        .join('\n')
+      return `@keyframes ${name} {\n${body}\n}`
+    })
+    .join('\n\n')
+}
+
+/**
+ * Emit decorative `body::before` / `body::after` pseudo-element rules
+ * (I-GEN-09). Both pseudos are fixed-position, full-bleed, behind page
+ * content (`z-index: -1`), and pointer-events: none — purely cosmetic
+ * layers (grid overlays, noise textures, animated gradients) that
+ * cannot interfere with focus or hit-testing.
+ *
+ * `content: ""` is required for any pseudo-element to render. Other
+ * declarations are layered in only when the author has set them, so
+ * the rules stay minimal.
+ */
+function pseudoDecls(spec: DecorativePseudoElement): Declaration[] {
+  const out: Declaration[] = [
+    { prop: 'content', value: '""' },
+    { prop: 'position', value: 'fixed' },
+    { prop: 'inset', value: '0' },
+    { prop: 'pointer-events', value: 'none' },
+    { prop: 'z-index', value: '-1' },
+  ]
+  if (spec.background) out.push(...backgroundDecls(spec.background))
+  if (spec.opacity !== undefined) out.push({ prop: 'opacity', value: String(spec.opacity) })
+  if (spec.mixBlendMode !== undefined)
+    out.push({ prop: 'mix-blend-mode', value: spec.mixBlendMode })
+  if (spec.maskImage !== undefined) out.push({ prop: 'mask-image', value: spec.maskImage })
+  if (spec.filter !== undefined) out.push({ prop: 'filter', value: spec.filter })
+  return out
+}
+
+function emitDecorativeBackdrop(doc: Document): string {
+  const cfg = doc.settings.decorativeBackdrop
+  if (!cfg) return ''
+  const blocks: string[] = []
+  if (cfg.before) blocks.push(formatRule('body::before', pseudoDecls(cfg.before)))
+  if (cfg.after) blocks.push(formatRule('body::after', pseudoDecls(cfg.after)))
+  return blocks.filter((b) => b.length > 0).join('\n\n')
+}
+
+function emitReducedMotionBlock(ids: ReadonlyArray<string>): string {
+  if (ids.length === 0) return ''
+  const inner = ids
+    .map((id) => `${INDENT}${selectorFor(id)} {\n${INDENT}${INDENT}animation: none;\n${INDENT}}`)
+    .join('\n')
+  return `@media (prefers-reduced-motion: reduce) {\n${inner}\n}`
 }
 
 function walkElements<T>(root: ElementNode, visit: (node: ElementNode) => T): T[] {
@@ -453,6 +714,19 @@ export function emitCss(doc: Document): string {
   const tokensBlock = emitTokensBlock(doc.tokens)
   if (tokensBlock.length > 0) sections.push(tokensBlock)
 
+  // Decorative `body::before` / `body::after` pseudo-elements (I-GEN-09).
+  // Sit between tokens and element rules so authors reading the CSS
+  // see them as a page-level concern, not an element override.
+  const backdrop = emitDecorativeBackdrop(doc)
+  if (backdrop.length > 0) sections.push(backdrop)
+
+  // Keyframe library (I-GEN-11). Only emit the keyframes the document
+  // actually references; an animation-free document leaves the
+  // stylesheet keyframe-free.
+  const keyframeNames = collectKeyframeNames(doc.tree)
+  const keyframesBlock = emitKeyframesBlock(keyframeNames)
+  if (keyframesBlock.length > 0) sections.push(keyframesBlock)
+
   // Root element rule + descendants.
   const baseRules = walkElements(doc.tree, emitElementBase).filter((s) => s.length > 0)
   if (baseRules.length > 0) sections.push(baseRules.join('\n\n'))
@@ -474,8 +748,93 @@ export function emitCss(doc: Document): string {
     sections.push(`@media (max-width: ${BREAKPOINT_MAX_WIDTH[bp]}px) {\n${inner}\n}`)
   }
 
+  // Reduced-motion override (I-GEN-11). Disables every decorative
+  // animation; essential motion (`decorative: false`) is kept.
+  const decorativeIds = collectDecorativeAnimatedIds(doc.tree)
+  const reducedMotion = emitReducedMotionBlock(decorativeIds)
+  if (reducedMotion.length > 0) sections.push(reducedMotion)
+
+  // View transitions for theme toggle (I-GEN-14). Progressive-
+  // enhancement only — browsers that do not implement the View
+  // Transitions API ignore the rules entirely. Emitted only when the
+  // theme toggle runtime is enabled, since that is the only place we
+  // currently call `document.startViewTransition()`.
+  if (doc.runtime.themeToggle) sections.push(VIEW_TRANSITION_BLOCK)
+
+  // Print stylesheet (I-GEN-13). Forces background printing, hides
+  // navigation chrome and decorative pseudo-elements, collapses the
+  // page to a single column, and adds the URL after links (helpful on
+  // paper since you can't click them).
+  sections.push(PRINT_STYLESHEET)
+
   return sections.join('\n\n') + '\n'
 }
+
+// ---------------------------------------------------------------------------
+// View transitions (I-GEN-14)
+// ---------------------------------------------------------------------------
+
+const VIEW_TRANSITION_BLOCK = `::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 1ms;
+  }
+}`
+
+// ---------------------------------------------------------------------------
+// Print stylesheet (I-GEN-13)
+// ---------------------------------------------------------------------------
+
+const PRINT_STYLESHEET = `@media print {
+  @page {
+    margin: 12mm;
+  }
+  *,
+  *::before,
+  *::after {
+    color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  nav,
+  footer,
+  .dtw-skip-link {
+    display: none !important;
+  }
+  body::before,
+  body::after {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+  img,
+  figure,
+  table {
+    break-inside: avoid;
+  }
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #555;
+  }
+}`
 
 // Re-export internals used by tests; treat as private-to-package.
 export const __internal__ = {

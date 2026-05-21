@@ -83,11 +83,23 @@ export const THEME_TOGGLE_SNIPPET = `(function () {
     syncPressed();
   }
   syncPressed();
+  function commit(next) {
+    writeStored(next);
+    apply(next);
+  }
+  function flip() {
+    var next = effective() === 'dark' ? 'light' : 'dark';
+    // Progressive enhancement (I-GEN-14): when the View Transitions
+    // API is available, wrap the swap so supporting browsers cross-fade
+    // the root. Fallback is a synchronous swap, which matches the
+    // pre-view-transition behaviour exactly.
+    if (typeof document.startViewTransition === 'function') {
+      document.startViewTransition(function () { commit(next); });
+    } else {
+      commit(next);
+    }
+  }
   for (var j = 0; j < toggles.length; j++) {
-    toggles[j].addEventListener('click', function () {
-      var next = effective() === 'dark' ? 'light' : 'dark';
-      writeStored(next);
-      apply(next);
-    });
+    toggles[j].addEventListener('click', flip);
   }
 })();`

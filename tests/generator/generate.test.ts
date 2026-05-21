@@ -130,4 +130,51 @@ describe('generate(document)', () => {
     const out = await generate(PORTFOLIO_DOCUMENT)
     expect(out).toMatchSnapshot()
   })
+
+  describe('CSP meta tag (I-GEN-20)', () => {
+    it('emits a default CSP meta tag right after the charset', async () => {
+      const { html } = await generate(PORTFOLIO_DOCUMENT)
+      // Prettier may wrap long `<meta>` tags across lines; match the
+      // policy attribute rather than the literal tag opening.
+      expect(html).toContain('http-equiv="Content-Security-Policy"')
+      const charsetIdx = html.indexOf('<meta charset=')
+      const cspIdx = html.indexOf('Content-Security-Policy')
+      expect(cspIdx).toBeGreaterThan(charsetIdx)
+    })
+
+    it("uses script-src 'self' only when no inline scripts are emitted", async () => {
+      const { html } = await generate(PORTFOLIO_DOCUMENT)
+      const cspLine = html.match(/Content-Security-Policy"\s+content="([^"]+)"/)?.[1] ?? ''
+      expect(cspLine).toContain("script-src 'self'")
+      expect(cspLine).not.toContain("script-src 'self' 'unsafe-inline'")
+    })
+
+    it('relaxes script-src to allow inline when the FOUC guard runs', async () => {
+      const doc = {
+        ...PORTFOLIO_DOCUMENT,
+        runtime: { ...PORTFOLIO_DOCUMENT.runtime, themeToggle: true },
+      }
+      const { html } = await generate(doc)
+      const cspLine = html.match(/Content-Security-Policy"\s+content="([^"]+)"/)?.[1] ?? ''
+      expect(cspLine).toContain("script-src 'self' 'unsafe-inline'")
+    })
+
+    it('honours an author-supplied csp string verbatim', async () => {
+      const doc = {
+        ...PORTFOLIO_DOCUMENT,
+        seo: { ...PORTFOLIO_DOCUMENT.seo, csp: "default-src 'none'" },
+      }
+      const { html } = await generate(doc)
+      expect(html).toContain(`content="default-src 'none'"`)
+    })
+
+    it('omits the CSP meta tag when doc.seo.csp is explicitly false', async () => {
+      const doc = {
+        ...PORTFOLIO_DOCUMENT,
+        seo: { ...PORTFOLIO_DOCUMENT.seo, csp: false as const },
+      }
+      const { html } = await generate(doc)
+      expect(html).not.toContain('Content-Security-Policy')
+    })
+  })
 })

@@ -40,6 +40,23 @@ a {
   color: inherit;
 }
 
+.dtw-skip-link {
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding: 8px 12px;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  z-index: 9999;
+  transform: translateY(-200%);
+  transition: transform 120ms ease;
+}
+
+.dtw-skip-link:focus {
+  transform: translateY(0);
+}
+
 :root {
   --color-bg: #ffffff;
   --color-text: #111111;
@@ -139,16 +156,66 @@ a {
     padding-left: var(--space-sm);
   }
 }
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  *,
+  *::before,
+  *::after {
+    color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  nav,
+  footer,
+  .dtw-skip-link {
+    display: none !important;
+  }
+  body::before,
+  body::after {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+  img,
+  figure,
+  table {
+    break-inside: avoid;
+  }
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #555;
+  }
+}
 ",
   "html": "<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; script-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="dtw-el-root">
+    <a class="dtw-skip-link" href="#root">Skip to content</a>
+    <main class="dtw-el-root" id="root">
       <header class="dtw-el-header">
         <h1 class="dtw-el-title">Welcome, Ada Lovelace</h1>
         <a class="dtw-el-cta" href="#contact" target="_blank" rel="noopener noreferrer"

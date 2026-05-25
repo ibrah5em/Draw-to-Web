@@ -5,8 +5,10 @@
  * Shadows / Radii), reading the registry from the document store. Rows are
  * editable (L-TKN-02), each category has an Add button (L-TKN-04), and color
  * rows show a live WCAG-AA contrast badge against the surface (L-TKN-03). The
- * panel is hosted in a resizable, collapsible region whose size persists (the
- * shell owns that; see `App.tsx`).
+ * header carries a theme switch (L-TKN-06) — the same sessionStore-bound
+ * toggle as the topbar (L-TOP-01), so the panel and canvas repaint together.
+ * The panel is hosted in a resizable, collapsible region whose size persists
+ * (the shell owns that; see `App.tsx`).
  */
 
 import * as Tabs from '@radix-ui/react-tabs'
@@ -18,6 +20,7 @@ import { useTokens } from '@store/documentStore'
 import { useSessionStore } from '@store/sessionStore'
 import { addToken } from '@store/tokenOps'
 
+import { ThemeToggle } from '../../topbar/ThemeToggle'
 import { findSurfaceColor } from './contrast'
 import { ColorTokenRow, ScalarTokenRow } from './TokenRow'
 import { colorDefault, nextTokenId, scalarDefault } from './tokenDefaults'
@@ -130,14 +133,17 @@ export function TokensPanel({ collapsed, onToggleCollapse }: TokensPanelProps): 
             </Tabs.Trigger>
           ))}
         </Tabs.List>
-        <button
-          className={styles.collapseBtn}
-          onClick={onToggleCollapse}
-          aria-label={collapsed ? 'Expand tokens panel' : 'Collapse tokens panel'}
-          title={collapsed ? 'Expand' : 'Collapse'}
-        >
-          {collapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
+        <div className={styles.headerRight}>
+          <ThemeToggle />
+          <button
+            className={styles.collapseBtn}
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? 'Expand tokens panel' : 'Collapse tokens panel'}
+            title={collapsed ? 'Expand' : 'Collapse'}
+          >
+            {collapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        </div>
       </div>
 
       <div className={styles.body}>

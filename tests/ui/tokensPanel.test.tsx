@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { useDocumentStore } from '@store/documentStore'
+import { useSessionStore } from '@store/sessionStore'
 import { TokensPanel } from '@ui/panels/tokens/TokensPanel'
 
 import { PORTFOLIO_DOCUMENT } from '../fixtures/portfolioDocument'
@@ -27,6 +28,7 @@ afterEach(() => {
   act(() => root.unmount())
   container.remove()
   useDocumentStore.getState().reset()
+  useSessionStore.getState().setTheme('light')
 })
 
 function renderPanel(): void {
@@ -71,5 +73,14 @@ describe('TokensPanel (L-TKN-01)', () => {
     })
     expect(inputValues('Token name')).toContain('Medium')
     expect(inputValues('Token value')).toContain('16px')
+  })
+
+  it('includes a theme toggle that flips the session theme (L-TKN-06)', () => {
+    useSessionStore.getState().setTheme('light')
+    renderPanel()
+    const toggle = container.querySelector('[role="switch"]')
+    if (!toggle) throw new Error('no theme switch in panel')
+    act(() => (toggle as HTMLButtonElement).click())
+    expect(useSessionStore.getState().theme).toBe('dark')
   })
 })

@@ -110,6 +110,19 @@
   cursor: pointer;
 }
 
+.idInput {
+  width: 84px;
+  flex-shrink: 0;
+  height: 22px;
+  padding: 0 var(--sp-1);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
 .nameInput {
   flex: 1;
   min-width: 0;
@@ -121,6 +134,17 @@
   color: var(--text-primary);
   font-family: var(--font);
   font-size: var(--text-sm);
+}
+
+.idInput:hover {
+  border-color: var(--border);
+}
+
+.idInput:focus {
+  outline: none;
+  background: var(--bg-input);
+  border-color: var(--accent);
+  color: var(--text-primary);
 }
 
 .valueInput {
@@ -216,4 +240,44 @@
   padding: var(--sp-2);
   font-size: var(--text-xs);
   color: var(--text-secondary);
+}
+
+.contrastPass,
+.contrastFail {
+  flex-shrink: 0;
+  padding: 1px var(--sp-1);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.contrastPass {
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.contrastFail {
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-top: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.addBtn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
 }

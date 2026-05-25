@@ -1,21 +1,26 @@
 /**
- * Bottom-bar Tokens panel (L-TKN-01).
+ * Bottom-bar Tokens panel (L-TKN-01..04).
  *
  * Radix Tabs over the five token categories (Colors / Spacing / Typography /
  * Shadows / Radii), reading the registry from the document store. Rows are
- * read-only here; inline editing, delete, and the color picker arrive in
- * L-TKN-02 / L-TKN-04. The panel is hosted in a resizable, collapsible
- * region whose size persists (the shell owns that; see `App.tsx`).
+ * editable (L-TKN-02), each category has an Add button (L-TKN-04), and color
+ * rows show a live WCAG-AA contrast badge against the surface (L-TKN-03). The
+ * panel is hosted in a resizable, collapsible region whose size persists (the
+ * shell owns that; see `App.tsx`).
  */
 
 import * as Tabs from '@radix-ui/react-tabs'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import type { JSX } from 'react'
 
 import type { ColorTokenValue, TokenCategory, TokenDefinition } from '@document/types'
 import { useTokens } from '@store/documentStore'
+import { useSessionStore } from '@store/sessionStore'
+import { addToken } from '@store/tokenOps'
 
+import { findSurfaceColor } from './contrast'
 import { ColorTokenRow, ScalarTokenRow } from './TokenRow'
+import { colorDefault, nextTokenId, scalarDefault } from './tokenDefaults'
 import styles from './TokensPanel.module.css'
 
 type ScalarCategory = Exclude<TokenCategory, 'color'>
@@ -37,6 +42,15 @@ function EmptyState(): JSX.Element {
   return <p className={styles.empty}>No tokens in this category.</p>
 }
 
+function AddButton({ label, onClick }: { label: string; onClick: () => void }): JSX.Element {
+  return (
+    <button className={styles.addBtn} onClick={onClick}>
+      <Plus size={13} />
+      {label}
+    </button>
+  )
+}
+
 function ScalarList({
   category,
   items,
@@ -44,13 +58,20 @@ function ScalarList({
   category: ScalarCategory
   items: ReadonlyArray<TokenDefinition<string>>
 }): JSX.Element {
-  if (items.length === 0) return <EmptyState />
+  const add = (): void => addToken(category, scalarDefault(category, nextTokenId(items)))
   return (
-    <ul className={styles.list}>
-      {items.map((token) => (
-        <ScalarTokenRow key={token.id} category={category} token={token} />
-      ))}
-    </ul>
+    <>
+      {items.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <ul className={styles.list}>
+          {items.map((token) => (
+            <ScalarTokenRow key={token.id} category={category} token={token} />
+          ))}
+        </ul>
+      )}
+      <AddButton label="Add token" onClick={add} />
+    </>
   )
 }
 
@@ -76,13 +97,22 @@ function ColorList({
 }: {
   items: ReadonlyArray<TokenDefinition<ColorTokenValue>>
 }): JSX.Element {
-  if (items.length === 0) return <EmptyState />
+  const theme = useSessionStore((s) => s.theme)
+  const surface = findSurfaceColor(items, theme)
+  const add = (): void => addToken('color', colorDefault(nextTokenId(items)))
   return (
-    <ul className={styles.list}>
-      {items.map((token) => (
-        <ColorTokenRow key={token.id} token={token} />
-      ))}
-    </ul>
+    <>
+      {items.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <ul className={styles.list}>
+          {items.map((token) => (
+            <ColorTokenRow key={token.id} token={token} surface={surface} theme={theme} />
+          ))}
+        </ul>
+      )}
+      <AddButton label="Add color" onClick={add} />
+    </>
   )
 }
 

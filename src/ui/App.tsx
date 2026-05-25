@@ -1,7 +1,13 @@
-import { useState } from 'react'
+import { useState, type JSX } from 'react'
 import { Group, Panel, Separator, type Layout } from 'react-resizable-panels'
 
+import type { ElementNode } from '@document/types'
+import { useTree } from '@store/documentStore'
+import { useSessionStore } from '@store/sessionStore'
+
 import { Canvas } from './canvas/Canvas'
+import { LayerPanel } from './layers/LayerPanel'
+import { layerLabel } from './layers/layerMeta'
 import styles from './App.module.css'
 
 /** localStorage key for the main horizontal panel layout. */
@@ -73,8 +79,8 @@ export function App(): JSX.Element {
         onLayoutChanged={saveLayout}
       >
         <Panel id={PANEL.sidebar} defaultSize="18" minSize="12" maxSize="35">
-          <section className={styles.sidebar} aria-label="Insert">
-            <Placeholder label="Sidebar" hint="Insert · Layers (L-SBR / L-LYR)" />
+          <section className={styles.sidebar} aria-label="Layers">
+            <LayerPanel />
           </section>
         </Panel>
 
@@ -94,7 +100,7 @@ export function App(): JSX.Element {
 
         <Panel id={PANEL.properties} defaultSize="20" minSize="14" maxSize="40">
           <section className={styles.properties} aria-label="Properties">
-            <Placeholder label="Properties" hint="Inspector (L-PRP)" />
+            <SelectionInfo />
           </section>
         </Panel>
       </Group>
@@ -109,6 +115,41 @@ function Placeholder({ label, hint }: { label: string; hint: string }): JSX.Elem
     <div className={styles.placeholder}>
       <span className={styles.placeholderLabel}>{label}</span>
       <span className={styles.placeholderHint}>{hint}</span>
+    </div>
+  )
+}
+
+function findNode(node: ElementNode, id: string): ElementNode | undefined {
+  if (node.id === id) return node
+  if (node.type !== 'container') return undefined
+  for (const child of node.children) {
+    const hit = findNode(child, id)
+    if (hit) return hit
+  }
+  return undefined
+}
+
+/**
+ * Placeholder inspector for M1: reflects the current selection so element
+ * clicks are observably wired end-to-end (L-CAN-05). The real Properties
+ * panel replaces this in the L-PRP tasks.
+ */
+function SelectionInfo(): JSX.Element {
+  const selectedIds = useSessionStore((s) => s.selectedIds)
+  const tree = useTree()
+
+  if (selectedIds.length === 0) {
+    return <Placeholder label="Properties" hint="Select an element to edit" />
+  }
+
+  const node = findNode(tree, selectedIds[0])
+  const extra = selectedIds.length > 1 ? ` +${selectedIds.length - 1} more` : ''
+  return (
+    <div className={styles.placeholder}>
+      <span className={styles.placeholderLabel}>{node ? layerLabel(node) : 'Unknown'}</span>
+      <span
+        className={styles.placeholderHint}
+      >{`${node ? node.type : selectedIds[0]}${extra}`}</span>
     </div>
   )
 }

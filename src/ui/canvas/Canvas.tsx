@@ -39,8 +39,10 @@ export function Canvas(): JSX.Element {
 
   const annotated = useMemo(() => inferSemantics(tree), [tree])
 
+  const clearSelection = useSessionStore((s) => s.clearSelection)
+
   return (
-    <div className={styles.viewport}>
+    <div className={styles.viewport} onClick={clearSelection}>
       <div className={styles.page}>
         <StyleResolverProvider value={resolve}>
           <CanvasNode node={annotated} />

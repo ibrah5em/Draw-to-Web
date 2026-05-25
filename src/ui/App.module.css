@@ -117,24 +117,3 @@
   background: #007acc;
   flex-shrink: 0;
 }
-
-.placeholder {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-1);
-  padding: var(--sp-4);
-  text-align: center;
-}
-
-.placeholderLabel {
-  font-size: var(--text-md);
-  color: var(--text-primary);
-}
-
-.placeholderHint {
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-}

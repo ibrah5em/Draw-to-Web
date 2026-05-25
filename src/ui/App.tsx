@@ -1,13 +1,9 @@
 import { useState, type JSX } from 'react'
 import { Group, Panel, Separator, usePanelRef, type Layout } from 'react-resizable-panels'
 
-import type { ElementNode } from '@document/types'
-import { useTree } from '@store/documentStore'
-import { useSessionStore } from '@store/sessionStore'
-
 import { Canvas } from './canvas/Canvas'
 import { LayerPanel } from './layers/LayerPanel'
-import { layerLabel } from './layers/layerMeta'
+import { PropertiesPanel } from './panels/properties/PropertiesPanel'
 import { TokensPanel } from './panels/tokens/TokensPanel'
 import { ThemeToggle } from './topbar/ThemeToggle'
 import styles from './App.module.css'
@@ -129,7 +125,7 @@ export function App(): JSX.Element {
 
             <Panel id={PANEL.properties} defaultSize="20" minSize="14" maxSize="40">
               <section className={styles.properties} aria-label="Properties">
-                <SelectionInfo />
+                <PropertiesPanel />
               </section>
             </Panel>
           </Group>
@@ -155,46 +151,6 @@ export function App(): JSX.Element {
       </Group>
 
       <footer className={styles.statusbar} />
-    </div>
-  )
-}
-
-function findNode(node: ElementNode, id: string): ElementNode | undefined {
-  if (node.id === id) return node
-  if (node.type !== 'container') return undefined
-  for (const child of node.children) {
-    const hit = findNode(child, id)
-    if (hit) return hit
-  }
-  return undefined
-}
-
-/**
- * Placeholder inspector for M1: reflects the current selection so element
- * clicks are observably wired end-to-end (L-CAN-05). The real Properties
- * panel replaces this in the L-PRP tasks.
- */
-function SelectionInfo(): JSX.Element {
-  const selectedIds = useSessionStore((s) => s.selectedIds)
-  const tree = useTree()
-
-  if (selectedIds.length === 0) {
-    return (
-      <div className={styles.placeholder}>
-        <span className={styles.placeholderLabel}>Properties</span>
-        <span className={styles.placeholderHint}>Select an element to edit</span>
-      </div>
-    )
-  }
-
-  const node = findNode(tree, selectedIds[0])
-  const extra = selectedIds.length > 1 ? ` +${selectedIds.length - 1} more` : ''
-  return (
-    <div className={styles.placeholder}>
-      <span className={styles.placeholderLabel}>{node ? layerLabel(node) : 'Unknown'}</span>
-      <span
-        className={styles.placeholderHint}
-      >{`${node ? node.type : selectedIds[0]}${extra}`}</span>
     </div>
   )
 }

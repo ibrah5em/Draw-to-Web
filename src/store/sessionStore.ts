@@ -47,6 +47,14 @@ interface SessionState {
   readonly panelSizes: PanelSizes
   /** Editor theme preview mode. Independent of the document's emitted theme. */
   readonly theme: ThemeMode
+  /**
+   * Absolute path of the `.dtw` file this session is editing, or `null`
+   * for a never-saved project. Set on a successful save / open and read
+   * by autosave (Y-PER-03) to derive the `<project>.dtw.autosave` target.
+   * Session state, not document data — it must never be serialized into
+   * the `.dtw` payload.
+   */
+  readonly currentFilePath: string | null
 }
 
 interface SessionActions {
@@ -66,6 +74,12 @@ interface SessionActions {
   setTheme: (theme: ThemeMode) => void
   /** Flip the editor preview theme between `light` and `dark`. */
   toggleTheme: () => void
+  /**
+   * Record (or clear, with `null`) the `.dtw` path backing this session.
+   * Called by `saveProject` / `openProject` on success; cleared by a
+   * fresh blank-project reset.
+   */
+  setCurrentFilePath: (path: string | null) => void
 }
 
 export type SessionStore = SessionState & SessionActions
@@ -92,6 +106,7 @@ export const useSessionStore = create<SessionStore>()((set) => ({
   activeState: 'default',
   panelSizes: DEFAULT_PANEL_SIZES,
   theme: 'light',
+  currentFilePath: null,
 
   setSelectedIds: (ids) => set({ selectedIds: ids }),
 
@@ -118,4 +133,6 @@ export const useSessionStore = create<SessionStore>()((set) => ({
   setTheme: (theme) => set({ theme }),
 
   toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
+
+  setCurrentFilePath: (path) => set({ currentFilePath: path }),
 }))

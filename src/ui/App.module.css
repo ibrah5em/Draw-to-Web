@@ -19,11 +19,6 @@
   flex-shrink: 0;
 }
 
-.title {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-}
-
 .titlebarActions {
   display: flex;
   align-items: center;

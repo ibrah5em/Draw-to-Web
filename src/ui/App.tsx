@@ -6,8 +6,9 @@ import { Canvas } from './canvas/Canvas'
 import { LayerPanel } from './layers/LayerPanel'
 import { PropertiesPanel } from './panels/properties/PropertiesPanel'
 import { TokensPanel } from './panels/tokens/TokensPanel'
+import { MenuBar } from './topbar/MenuBar'
 import { ThemeToggle } from './topbar/ThemeToggle'
-import { ViewToggles } from './topbar/ViewToggles'
+import { ViewToggles, type ViewToggle } from './topbar/ViewToggles'
 import styles from './App.module.css'
 
 /** localStorage keys for each persisted panel group. */
@@ -96,36 +97,36 @@ export function App(): JSX.Element {
     setTokensCollapsed(tokensRef.current?.isCollapsed() ?? false)
   }, [sidebarRef, propertiesRef, tokensRef])
 
+  const panelToggles: ViewToggle[] = [
+    {
+      id: 'sidebar',
+      label: 'Layers panel',
+      icon: <PanelLeft size={16} />,
+      visible: !sidebarCollapsed,
+      onToggle: () => togglePanel(sidebarRef),
+    },
+    {
+      id: 'properties',
+      label: 'Properties panel',
+      icon: <PanelRight size={16} />,
+      visible: !propertiesCollapsed,
+      onToggle: () => togglePanel(propertiesRef),
+    },
+    {
+      id: 'tokens',
+      label: 'Tokens panel',
+      icon: <PanelBottom size={16} />,
+      visible: !tokensCollapsed,
+      onToggle: () => togglePanel(tokensRef),
+    },
+  ]
+
   return (
     <div className={styles.app}>
       <header className={styles.titlebar}>
-        <span className={styles.title}>Draw to Web</span>
+        <MenuBar panels={panelToggles} />
         <div className={styles.titlebarActions}>
-          <ViewToggles
-            toggles={[
-              {
-                id: 'sidebar',
-                label: 'Layers panel',
-                icon: <PanelLeft size={16} />,
-                visible: !sidebarCollapsed,
-                onToggle: () => togglePanel(sidebarRef),
-              },
-              {
-                id: 'properties',
-                label: 'Properties panel',
-                icon: <PanelRight size={16} />,
-                visible: !propertiesCollapsed,
-                onToggle: () => togglePanel(propertiesRef),
-              },
-              {
-                id: 'tokens',
-                label: 'Tokens panel',
-                icon: <PanelBottom size={16} />,
-                visible: !tokensCollapsed,
-                onToggle: () => togglePanel(tokensRef),
-              },
-            ]}
-          />
+          <ViewToggles toggles={panelToggles} />
           <ThemeToggle />
         </div>
       </header>

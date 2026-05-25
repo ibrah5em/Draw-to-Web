@@ -116,8 +116,28 @@ function styleForProps(props: CanvasElement['props']): StyleBlock {
 /** Mutable mirror of a `readonly` type — used when building drafts. */
 type Mutable<T> = { -readonly [K in keyof T]: T[K] }
 
+/**
+ * Translate the v0.1.0 grid geometry into flow-friendly sizing so drawn
+ * shapes stay visible in the preview. We map width (a 1–12 grid column
+ * span) to a percentage of the row and height (a pixel value) to a
+ * `minHeight` — using `minHeight` rather than a fixed `height` keeps the
+ * box growable and avoids any absolute positioning. Without this an empty
+ * rectangle collapses to 0px and disappears.
+ */
+function geometryStyle(el: CanvasElement): Partial<Mutable<StyleBlock>> {
+  const out: Partial<Mutable<StyleBlock>> = {}
+  if (typeof el.width === 'number' && el.width > 0) {
+    const pct = Math.min(100, Math.round((el.width / 12) * 1000) / 10)
+    out.width = `${pct}%`
+  }
+  if (typeof el.height === 'number' && el.height > 0) {
+    out.minHeight = `${el.height}px`
+  }
+  return out
+}
+
 function convertElement(el: CanvasElement, textIndex: { value: number }): ElementNode | null {
-  const baseStyle = styleForProps(el.props)
+  const baseStyle = { ...styleForProps(el.props), ...geometryStyle(el) }
   const common = {
     id: el.id,
     style: { base: baseStyle },

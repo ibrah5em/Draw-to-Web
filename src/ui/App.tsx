@@ -1,5 +1,5 @@
 import { useState, type JSX } from 'react'
-import { Group, Panel, Separator, type Layout } from 'react-resizable-panels'
+import { Group, Panel, Separator, usePanelRef, type Layout } from 'react-resizable-panels'
 
 import type { ElementNode } from '@document/types'
 import { useTree } from '@store/documentStore'
@@ -8,23 +8,32 @@ import { useSessionStore } from '@store/sessionStore'
 import { Canvas } from './canvas/Canvas'
 import { LayerPanel } from './layers/LayerPanel'
 import { layerLabel } from './layers/layerMeta'
+import { TokensPanel } from './panels/tokens/TokensPanel'
+import { ThemeToggle } from './topbar/ThemeToggle'
 import styles from './App.module.css'
 
-/** localStorage key for the main horizontal panel layout. */
-const LAYOUT_STORAGE_KEY = 'dtw.layout.main'
+/** localStorage keys for each persisted panel group. */
+const COLUMNS_KEY = 'dtw.layout.main'
+const ROWS_KEY = 'dtw.layout.vertical'
 
-/** Panel ids — also the keys in the persisted {@link Layout} map. */
+/** Panel ids — also the keys in each persisted {@link Layout} map. */
 const PANEL = {
   sidebar: 'sidebar',
   canvas: 'canvas',
   properties: 'properties',
+  workspace: 'workspace',
+  tokens: 'tokens',
 } as const
 
-/** Default column split (percentages of the group) used on first run. */
-const DEFAULT_LAYOUT: Layout = {
+const DEFAULT_COLUMNS: Layout = {
   [PANEL.sidebar]: 18,
   [PANEL.canvas]: 62,
   [PANEL.properties]: 20,
+}
+
+const DEFAULT_ROWS: Layout = {
+  [PANEL.workspace]: 74,
+  [PANEL.tokens]: 26,
 }
 
 /** Narrow an unknown JSON value to a {@link Layout} (id → numeric percentage). */
@@ -33,88 +42,119 @@ function isLayout(value: unknown): value is Layout {
   return Object.values(value as Record<string, unknown>).every((v) => typeof v === 'number')
 }
 
-/** Read the persisted layout, falling back to {@link DEFAULT_LAYOUT}. */
-function loadLayout(): Layout {
+/** Read a persisted layout for `key`, falling back to `fallback`. */
+function loadLayout(key: string, fallback: Layout): Layout {
   try {
-    const raw = localStorage.getItem(LAYOUT_STORAGE_KEY)
-    if (raw === null) return DEFAULT_LAYOUT
+    const raw = localStorage.getItem(key)
+    if (raw === null) return fallback
     const parsed: unknown = JSON.parse(raw)
     if (isLayout(parsed)) return parsed
   } catch {
     // Corrupt or unavailable storage — fall through to the default.
   }
-  return DEFAULT_LAYOUT
+  return fallback
 }
 
-/** Persist the layout after a resize settles (called from `onLayoutChanged`). */
-function saveLayout(layout: Layout): void {
+/** Persist `layout` under `key` after a resize settles. */
+function saveLayout(key: string, layout: Layout): void {
   try {
-    localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout))
+    localStorage.setItem(key, JSON.stringify(layout))
   } catch {
     // Storage unavailable (private mode / quota) — non-fatal.
   }
 }
 
 /**
- * Root editor shell (L-CAN-01).
+ * Root editor shell.
  *
- * Renders the three-column resizable layout — Sidebar / Canvas / Properties —
- * and persists the column split to localStorage so it restores across reloads.
- * The panel contents are placeholders filled in by later L-CAN / L-SBR / L-PRP
- * tasks; this component owns only the frame and its persistence.
+ * Three resizable columns (Sidebar / Canvas / Properties) over a collapsible
+ * bottom Tokens panel; both splits persist to localStorage. The topbar holds
+ * the theme toggle (L-TOP-01); the bottom panel hosts the Tokens UI (L-TKN).
  */
 export function App(): JSX.Element {
-  const [defaultLayout] = useState(loadLayout)
+  const [columns] = useState(() => loadLayout(COLUMNS_KEY, DEFAULT_COLUMNS))
+  const [rows] = useState(() => loadLayout(ROWS_KEY, DEFAULT_ROWS))
+
+  const tokensRef = usePanelRef()
+  const [tokensCollapsed, setTokensCollapsed] = useState(false)
+
+  const toggleTokens = (): void => {
+    const panel = tokensRef.current
+    if (!panel) return
+    if (panel.isCollapsed()) panel.expand()
+    else panel.collapse()
+  }
 
   return (
     <div className={styles.app}>
       <header className={styles.titlebar}>
         <span className={styles.title}>Draw to Web</span>
+        <div className={styles.titlebarActions}>
+          <ThemeToggle />
+        </div>
       </header>
 
       <Group
-        orientation="horizontal"
+        orientation="vertical"
         className={styles.main}
-        defaultLayout={defaultLayout}
-        onLayoutChanged={saveLayout}
+        defaultLayout={rows}
+        onLayoutChanged={(layout) => saveLayout(ROWS_KEY, layout)}
       >
-        <Panel id={PANEL.sidebar} defaultSize="18" minSize="12" maxSize="35">
-          <section className={styles.sidebar} aria-label="Layers">
-            <LayerPanel />
-          </section>
+        <Panel id={PANEL.workspace} defaultSize="74" minSize="40">
+          <Group
+            orientation="horizontal"
+            className={styles.workspace}
+            defaultLayout={columns}
+            onLayoutChanged={(layout) => saveLayout(COLUMNS_KEY, layout)}
+          >
+            <Panel id={PANEL.sidebar} defaultSize="18" minSize="12" maxSize="35">
+              <section className={styles.sidebar} aria-label="Layers">
+                <LayerPanel />
+              </section>
+            </Panel>
+
+            <Separator className={styles.handle}>
+              <div className={styles.handleInner} />
+            </Separator>
+
+            <Panel id={PANEL.canvas} defaultSize="62" minSize="30">
+              <section className={styles.canvas} aria-label="Canvas">
+                <Canvas />
+              </section>
+            </Panel>
+
+            <Separator className={styles.handle}>
+              <div className={styles.handleInner} />
+            </Separator>
+
+            <Panel id={PANEL.properties} defaultSize="20" minSize="14" maxSize="40">
+              <section className={styles.properties} aria-label="Properties">
+                <SelectionInfo />
+              </section>
+            </Panel>
+          </Group>
         </Panel>
 
-        <Separator className={styles.handle}>
-          <div className={styles.handleInner} />
+        <Separator className={styles.handleH}>
+          <div className={styles.handleHInner} />
         </Separator>
 
-        <Panel id={PANEL.canvas} defaultSize="62" minSize="30">
-          <section className={styles.canvas} aria-label="Canvas">
-            <Canvas />
-          </section>
-        </Panel>
-
-        <Separator className={styles.handle}>
-          <div className={styles.handleInner} />
-        </Separator>
-
-        <Panel id={PANEL.properties} defaultSize="20" minSize="14" maxSize="40">
-          <section className={styles.properties} aria-label="Properties">
-            <SelectionInfo />
+        <Panel
+          id={PANEL.tokens}
+          panelRef={tokensRef}
+          defaultSize="26"
+          minSize="12"
+          collapsible
+          collapsedSize="34px"
+          onResize={() => setTokensCollapsed(tokensRef.current?.isCollapsed() ?? false)}
+        >
+          <section className={styles.tokens} aria-label="Tokens">
+            <TokensPanel collapsed={tokensCollapsed} onToggleCollapse={toggleTokens} />
           </section>
         </Panel>
       </Group>
 
       <footer className={styles.statusbar} />
-    </div>
-  )
-}
-
-function Placeholder({ label, hint }: { label: string; hint: string }): JSX.Element {
-  return (
-    <div className={styles.placeholder}>
-      <span className={styles.placeholderLabel}>{label}</span>
-      <span className={styles.placeholderHint}>{hint}</span>
     </div>
   )
 }
@@ -139,7 +179,12 @@ function SelectionInfo(): JSX.Element {
   const tree = useTree()
 
   if (selectedIds.length === 0) {
-    return <Placeholder label="Properties" hint="Select an element to edit" />
+    return (
+      <div className={styles.placeholder}>
+        <span className={styles.placeholderLabel}>Properties</span>
+        <span className={styles.placeholderHint}>Select an element to edit</span>
+      </div>
+    )
   }
 
   const node = findNode(tree, selectedIds[0])

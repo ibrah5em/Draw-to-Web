@@ -13,6 +13,7 @@
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 var(--sp-3);
   user-select: none;
   flex-shrink: 0;
@@ -23,7 +24,24 @@
   color: var(--text-secondary);
 }
 
+.titlebarActions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
 .main {
+  overflow: hidden;
+}
+
+.workspace {
+  overflow: hidden;
+}
+
+.tokens {
+  height: 100%;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
   overflow: hidden;
 }
 
@@ -67,6 +85,30 @@
   bottom: 0;
   left: 2px;
   width: 1px;
+  background: var(--border);
+  pointer-events: none;
+}
+
+.handleH {
+  height: 5px;
+  flex-shrink: 0;
+  background: transparent;
+  cursor: row-resize;
+  position: relative;
+  transition: background 0.12s ease;
+}
+
+.handleH:hover,
+.handleH[data-resize-handle-active] {
+  background: var(--accent);
+}
+
+.handleHInner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 2px;
+  height: 1px;
   background: var(--border);
   pointer-events: none;
 }

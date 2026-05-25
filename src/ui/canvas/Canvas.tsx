@@ -43,7 +43,7 @@ export function Canvas(): JSX.Element {
 
   return (
     <div className={styles.viewport} onClick={clearSelection}>
-      <div className={styles.page}>
+      <div className={styles.page} data-theme={theme}>
         <StyleResolverProvider value={resolve}>
           <CanvasNode node={annotated} />
         </StyleResolverProvider>

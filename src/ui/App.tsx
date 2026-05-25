@@ -1,11 +1,13 @@
-import { useState, type JSX } from 'react'
+import { useEffect, useState, type JSX } from 'react'
 import { Group, Panel, Separator, usePanelRef, type Layout } from 'react-resizable-panels'
+import { PanelBottom, PanelLeft, PanelRight } from 'lucide-react'
 
 import { Canvas } from './canvas/Canvas'
 import { LayerPanel } from './layers/LayerPanel'
 import { PropertiesPanel } from './panels/properties/PropertiesPanel'
 import { TokensPanel } from './panels/tokens/TokensPanel'
 import { ThemeToggle } from './topbar/ThemeToggle'
+import { ViewToggles } from './topbar/ViewToggles'
 import styles from './App.module.css'
 
 /** localStorage keys for each persisted panel group. */
@@ -71,21 +73,59 @@ export function App(): JSX.Element {
   const [columns] = useState(() => loadLayout(COLUMNS_KEY, DEFAULT_COLUMNS))
   const [rows] = useState(() => loadLayout(ROWS_KEY, DEFAULT_ROWS))
 
+  const sidebarRef = usePanelRef()
+  const propertiesRef = usePanelRef()
   const tokensRef = usePanelRef()
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [propertiesCollapsed, setPropertiesCollapsed] = useState(false)
   const [tokensCollapsed, setTokensCollapsed] = useState(false)
 
-  const toggleTokens = (): void => {
-    const panel = tokensRef.current
+  type PanelRef = ReturnType<typeof usePanelRef>
+  const togglePanel = (ref: PanelRef): void => {
+    const panel = ref.current
     if (!panel) return
     if (panel.isCollapsed()) panel.expand()
     else panel.collapse()
   }
+
+  // Sync the toggle button states to the actual (possibly persisted-collapsed)
+  // panel state once the imperative handles are attached.
+  useEffect(() => {
+    setSidebarCollapsed(sidebarRef.current?.isCollapsed() ?? false)
+    setPropertiesCollapsed(propertiesRef.current?.isCollapsed() ?? false)
+    setTokensCollapsed(tokensRef.current?.isCollapsed() ?? false)
+  }, [sidebarRef, propertiesRef, tokensRef])
 
   return (
     <div className={styles.app}>
       <header className={styles.titlebar}>
         <span className={styles.title}>Draw to Web</span>
         <div className={styles.titlebarActions}>
+          <ViewToggles
+            toggles={[
+              {
+                id: 'sidebar',
+                label: 'Layers panel',
+                icon: <PanelLeft size={16} />,
+                visible: !sidebarCollapsed,
+                onToggle: () => togglePanel(sidebarRef),
+              },
+              {
+                id: 'properties',
+                label: 'Properties panel',
+                icon: <PanelRight size={16} />,
+                visible: !propertiesCollapsed,
+                onToggle: () => togglePanel(propertiesRef),
+              },
+              {
+                id: 'tokens',
+                label: 'Tokens panel',
+                icon: <PanelBottom size={16} />,
+                visible: !tokensCollapsed,
+                onToggle: () => togglePanel(tokensRef),
+              },
+            ]}
+          />
           <ThemeToggle />
         </div>
       </header>
@@ -103,7 +143,16 @@ export function App(): JSX.Element {
             defaultLayout={columns}
             onLayoutChanged={(layout) => saveLayout(COLUMNS_KEY, layout)}
           >
-            <Panel id={PANEL.sidebar} defaultSize="18" minSize="12" maxSize="35">
+            <Panel
+              id={PANEL.sidebar}
+              panelRef={sidebarRef}
+              defaultSize="18"
+              minSize="12"
+              maxSize="35"
+              collapsible
+              collapsedSize={0}
+              onResize={() => setSidebarCollapsed(sidebarRef.current?.isCollapsed() ?? false)}
+            >
               <section className={styles.sidebar} aria-label="Layers">
                 <LayerPanel />
               </section>
@@ -123,7 +172,16 @@ export function App(): JSX.Element {
               <div className={styles.handleInner} />
             </Separator>
 
-            <Panel id={PANEL.properties} defaultSize="20" minSize="14" maxSize="40">
+            <Panel
+              id={PANEL.properties}
+              panelRef={propertiesRef}
+              defaultSize="20"
+              minSize="14"
+              maxSize="40"
+              collapsible
+              collapsedSize={0}
+              onResize={() => setPropertiesCollapsed(propertiesRef.current?.isCollapsed() ?? false)}
+            >
               <section className={styles.properties} aria-label="Properties">
                 <PropertiesPanel />
               </section>
@@ -145,7 +203,10 @@ export function App(): JSX.Element {
           onResize={() => setTokensCollapsed(tokensRef.current?.isCollapsed() ?? false)}
         >
           <section className={styles.tokens} aria-label="Tokens">
-            <TokensPanel collapsed={tokensCollapsed} onToggleCollapse={toggleTokens} />
+            <TokensPanel
+              collapsed={tokensCollapsed}
+              onToggleCollapse={() => togglePanel(tokensRef)}
+            />
           </section>
         </Panel>
       </Group>

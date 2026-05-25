@@ -1,0 +1,32 @@
+.group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.toggle,
+.toggleActive {
+  width: 26px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 3px;
+  cursor: pointer;
+  transition:
+    background 0.1s ease,
+    color 0.1s ease;
+}
+
+.toggle:hover,
+.toggleActive:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.toggleActive {
+  color: var(--icon-active);
+}

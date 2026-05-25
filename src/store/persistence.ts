@@ -117,6 +117,12 @@ export async function saveProject(io: ProjectSaveIO = defaultSaveIO()): Promise<
   const result = await io.saveProject(json, document.meta.name)
   if (result.success) {
     useDocumentStore.getState().markClean()
+    // Record the path so autosave (Y-PER-03) knows where to write the
+    // `<project>.dtw.autosave` sidecar. `saveProject` may return without a
+    // path on some platforms; only set it when we actually have one.
+    if (typeof result.filePath === 'string') {
+      useSessionStore.getState().setCurrentFilePath(result.filePath)
+    }
   }
   return result
 }
@@ -225,6 +231,9 @@ export async function openProject(io: ProjectOpenIO = defaultOpenIO()): Promise<
   useDocumentStore.getState().hydrate(document)
   useHistoryStore.getState().clear()
   useSessionStore.getState().clearSelection()
+  // Bind the session to the loaded file so autosave (Y-PER-03) targets the
+  // right `<project>.dtw.autosave` sidecar.
+  useSessionStore.getState().setCurrentFilePath(ipcResult.filePath)
 
   return { kind: 'success', filePath: ipcResult.filePath, document }
 }

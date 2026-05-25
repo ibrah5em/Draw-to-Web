@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Group, Panel, Separator, type Layout } from 'react-resizable-panels'
 
+import { Canvas } from './canvas/Canvas'
 import styles from './App.module.css'
 
 /** localStorage key for the main horizontal panel layout. */
@@ -83,7 +84,7 @@ export function App(): JSX.Element {
 
         <Panel id={PANEL.canvas} defaultSize="62" minSize="30">
           <section className={styles.canvas} aria-label="Canvas">
-            <Placeholder label="Canvas" hint="Recursive renderer (L-CAN-02)" />
+            <Canvas />
           </section>
         </Panel>
 

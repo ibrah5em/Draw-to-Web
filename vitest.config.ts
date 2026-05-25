@@ -10,6 +10,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@ui': resolve(__dirname, 'src/ui'),
       '@store': resolve(__dirname, 'src/store'),
       '@engine': resolve(__dirname, 'src/engine'),
       '@document': resolve(__dirname, 'src/document'),

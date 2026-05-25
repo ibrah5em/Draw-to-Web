@@ -39,6 +39,12 @@ function tabByLabel(label: string): HTMLElement {
   return tab as HTMLElement
 }
 
+function inputValues(ariaLabel: string): string[] {
+  return [...container.querySelectorAll(`input[aria-label="${ariaLabel}"]`)].map(
+    (input) => (input as HTMLInputElement).value
+  )
+}
+
 describe('TokensPanel (L-TKN-01)', () => {
   it('renders the five category tabs', () => {
     renderPanel()
@@ -50,8 +56,9 @@ describe('TokensPanel (L-TKN-01)', () => {
   it('lists color tokens from the document on the default tab', () => {
     act(() => useDocumentStore.getState().hydrate(PORTFOLIO_DOCUMENT))
     renderPanel()
-    expect(container.textContent).toContain('Background')
-    expect(container.textContent).toContain('Accent')
+    const names = inputValues('Token name')
+    expect(names).toContain('Background')
+    expect(names).toContain('Accent')
   })
 
   it('shows spacing tokens after switching to the Spacing tab', () => {
@@ -62,7 +69,7 @@ describe('TokensPanel (L-TKN-01)', () => {
       tab.focus()
       tab.click()
     })
-    expect(container.textContent).toContain('Medium')
-    expect(container.textContent).toContain('16px')
+    expect(inputValues('Token name')).toContain('Medium')
+    expect(inputValues('Token value')).toContain('16px')
   })
 })

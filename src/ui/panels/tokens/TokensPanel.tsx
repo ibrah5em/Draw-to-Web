@@ -12,10 +12,13 @@ import * as Tabs from '@radix-ui/react-tabs'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { JSX } from 'react'
 
-import type { ColorTokenValue, TokenDefinition } from '@document/types'
+import type { ColorTokenValue, TokenCategory, TokenDefinition } from '@document/types'
 import { useTokens } from '@store/documentStore'
 
+import { ColorTokenRow, ScalarTokenRow } from './TokenRow'
 import styles from './TokensPanel.module.css'
+
+type ScalarCategory = Exclude<TokenCategory, 'color'>
 
 interface TokensPanelProps {
   readonly collapsed: boolean
@@ -34,15 +37,18 @@ function EmptyState(): JSX.Element {
   return <p className={styles.empty}>No tokens in this category.</p>
 }
 
-function ScalarList({ items }: { items: ReadonlyArray<TokenDefinition<string>> }): JSX.Element {
+function ScalarList({
+  category,
+  items,
+}: {
+  category: ScalarCategory
+  items: ReadonlyArray<TokenDefinition<string>>
+}): JSX.Element {
   if (items.length === 0) return <EmptyState />
   return (
     <ul className={styles.list}>
       {items.map((token) => (
-        <li key={token.id} className={styles.row}>
-          <span className={styles.name}>{token.name}</span>
-          <span className={styles.value}>{token.value}</span>
-        </li>
+        <ScalarTokenRow key={token.id} category={category} token={token} />
       ))}
     </ul>
   )
@@ -50,15 +56,17 @@ function ScalarList({ items }: { items: ReadonlyArray<TokenDefinition<string>> }
 
 function ScalarGroup({
   label,
+  category,
   items,
 }: {
   label: string
+  category: ScalarCategory
   items: ReadonlyArray<TokenDefinition<string>>
 }): JSX.Element {
   return (
     <section className={styles.group}>
       <h3 className={styles.groupLabel}>{label}</h3>
-      <ScalarList items={items} />
+      <ScalarList category={category} items={items} />
     </section>
   )
 }
@@ -72,22 +80,7 @@ function ColorList({
   return (
     <ul className={styles.list}>
       {items.map((token) => (
-        <li key={token.id} className={styles.row}>
-          <span className={styles.swatches}>
-            <span
-              className={styles.swatch}
-              style={{ background: token.value.light }}
-              title={`light ${token.value.light}`}
-            />
-            <span
-              className={styles.swatch}
-              style={{ background: token.value.dark }}
-              title={`dark ${token.value.dark}`}
-            />
-          </span>
-          <span className={styles.name}>{token.name}</span>
-          <span className={styles.value}>{`${token.value.light} / ${token.value.dark}`}</span>
-        </li>
+        <ColorTokenRow key={token.id} token={token} />
       ))}
     </ul>
   )
@@ -122,18 +115,18 @@ export function TokensPanel({ collapsed, onToggleCollapse }: TokensPanelProps): 
           <ColorList items={tokens.color} />
         </Tabs.Content>
         <Tabs.Content value="spacing" className={styles.content}>
-          <ScalarList items={tokens.spacing} />
+          <ScalarList category="spacing" items={tokens.spacing} />
         </Tabs.Content>
         <Tabs.Content value="typography" className={styles.content}>
-          <ScalarGroup label="Font family" items={tokens.fontFamily} />
-          <ScalarGroup label="Font size" items={tokens.fontSize} />
-          <ScalarGroup label="Line height" items={tokens.lineHeight} />
+          <ScalarGroup label="Font family" category="fontFamily" items={tokens.fontFamily} />
+          <ScalarGroup label="Font size" category="fontSize" items={tokens.fontSize} />
+          <ScalarGroup label="Line height" category="lineHeight" items={tokens.lineHeight} />
         </Tabs.Content>
         <Tabs.Content value="shadows" className={styles.content}>
-          <ScalarList items={tokens.shadow} />
+          <ScalarList category="shadow" items={tokens.shadow} />
         </Tabs.Content>
         <Tabs.Content value="radii" className={styles.content}>
-          <ScalarList items={tokens.radius} />
+          <ScalarList category="radius" items={tokens.radius} />
         </Tabs.Content>
       </div>
     </Tabs.Root>

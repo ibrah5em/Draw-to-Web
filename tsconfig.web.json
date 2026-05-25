@@ -12,6 +12,7 @@
     "skipLibCheck": true,
     "paths": {
       "@renderer/*": ["./src/renderer/src/*"],
+      "@ui/*": ["./src/ui/*"],
       "@store/*": ["./src/store/*"],
       "@engine/*": ["./src/engine/*"],
       "@document/*": ["./src/document/*"],
@@ -24,6 +25,7 @@
   },
   "include": [
     "src/renderer/src/**/*",
+    "src/ui/**/*",
     "src/store/**/*",
     "src/engine/**/*",
     "src/document/**/*",

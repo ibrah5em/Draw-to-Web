@@ -1,0 +1,17 @@
+.viewport {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  background: var(--bg-base);
+  display: flex;
+  justify-content: center;
+  padding: var(--sp-6);
+}
+
+.page {
+  flex: 1;
+  max-width: 1280px;
+  min-height: min-content;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px var(--border);
+}

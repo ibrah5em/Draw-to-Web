@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App'
+import { App } from '@ui/App'
 import '../styles/tokens.css'
 import './index.css'
 

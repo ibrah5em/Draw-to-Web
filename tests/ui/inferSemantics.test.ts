@@ -1,53 +1,97 @@
-import { describe, it, expect } from 'vitest'
-import { inferSemantics } from '../../src/ui/canvas/inferSemantics'
-import type { CanvasElement } from '../../src/store/elementStore'
+import { describe, expect, it } from 'vitest'
 
-function el(
+import { inferSemantics } from '@ui/canvas/inferSemantics'
+import type { ContainerNode, ElementNode } from '../../src/document/types'
+
+import { PORTFOLIO_DOCUMENT } from '../fixtures/portfolioDocument'
+
+function container(
   id: string,
-  type: CanvasElement['type'],
-  overrides: Partial<CanvasElement> = {}
-): CanvasElement {
-  return { id, type, x: 0, y: 200, width: 4, height: 80, props: {}, ...overrides }
+  children: ElementNode[],
+  role?: ContainerNode['semanticRole']
+): ContainerNode {
+  return {
+    id,
+    type: 'container',
+    semanticRole: role,
+    style: { base: {} },
+    layout: { base: { mode: 'flex' } },
+    children,
+  }
+}
+
+function link(id: string, href: string): ElementNode {
+  return { id, type: 'link', href, content: 'x', style: { base: {} } }
+}
+
+function findById(node: ElementNode, id: string): ElementNode | undefined {
+  if (node.id === id) return node
+  if (node.type !== 'container') return undefined
+  for (const child of node.children) {
+    const hit = findById(child, id)
+    if (hit) return hit
+  }
+  return undefined
+}
+
+function roleOf(tree: ElementNode, id: string): string | undefined {
+  const node = findById(tree, id)
+  return node?.type === 'container' ? node.semanticRole : undefined
 }
 
 describe('inferSemantics (C10 adapter)', () => {
-  it('re-exports the engine inferSemantics with the correct signature', () => {
-    expect(typeof inferSemantics).toBe('function')
-    expect(inferSemantics([])).toEqual([])
+  it('preserves explicit roles set by presets / authors', () => {
+    const out = inferSemantics(PORTFOLIO_DOCUMENT.tree)
+    expect(roleOf(out, 'root')).toBe('main')
+    expect(roleOf(out, 'header')).toBe('header')
+    expect(roleOf(out, 'footer')).toBe('footer')
   })
 
-  describe('Hero preset semantic role', () => {
-    // Hero preset: full-width rectangle at the top of the canvas
-    // → classifyRectangle sees y≈0, width≥FULL_WIDTH_THRESHOLD → 'header'
-    // ARIA mapping: semanticTag 'header' → role="banner" in the canvas renderer
-    it('wide top rectangle gets semanticTag "header" (role="banner")', () => {
-      const heroContainer = el('hero', 'rectangle', { y: 0, width: 12, height: 400 })
-      const [result] = inferSemantics([heroContainer])
-      expect(result.semanticTag).toBe('header')
-    })
+  it('labels the root container as main when no role is set', () => {
+    const tree = container('root', [container('a', []), container('b', [])])
+    expect(roleOf(inferSemantics(tree), 'root')).toBe('main')
+  })
 
-    it('hero semanticTag survives copy-paste (same element reproduced with a new id)', () => {
-      const original = el('hero', 'rectangle', { y: 0, width: 12, height: 400 })
-      const copy = { ...original, id: 'hero-copy' }
-      const [result] = inferSemantics([copy])
-      expect(result.semanticTag).toBe('header')
-    })
+  it('infers header for the first and footer for the last top-level region', () => {
+    const tree = container('root', [
+      container('first', []),
+      container('middle', []),
+      container('last', []),
+    ])
+    const out = inferSemantics(tree)
+    expect(roleOf(out, 'first')).toBe('header')
+    expect(roleOf(out, 'middle')).toBe('section')
+    expect(roleOf(out, 'last')).toBe('footer')
+  })
 
-    it('hero children are nested and preserve their own tags', () => {
-      const hero = el('hero', 'rectangle', { y: 0, width: 12, height: 400 })
-      const title = el('title', 'text', {
-        x: 1,
-        y: 50,
-        width: 8,
-        height: 60,
-        props: { fontSize: 48 },
-      })
-      const sub = el('sub', 'text', { x: 1, y: 120, width: 8, height: 30, props: { fontSize: 16 } })
-      const out = inferSemantics([hero, title, sub])
-      const heroOut = out.find((e) => e.id === 'hero')
-      expect(heroOut?.semanticTag).toBe('header')
-      expect(heroOut?.children).toHaveLength(2)
-      expect(heroOut?.children.find((c) => c.id === 'title')?.semanticTag).toBe('h1')
-    })
+  it('infers nav for a container grouping two or more links', () => {
+    const tree = container('root', [
+      container('menu', [link('l1', '#a'), link('l2', '#b')]),
+      container('body', []),
+    ])
+    expect(roleOf(inferSemantics(tree), 'menu')).toBe('nav')
+  })
+
+  it('is idempotent', () => {
+    const once = inferSemantics(PORTFOLIO_DOCUMENT.tree)
+    const twice = inferSemantics(once)
+    expect(twice).toEqual(once)
+  })
+
+  it('resolves identical roles for a copy-pasted subtree (new ids, same structure)', () => {
+    const hero = container(
+      'hero',
+      [{ id: 'h-title', type: 'text', tag: 'h1', content: 'Hi', style: { base: {} } }],
+      'section'
+    )
+    const copy: ContainerNode = {
+      ...hero,
+      id: 'hero-copy',
+      children: hero.children.map((c) => ({ ...c, id: `${c.id}-copy` })),
+    }
+    const original = inferSemantics(container('root', [hero, container('foot', [])]))
+    const pasted = inferSemantics(container('root', [copy, container('foot', [])]))
+    expect(roleOf(original, 'hero')).toBe('section')
+    expect(roleOf(pasted, 'hero-copy')).toBe(roleOf(original, 'hero'))
   })
 })

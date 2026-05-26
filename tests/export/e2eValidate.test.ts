@@ -110,8 +110,9 @@ async function runFixture(name: string, elements: typeof SIMPLE_PAGE) {
     ogImage: 'https://example.com/og.png',
     canonicalUrl: 'https://example.com/',
   }
-  const { html, css } = await generate(canvasElementsToDocument(elements, seoConfig))
-  const seoHtml = injectSEO(html, seoConfig)
+  const doc = canvasElementsToDocument(elements, seoConfig)
+  const { html, css } = await generate(doc)
+  const seoHtml = injectSEO(html, doc.seo)
   const fullDoc = seoHtml.replace(
     '<link rel="stylesheet" href="styles.css" />',
     `<style>${css}</style>`

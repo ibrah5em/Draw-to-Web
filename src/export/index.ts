@@ -121,22 +121,6 @@ function toMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
 
-/**
- * Derive the legacy `SEOConfig` shape `injectSEO` still consumes from
- * `document.seo`. The full I-SEO-01..05 rewrite is owed alongside this
- * pipeline — until then the export keeps the v0.1.0 head injector wired
- * by feeding it the equivalent fields from the document.
- */
-function legacySeoFromDocument(doc: Document): LegacySEOConfig {
-  return {
-    title: doc.seo.title,
-    description: doc.seo.description,
-    ogImage: doc.seo.openGraph?.imageUrl,
-    canonicalUrl: doc.seo.canonical,
-    lang: doc.seo.lang,
-  }
-}
-
 function emitProgress(opts: ExportOptions, stage: ExportStage): void {
   opts.onProgress?.({ stage, index: STAGE_ORDER.indexOf(stage), total: STAGE_ORDER.length })
 }
@@ -178,9 +162,8 @@ export async function exportProject(
   // 3. inject-seo ────────────────────────────────────────────────────
   emitProgress(options, 'inject-seo')
   let enrichedHtml: string
-  const legacySeo = legacySeoFromDocument(doc)
   try {
-    enrichedHtml = injectSEO(generated.html, legacySeo)
+    enrichedHtml = injectSEO(generated.html, doc.seo, doc.assets)
   } catch (err) {
     return { success: false, stage: 'inject-seo', error: toMessage(err) }
   }
@@ -192,7 +175,7 @@ export async function exportProject(
   emitProgress(options, 'a11y-gate')
   let report: FullExportReport
   try {
-    report = await generateFullReport(enrichedHtml, legacySeo)
+    report = await generateFullReport(enrichedHtml, doc.seo)
   } catch (err) {
     return { success: false, stage: 'a11y-gate', error: toMessage(err) }
   }

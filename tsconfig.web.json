@@ -30,6 +30,7 @@
     "src/engine/**/*",
     "src/document/**/*",
     "src/generator/**/*",
+    "src/runtime/**/*",
     "src/seo/**/*",
     "src/export/**/*",
     "src/templates/**/*",

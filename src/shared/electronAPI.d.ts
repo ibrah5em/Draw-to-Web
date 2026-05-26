@@ -82,6 +82,10 @@ interface ElectronAPI {
   addRecentFile: (filePath: string) => Promise<readonly RecentFile[]>
 }
 
-declare interface Window {
-  electronAPI: ElectronAPI
+declare global {
+  interface Window {
+    electronAPI: ElectronAPI
+  }
 }
+
+export {}

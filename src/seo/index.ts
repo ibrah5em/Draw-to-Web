@@ -1,17 +1,29 @@
-import type { AccessibilityReport, FullExportReport, SEOConfig, SEOReport } from '../shared/types'
+/**
+ * SEO injection + reporting (I-SEO-01..05).
+ *
+ * `injectSEO` post-processes the generator's HTML — the `inject-seo` stage of
+ * the export pipeline (C12) — adding everything the generator does not emit
+ * itself: head metadata (`head.ts`), Open Graph + Twitter (`og.ts`), JSON-LD
+ * (`jsonld.ts`), and ARIA landmark roles. All of it is driven by
+ * `document.seo`; the legacy v0.1.0 `SEOConfig` shape is no longer used.
+ *
+ * The generator already owns `<html lang>`, `<meta charset>`, the CSP meta,
+ * the FOUC guard, viewport, and the stylesheet/script links, so this module
+ * never touches them.
+ */
+
+import type { SEOConfig, AssetId, AssetManifestEntry } from '../document/types'
+import type { AccessibilityReport, FullExportReport, SEOReport } from '../shared/types'
+import { buildHeadTags } from './head'
+import { buildSocialTags } from './og'
+import { buildJsonLd } from './jsonld'
 import { formatViolation, runAxeGate } from './axeGate'
 
 export type { SEOConfig }
+export { buildHeadTags } from './head'
+export { buildSocialTags } from './og'
+export { buildJsonLd } from './jsonld'
 export { runAxeGate } from './axeGate'
-
-/** Escapes characters unsafe in HTML attribute values and text nodes. */
-function escapeHtml(raw: string): string {
-  return raw
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
 
 /** ARIA landmark roles for HTML5 sectioning elements. */
 const LANDMARK_ROLES: Readonly<Record<string, string>> = {
@@ -19,39 +31,6 @@ const LANDMARK_ROLES: Readonly<Record<string, string>> = {
   nav: 'navigation',
   main: 'main',
   footer: 'contentinfo',
-}
-
-/**
- * Updates (or adds) the lang attribute on the <html> element.
- * The generator always emits lang="en", so this handles overrides.
- */
-function updateLang(html: string, lang: string): string {
-  if (html.includes(' lang="')) {
-    return html.replace(/(<html\b[^>]*)\slang="[^"]*"/, `$1 lang="${lang}"`)
-  }
-  return html.replace(/(<html\b)/, `$1 lang="${lang}"`)
-}
-
-/**
- * Injects SEO meta tags, OG tags, and optional canonical link into <head>.
- * Inserts immediately before </head> to avoid displacing charset/viewport metas.
- */
-function injectHeadTags(html: string, config: SEOConfig): string {
-  const lines = [
-    `    <title>${escapeHtml(config.title)}</title>`,
-    `    <meta name="description" content="${escapeHtml(config.description)}" />`,
-    `    <meta property="og:title" content="${escapeHtml(config.title)}" />`,
-    `    <meta property="og:description" content="${escapeHtml(config.description)}" />`,
-  ]
-
-  if (config.ogImage) {
-    lines.push(`    <meta property="og:image" content="${escapeHtml(config.ogImage)}" />`)
-  }
-  if (config.canonicalUrl) {
-    lines.push(`    <link rel="canonical" href="${escapeHtml(config.canonicalUrl)}" />`)
-  }
-
-  return html.replace('</head>', `${lines.join('\n')}\n  </head>`)
 }
 
 /**
@@ -71,42 +50,52 @@ function addAriaRoles(html: string): string {
 }
 
 /**
- * Post-processes generated HTML with SEO meta tags, OG tags, ARIA landmark
- * roles, and a configurable lang attribute.
- * @param html - Raw HTML from the code generator
- * @param config - SEO metadata provided by the user
+ * Post-processes generated HTML with the full SEO surface: head metadata,
+ * Open Graph + Twitter Card, JSON-LD structured data, and ARIA landmark
+ * roles. Tags are spliced in immediately before `</head>` so the
+ * generator-emitted charset / CSP / viewport metas keep their position.
+ *
+ * @param html - Raw HTML from the code generator.
+ * @param seo - The document's SEO configuration (`document.seo`).
+ * @param assets - Optional asset manifest, used only to resolve a PNG favicon.
  */
-export function injectSEO(html: string, config: SEOConfig): string {
-  let result = html
-  result = updateLang(result, config.lang ?? 'en')
-  result = injectHeadTags(result, config)
-  result = addAriaRoles(result)
-  return result
+export function injectSEO(
+  html: string,
+  seo: SEOConfig,
+  assets?: Readonly<Record<AssetId, AssetManifestEntry>>
+): string {
+  const headLines = [...buildHeadTags(seo, assets), ...buildSocialTags(seo)]
+  const jsonLd = buildJsonLd(seo)
+  if (jsonLd) headLines.push(jsonLd)
+
+  const withHead = html.replace('</head>', `${headLines.join('\n')}\n  </head>`)
+  return addAriaRoles(withHead)
 }
 
 /**
  * Analyses an enriched HTML document and returns an SEO/a11y summary report.
  * The report is informational; blocking violations are handled by the axe-core gate.
- * @param html - HTML after injectSEO has run
- * @param config - The SEO config used to produce this HTML
+ *
+ * @param html - HTML after `injectSEO` has run.
+ * @param seo - The `document.seo` used to produce this HTML.
  */
-export function generateSEOReport(html: string, config: SEOConfig): SEOReport {
+export function generateSEOReport(html: string, seo: SEOConfig): SEOReport {
   const h1Count = (html.match(/<h1\b/g) ?? []).length
   // Images with alt="" are decorative — flag them as potentially needing review
   const imgTags = html.match(/<img\b[^>]*/g) ?? []
   const imagesMissingAlt = imgTags.filter((tag) => /\balt=""/.test(tag)).length
 
   return {
-    titleLength: config.title.length,
-    descriptionLength: config.description.length,
-    hasOgImage: !!config.ogImage,
-    hasCanonical: !!config.canonicalUrl,
+    titleLength: seo.title.length,
+    descriptionLength: seo.description.length,
+    hasOgImage: !!seo.openGraph?.imageUrl,
+    hasCanonical: !!seo.canonical,
     h1Count,
     imagesMissingAlt,
   }
 }
 
-/** Soft thresholds matched against SEOConfigDialog warnings. */
+/** Soft thresholds matched against the SEO config dialog warnings. */
 const TITLE_MAX = 60
 const DESC_MAX = 160
 
@@ -153,15 +142,12 @@ function buildGuidance(seo: SEOReport, a11y: AccessibilityReport): string[] {
  * + actionable guidance. The export pipeline blocks if `accessibility.passed`
  * is false. SEO findings are informational only.
  *
- * @param html - HTML *after* injectSEO has run (so meta tags and ARIA roles are present).
- * @param config - The SEOConfig used to produce this HTML.
+ * @param html - HTML *after* `injectSEO` has run (so meta tags and ARIA roles are present).
+ * @param seo - The `document.seo` used to produce this HTML.
  */
-export async function generateFullReport(
-  html: string,
-  config: SEOConfig
-): Promise<FullExportReport> {
-  const seo = generateSEOReport(html, config)
+export async function generateFullReport(html: string, seo: SEOConfig): Promise<FullExportReport> {
+  const seoReport = generateSEOReport(html, seo)
   const accessibility = await runAxeGate(html)
-  const guidance = buildGuidance(seo, accessibility)
-  return { seo, accessibility, guidance }
+  const guidance = buildGuidance(seoReport, accessibility)
+  return { seo: seoReport, accessibility, guidance }
 }

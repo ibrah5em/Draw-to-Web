@@ -168,8 +168,9 @@ async function buildAndAudit(name: string, elements: typeof SIMPLE_PAGE) {
     description: 'Generated output used for cross-browser validation.',
     canonicalUrl: 'https://example.com/',
   }
-  const { html, css } = await generate(canvasElementsToDocument(elements, seoConfig))
-  const seoHtml = injectSEO(html, seoConfig)
+  const doc = canvasElementsToDocument(elements, seoConfig)
+  const { html, css } = await generate(doc)
+  const seoHtml = injectSEO(html, doc.seo)
   return { html: seoHtml, css, ...runAudit(name, seoHtml, css) }
 }
 

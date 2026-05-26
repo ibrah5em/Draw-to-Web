@@ -4,17 +4,19 @@ import { generateFullReport, injectSEO } from '@seo'
 import { generate } from '@generator'
 import { canvasElementsToDocument } from '../../src/export/legacyAdapter'
 import { SIMPLE_PAGE } from '../fixtures/legacyElements'
-import type { SEOConfig } from '@seo'
+import type { SEOConfig as LegacySEOConfig } from '../../src/shared/types'
 
-const BASE_CONFIG: SEOConfig = {
+const BASE_CONFIG: LegacySEOConfig = {
   title: 'Axe Gate Page',
   description: 'A test page used by the axe-core gate suite.',
 }
 
 let SIMPLE_HTML: string
+let SIMPLE_DOC: ReturnType<typeof canvasElementsToDocument>
 
 beforeAll(async () => {
-  SIMPLE_HTML = (await generate(canvasElementsToDocument(SIMPLE_PAGE, BASE_CONFIG))).html
+  SIMPLE_DOC = canvasElementsToDocument(SIMPLE_PAGE, BASE_CONFIG)
+  SIMPLE_HTML = (await generate(SIMPLE_DOC)).html
 })
 
 /** Wraps an HTML body fragment in a minimal valid document. */
@@ -26,7 +28,7 @@ function doc(body: string, opts: { lang?: string; title?: string } = {}): string
 
 describe('runAxeGate', () => {
   it('passes on a clean injectSEO output', async () => {
-    const html = injectSEO(SIMPLE_HTML, BASE_CONFIG)
+    const html = injectSEO(SIMPLE_HTML, SIMPLE_DOC.seo)
     const report = await runAxeGate(html)
     const blocking = report.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'
@@ -107,8 +109,8 @@ describe('formatViolation', () => {
 
 describe('generateFullReport', () => {
   it('returns SEO + accessibility + guidance for a clean page', async () => {
-    const html = injectSEO(SIMPLE_HTML, BASE_CONFIG)
-    const report = await generateFullReport(html, BASE_CONFIG)
+    const html = injectSEO(SIMPLE_HTML, SIMPLE_DOC.seo)
+    const report = await generateFullReport(html, SIMPLE_DOC.seo)
 
     expect(report.seo.titleLength).toBe(BASE_CONFIG.title.length)
     expect(report.accessibility.passed).toBe(true)
@@ -116,28 +118,26 @@ describe('generateFullReport', () => {
   })
 
   it('flags missing OG image and canonical in guidance', async () => {
-    const html = injectSEO(SIMPLE_HTML, BASE_CONFIG)
-    const report = await generateFullReport(html, BASE_CONFIG)
+    const html = injectSEO(SIMPLE_HTML, SIMPLE_DOC.seo)
+    const report = await generateFullReport(html, SIMPLE_DOC.seo)
     expect(report.guidance.some((g) => g.includes('Open Graph'))).toBe(true)
     expect(report.guidance.some((g) => g.includes('canonical'))).toBe(true)
   })
 
   it('flags over-long title with a warning', async () => {
-    const longConfig: SEOConfig = {
+    const longConfig: LegacySEOConfig = {
       title: 'x'.repeat(80),
       description: 'ok',
     }
-    const html = injectSEO(
-      (await generate(canvasElementsToDocument(SIMPLE_PAGE, longConfig))).html,
-      longConfig
-    )
-    const report = await generateFullReport(html, longConfig)
+    const longDoc = canvasElementsToDocument(SIMPLE_PAGE, longConfig)
+    const html = injectSEO((await generate(longDoc)).html, longDoc.seo)
+    const report = await generateFullReport(html, longDoc.seo)
     expect(report.guidance.some((g) => g.includes('truncated above 60'))).toBe(true)
   })
 
   it('includes blocking ✗ markers when a11y violations are critical/serious', async () => {
     const html = doc('<img src="x.png">', { title: 'y' })
-    const report = await generateFullReport(html, BASE_CONFIG)
+    const report = await generateFullReport(html, SIMPLE_DOC.seo)
     expect(report.accessibility.passed).toBe(false)
     expect(report.guidance.some((g) => g.startsWith('✗'))).toBe(true)
   })

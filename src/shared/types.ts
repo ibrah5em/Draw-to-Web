@@ -7,7 +7,6 @@
 export type ActiveTool = 'select' | 'rectangle' | 'text' | 'image' | 'button'
 
 export type { CanvasElement, ElementType, ElementProps } from '../store/elementStore'
-export type { SemanticElement, SemanticTag } from '../engine'
 
 /**
  * CSS-property-named style values for a canvas element.

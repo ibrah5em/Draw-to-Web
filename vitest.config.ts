@@ -12,7 +12,6 @@ export default defineConfig({
     alias: {
       '@ui': resolve(__dirname, 'src/ui'),
       '@store': resolve(__dirname, 'src/store'),
-      '@engine': resolve(__dirname, 'src/engine'),
       '@document': resolve(__dirname, 'src/document'),
       '@generator': resolve(__dirname, 'src/generator'),
       '@seo': resolve(__dirname, 'src/seo'),

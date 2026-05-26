@@ -17,7 +17,6 @@ export default defineConfig({
         '@renderer': resolve('src/renderer/src'),
         '@ui': resolve('src/ui'),
         '@store': resolve('src/store'),
-        '@engine': resolve('src/engine'),
         '@document': resolve('src/document'),
         '@generator': resolve('src/generator'),
         '@seo': resolve('src/seo'),

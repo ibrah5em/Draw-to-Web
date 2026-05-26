@@ -91,14 +91,20 @@ export default function ExportReportDialog({
 
 function stageLabel(stage: ExportStage): string {
   switch (stage) {
-    case 'infer':
-      return 'Semantic inference'
+    case 'validate':
+      return 'Validation'
     case 'generate':
       return 'Code generation'
     case 'inject-seo':
       return 'SEO injection'
     case 'a11y-gate':
       return 'Accessibility check'
+    case 'optimize-images':
+      return 'Image optimization'
+    case 'minify':
+      return 'Minification'
+    case 'sitemap-robots':
+      return 'Sitemap and robots'
     case 'bundle':
       return 'ZIP bundling'
     case 'save':

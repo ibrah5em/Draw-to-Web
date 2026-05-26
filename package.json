@@ -19,6 +19,7 @@
     "test:a11y": "vitest run tests/a11y",
     "lint": "eslint . --ext .ts,.tsx && prettier --check .",
     "typecheck": "tsc --noEmit",
+    "typecheck:web": "tsc -p tsconfig.web.json --noEmit",
     "prepare": "husky"
   },
   "dependencies": {

@@ -4,69 +4,18 @@ import { registerIpcHandlers } from './ipc'
 
 const isDev = !app.isPackaged
 
-function buildMenu(win: BrowserWindow): void {
-  const viewSubmenu: Electron.MenuItemConstructorOptions[] = [
-    {
-      label: 'Toggle Grid',
-      accelerator: 'CmdOrCtrl+G',
-      click: () => win.webContents.send('menu:action', 'toggle-grid'),
-    },
-  ]
-
+/**
+ * The application menu is rendered in-app (a custom dark File/Edit/View bar in
+ * the renderer topbar), so the native OS menu is removed. In dev we keep an
+ * F12 binding to toggle DevTools since there's no menu accelerator for it.
+ */
+function configureMenu(win: BrowserWindow): void {
+  Menu.setApplicationMenu(null)
   if (isDev) {
-    viewSubmenu.push(
-      { type: 'separator' },
-      {
-        label: 'Toggle Developer Tools',
-        accelerator: 'F12',
-        click: () => win.webContents.toggleDevTools(),
-      }
-    )
+    win.webContents.on('before-input-event', (_event, input) => {
+      if (input.type === 'keyDown' && input.key === 'F12') win.webContents.toggleDevTools()
+    })
   }
-
-  const template: Electron.MenuItemConstructorOptions[] = [
-    {
-      label: 'File',
-      submenu: [
-        {
-          label: 'Open Project…',
-          accelerator: 'CmdOrCtrl+O',
-          click: () => win.webContents.send('menu:action', 'open-project'),
-        },
-        {
-          label: 'Save Project…',
-          accelerator: 'CmdOrCtrl+S',
-          click: () => win.webContents.send('menu:action', 'save-project'),
-        },
-        { type: 'separator' },
-        {
-          label: 'Export…',
-          accelerator: 'CmdOrCtrl+E',
-          click: () => win.webContents.send('menu:action', 'export'),
-        },
-        { type: 'separator' },
-        { role: 'quit' },
-      ],
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        {
-          label: 'Undo',
-          accelerator: 'CmdOrCtrl+Z',
-          click: () => win.webContents.send('menu:action', 'undo'),
-        },
-        {
-          label: 'Redo',
-          accelerator: 'CmdOrCtrl+Shift+Z',
-          click: () => win.webContents.send('menu:action', 'redo'),
-        },
-      ],
-    },
-    { label: 'View', submenu: viewSubmenu },
-  ]
-
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
 function createWindow(): void {
@@ -85,7 +34,7 @@ function createWindow(): void {
     },
   })
 
-  buildMenu(win)
+  configureMenu(win)
 
   win.on('ready-to-show', () => win.show())
 

@@ -8,12 +8,12 @@ describe('emitJs(document)', () => {
   })
 
   it('returns an empty string when only unauthored flags are enabled', () => {
-    // I-RUN-01..05 (themeToggle, scrollSpy, smoothScroll, mobileNav,
-    // navOnScroll) have shipped. Flipping only the still-unauthored flags
-    // must still produce no JS until I-RUN-06..08 land.
+    // I-RUN-01..06 (themeToggle, scrollSpy, smoothScroll, mobileNav,
+    // navOnScroll, reveals) have shipped. Flipping only the still-
+    // unauthored flags must still produce no JS until I-RUN-07..08 land.
     const doc = {
       ...PORTFOLIO_DOCUMENT,
-      runtime: { ...PORTFOLIO_DOCUMENT.runtime, reveals: true, animationGating: true },
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, animationGating: true, terminalTyping: true },
     }
     expect(emitJs(doc)).toBe('')
   })
@@ -113,6 +113,28 @@ describe('emitJs(document)', () => {
     }
     const js = emitJs(doc)
     expect(js.indexOf('/* mobileNav */')).toBeLessThan(js.indexOf('/* navOnScroll */'))
+  })
+
+  it('emits the reveals snippet when reveals is on (I-RUN-06)', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, reveals: true },
+    }
+    const js = emitJs(doc)
+    expect(js).toContain('/* reveals */')
+    expect(js).toContain('data-dtw-reveal')
+    expect(js).toContain('IntersectionObserver')
+    expect(js).toContain('prefers-reduced-motion')
+    expect(js).toContain('visible')
+  })
+
+  it('orders snippets deterministically: navOnScroll before reveals', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, navOnScroll: true, reveals: true },
+    }
+    const js = emitJs(doc)
+    expect(js.indexOf('/* navOnScroll */')).toBeLessThan(js.indexOf('/* reveals */'))
   })
 
   it('produces deterministic output across repeated calls', () => {

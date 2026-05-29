@@ -1,20 +1,20 @@
 version: 2
 updates:
-  # GitHub Actions — weekly check, one PR per action upgrade.
+  # GitHub Actions — monthly check, one PR per action upgrade.
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
-      interval: 'weekly'
+      interval: 'monthly'
     open-pull-requests-limit: 5
     commit-message:
       prefix: 'ci'
 
-  # npm — weekly check. Group minor/patch into a single PR to cut review
+  # npm — monthly check. Group minor/patch into a single PR to cut review
   # overhead; majors get their own PR so they get a real review.
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
-      interval: 'weekly'
+      interval: 'monthly'
     open-pull-requests-limit: 10
     commit-message:
       prefix: 'chore'

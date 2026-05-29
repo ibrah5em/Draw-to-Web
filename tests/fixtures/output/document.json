@@ -1,0 +1,3114 @@
+{
+  "version": "0.2.0",
+  "meta": {
+    "name": "Author Name — Portfolio",
+    "createdAt": "2026-05-29T09:58:16.211Z",
+    "updatedAt": "2026-05-29T09:58:16.211Z"
+  },
+  "tokens": {
+    "color": [
+      {
+        "id": "bg",
+        "name": "Background",
+        "value": {
+          "light": "#f6f5f2",
+          "dark": "#0a0a10"
+        }
+      },
+      {
+        "id": "bg-secondary",
+        "name": "Background (secondary)",
+        "value": {
+          "light": "#eeedea",
+          "dark": "#0f0f17"
+        }
+      },
+      {
+        "id": "surface",
+        "name": "Surface (card)",
+        "value": {
+          "light": "#ffffff",
+          "dark": "#13131c"
+        }
+      },
+      {
+        "id": "surface-accent",
+        "name": "Surface (accent tint)",
+        "value": {
+          "light": "rgba(43, 108, 212, 0.06)",
+          "dark": "rgba(77, 142, 255, 0.07)"
+        }
+      },
+      {
+        "id": "surface-shadow",
+        "name": "Surface shadow",
+        "value": {
+          "light": "rgba(0, 0, 0, 0.06)",
+          "dark": "rgba(0, 0, 0, 0.3)"
+        }
+      },
+      {
+        "id": "text",
+        "name": "Body text",
+        "value": {
+          "light": "#1a1a2e",
+          "dark": "#e2e2ea"
+        }
+      },
+      {
+        "id": "text-secondary",
+        "name": "Text (secondary)",
+        "value": {
+          "light": "#5a5a6e",
+          "dark": "#8a8a9e"
+        }
+      },
+      {
+        "id": "text-dim",
+        "name": "Text (dim)",
+        "value": {
+          "light": "#8888a0",
+          "dark": "#53536a"
+        }
+      },
+      {
+        "id": "accent",
+        "name": "Accent",
+        "value": {
+          "light": "#2b6cd4",
+          "dark": "#4d8eff"
+        }
+      },
+      {
+        "id": "accent-soft",
+        "name": "Accent (soft)",
+        "value": {
+          "light": "#4a88e6",
+          "dark": "#6ba1ff"
+        }
+      },
+      {
+        "id": "border",
+        "name": "Border",
+        "value": {
+          "light": "#ddddd8",
+          "dark": "#1c1c2a"
+        }
+      }
+    ],
+    "spacing": [
+      {
+        "id": "sm",
+        "name": "Small",
+        "value": "8px"
+      },
+      {
+        "id": "md",
+        "name": "Medium",
+        "value": "16px"
+      },
+      {
+        "id": "lg",
+        "name": "Large",
+        "value": "32px"
+      },
+      {
+        "id": "xl",
+        "name": "Extra large",
+        "value": "64px"
+      }
+    ],
+    "fontSize": [
+      {
+        "id": "sm",
+        "name": "Small",
+        "value": "clamp(12px, 0.78rem, 14px)"
+      },
+      {
+        "id": "md",
+        "name": "Body",
+        "value": "clamp(14px, 0.9rem + 0.2vw, 18px)"
+      },
+      {
+        "id": "lg",
+        "name": "Large",
+        "value": "clamp(18px, 1rem + 0.6vw, 22px)"
+      },
+      {
+        "id": "xl",
+        "name": "Extra large",
+        "value": "clamp(22px, 1.2rem + 1vw, 32px)"
+      },
+      {
+        "id": "display",
+        "name": "Display",
+        "value": "clamp(44px, 2.75rem + 3.5vw, 76px)"
+      }
+    ],
+    "fontFamily": [
+      {
+        "id": "body",
+        "name": "Body (sans)",
+        "value": "\"Outfit\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif"
+      },
+      {
+        "id": "mono",
+        "name": "Mono",
+        "value": "\"JetBrains Mono\", ui-monospace, \"SF Mono\", Menlo, Consolas, monospace"
+      }
+    ],
+    "lineHeight": [
+      {
+        "id": "tight",
+        "name": "Tight",
+        "value": "1.15"
+      },
+      {
+        "id": "normal",
+        "name": "Normal",
+        "value": "1.6"
+      },
+      {
+        "id": "loose",
+        "name": "Loose",
+        "value": "1.85"
+      }
+    ],
+    "radius": [
+      {
+        "id": "sm",
+        "name": "Small",
+        "value": "6px"
+      },
+      {
+        "id": "md",
+        "name": "Medium",
+        "value": "12px"
+      },
+      {
+        "id": "lg",
+        "name": "Large",
+        "value": "20px"
+      }
+    ],
+    "shadow": []
+  },
+  "tree": {
+    "type": "container",
+    "id": "uWY_1syR",
+    "name": "Page",
+    "semanticRole": "div",
+    "layout": {
+      "base": {
+        "mode": "flex",
+        "direction": "column"
+      }
+    },
+    "style": {
+      "base": {
+        "background": [
+          {
+            "kind": "solid",
+            "color": "color.bg"
+          }
+        ],
+        "typography": {
+          "fontFamily": "fontFamily.body",
+          "color": "color.text"
+        }
+      }
+    },
+    "children": [
+      {
+        "type": "container",
+        "id": "x1jf6-4g",
+        "name": "Site nav",
+        "semanticRole": "nav",
+        "layout": {
+          "base": {
+            "mode": "flex",
+            "direction": "row",
+            "justify": "space-between",
+            "align": "center"
+          }
+        },
+        "style": {
+          "base": {
+            "padding": {
+              "top": "spacing.md",
+              "right": "spacing.lg",
+              "bottom": "spacing.md",
+              "left": "spacing.lg"
+            },
+            "background": [
+              {
+                "kind": "solid",
+                "color": "color.bg"
+              }
+            ],
+            "border": {
+              "width": "1px",
+              "style": "solid",
+              "color": "color.border"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "link",
+            "id": "cDo8fsA6",
+            "content": "{{author}}.dev",
+            "href": "#",
+            "style": {
+              "base": {
+                "typography": {
+                  "fontFamily": "fontFamily.mono",
+                  "fontSize": "fontSize.sm",
+                  "color": "color.accent",
+                  "fontWeight": 600
+                }
+              }
+            },
+            "ariaLabel": "Home"
+          },
+          {
+            "type": "container",
+            "id": "D2rx_SS4",
+            "name": "Nav right",
+            "layout": {
+              "base": {
+                "mode": "flex",
+                "direction": "row",
+                "gap": "spacing.md",
+                "align": "center"
+              }
+            },
+            "style": {
+              "base": {}
+            },
+            "children": [
+              {
+                "type": "container",
+                "id": "6KViiLb4",
+                "name": "Nav links",
+                "layout": {
+                  "base": {
+                    "mode": "flex",
+                    "direction": "row",
+                    "gap": "spacing.sm",
+                    "align": "center"
+                  }
+                },
+                "style": {
+                  "base": {
+                    "typography": {
+                      "fontFamily": "fontFamily.mono"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "link",
+                    "id": "ad7Ef2vF",
+                    "content": "about",
+                    "href": "#about",
+                    "style": {
+                      "base": {}
+                    }
+                  },
+                  {
+                    "type": "link",
+                    "id": "ixkTf4KT",
+                    "content": "projects",
+                    "href": "#projects",
+                    "style": {
+                      "base": {}
+                    }
+                  },
+                  {
+                    "type": "link",
+                    "id": "v4UMmVLb",
+                    "content": "stack",
+                    "href": "#stack",
+                    "style": {
+                      "base": {}
+                    }
+                  },
+                  {
+                    "type": "link",
+                    "id": "3qDecNEH",
+                    "content": "connect",
+                    "href": "#connect",
+                    "style": {
+                      "base": {}
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "button",
+                "id": "YhbzeJgi",
+                "content": "",
+                "ariaLabel": "Toggle theme",
+                "attributes": {
+                  "data-dtw-theme-toggle": ""
+                },
+                "style": {
+                  "base": {
+                    "width": "36px",
+                    "height": "36px",
+                    "borderRadius": {
+                      "all": "radius.sm"
+                    },
+                    "border": {
+                      "width": "1px",
+                      "style": "solid",
+                      "color": "color.border"
+                    },
+                    "background": [
+                      {
+                        "kind": "solid",
+                        "color": "transparent"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "container",
+        "id": "NIbCEzGd",
+        "name": "Page main",
+        "semanticRole": "main",
+        "layout": {
+          "base": {
+            "mode": "flex",
+            "direction": "column",
+            "gap": "spacing.xl",
+            "align": "center"
+          }
+        },
+        "style": {
+          "base": {
+            "padding": {
+              "top": "spacing.xl"
+            },
+            "background": [
+              {
+                "kind": "solid",
+                "color": "color.bg"
+              }
+            ]
+          }
+        },
+        "children": [
+          {
+            "type": "container",
+            "id": "hero",
+            "name": "Hero",
+            "semanticRole": "section",
+            "layout": {
+              "base": {
+                "mode": "grid",
+                "gap": "spacing.xl",
+                "gridTemplateColumns": "1fr auto",
+                "align": "center"
+              },
+              "mobile": {
+                "mode": "flex",
+                "direction": "column",
+                "gap": "spacing.lg",
+                "align": "center"
+              }
+            },
+            "style": {
+              "base": {
+                "padding": {
+                  "top": "spacing.xl",
+                  "right": "spacing.lg",
+                  "bottom": "spacing.xl",
+                  "left": "spacing.lg"
+                },
+                "maxWidth": "1100px"
+              }
+            },
+            "children": [
+              {
+                "type": "container",
+                "id": "Al_Uwh9F",
+                "name": "Hero copy",
+                "layout": {
+                  "base": {
+                    "mode": "flex",
+                    "direction": "column",
+                    "gap": "spacing.md",
+                    "justify": "center"
+                  }
+                },
+                "style": {
+                  "base": {}
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "id": "eok1MrS9",
+                    "tag": "p",
+                    "content": "Systems & DevOps Engineer",
+                    "style": {
+                      "base": {
+                        "typography": {
+                          "fontFamily": "fontFamily.mono",
+                          "fontSize": "fontSize.sm",
+                          "color": "color.accent"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "id": "0V-e2uQN",
+                    "tag": "h1",
+                    "content": "{{author}}.",
+                    "style": {
+                      "base": {
+                        "typography": {
+                          "fontSize": "fontSize.display",
+                          "fontWeight": 700,
+                          "lineHeight": "lineHeight.tight",
+                          "color": "color.text"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "id": "wd5YjcWT",
+                    "tag": "p",
+                    "content": "I deploy servers from scratch, set up CI/CD pipelines, and write tools that get used. Self-host my own infrastructure and automate everything I can.",
+                    "style": {
+                      "base": {
+                        "typography": {
+                          "fontSize": "fontSize.md",
+                          "color": "color.text-secondary",
+                          "lineHeight": "lineHeight.normal"
+                        },
+                        "maxWidth": "480px"
+                      }
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "id": "-5LiDfuh",
+                    "name": "Hero actions",
+                    "layout": {
+                      "base": {
+                        "mode": "flex",
+                        "direction": "row",
+                        "gap": "spacing.md",
+                        "wrap": "wrap"
+                      }
+                    },
+                    "style": {
+                      "base": {}
+                    },
+                    "children": [
+                      {
+                        "type": "link",
+                        "id": "p3O3NxM1",
+                        "content": "See my projects",
+                        "href": "#projects",
+                        "style": {
+                          "base": {
+                            "padding": {
+                              "top": "spacing.sm",
+                              "right": "spacing.lg",
+                              "bottom": "spacing.sm",
+                              "left": "spacing.lg"
+                            },
+                            "borderRadius": {
+                              "all": "radius.sm"
+                            },
+                            "background": [
+                              {
+                                "kind": "solid",
+                                "color": "color.accent"
+                              }
+                            ],
+                            "typography": {
+                              "fontFamily": "fontFamily.mono",
+                              "fontSize": "fontSize.sm",
+                              "color": "#ffffff"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "link",
+                        "id": "mhmuuQxC",
+                        "content": "Get in touch",
+                        "href": "#connect",
+                        "style": {
+                          "base": {
+                            "padding": {
+                              "top": "spacing.sm",
+                              "right": "spacing.lg",
+                              "bottom": "spacing.sm",
+                              "left": "spacing.lg"
+                            },
+                            "borderRadius": {
+                              "all": "radius.sm"
+                            },
+                            "border": {
+                              "width": "1px",
+                              "style": "solid",
+                              "color": "color.border"
+                            },
+                            "typography": {
+                              "fontFamily": "fontFamily.mono",
+                              "fontSize": "fontSize.sm",
+                              "color": "color.text-secondary"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "image",
+                "id": "3UV7370a",
+                "alt": "{{author}} portrait",
+                "externalUrl": "https://picsum.photos/seed/portfolio-avatar/520/520",
+                "loading": "eager",
+                "decoding": "async",
+                "style": {
+                  "base": {
+                    "width": "260px",
+                    "height": "260px",
+                    "borderRadius": {
+                      "all": "radius.lg"
+                    },
+                    "border": {
+                      "width": "1px",
+                      "style": "solid",
+                      "color": "color.border"
+                    }
+                  },
+                  "mobile": {
+                    "width": "160px",
+                    "height": "160px"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "container",
+            "id": "about",
+            "name": "About",
+            "semanticRole": "section",
+            "layout": {
+              "base": {
+                "mode": "grid",
+                "gap": "spacing.xl",
+                "gridTemplateColumns": "1fr 1fr",
+                "align": "center"
+              },
+              "mobile": {
+                "mode": "flex",
+                "direction": "column",
+                "gap": "spacing.lg"
+              }
+            },
+            "style": {
+              "base": {
+                "padding": {
+                  "top": "spacing.xl",
+                  "right": "spacing.lg",
+                  "bottom": "spacing.xl",
+                  "left": "spacing.lg"
+                },
+                "maxWidth": "1100px"
+              }
+            },
+            "children": [
+              {
+                "type": "container",
+                "id": "N9RQ-L3x",
+                "name": "About header + body",
+                "layout": {
+                  "base": {
+                    "mode": "flex",
+                    "direction": "column",
+                    "gap": "spacing.md"
+                  }
+                },
+                "style": {
+                  "base": {}
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "id": "TCuH8k4-",
+                    "tag": "p",
+                    "content": "01 — About",
+                    "style": {
+                      "base": {
+                        "typography": {
+                          "fontFamily": "fontFamily.mono",
+                          "fontSize": "fontSize.sm",
+                          "color": "color.accent",
+                          "letterSpacing": "0.04em"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "container",
+                    "id": "mXIKPIvF",
+                    "name": "About copy",
+                    "layout": {
+                      "base": {
+                        "mode": "flex",
+                        "direction": "column",
+                        "gap": "spacing.md"
+                      }
+                    },
+                    "style": {
+                      "base": {}
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "id": "su6s6YxB",
+                        "tag": "h2",
+                        "content": "Building systems, not just writing code.",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontSize": "fontSize.xl",
+                              "fontWeight": 700,
+                              "lineHeight": "lineHeight.tight",
+                              "color": "color.text"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "container",
+                        "id": "0lJzY3FM",
+                        "name": "About text",
+                        "layout": {
+                          "base": {
+                            "mode": "flex",
+                            "direction": "column",
+                            "gap": "spacing.md"
+                          }
+                        },
+                        "style": {
+                          "base": {}
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "id": "JJuQwWKg",
+                            "tag": "p",
+                            "content": "I'm studying Information Technology & Management Information Systems. Most of my time goes into the stuff that sits between writing code and getting it to actually run — servers, containers, pipelines, security. The infrastructure side of things.",
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary",
+                                  "lineHeight": "lineHeight.loose"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "id": "16emMCP5",
+                            "tag": "p",
+                            "content": "I've been at it for years — started with bots and templates, and now I deploy full Linux servers from scratch, manage Docker environments, run CI/CD pipelines, and handle everything from DNS to firewalls.",
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary",
+                                  "lineHeight": "lineHeight.loose"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "container",
+                        "id": "E6W5X_W2",
+                        "name": "Interests",
+                        "layout": {
+                          "base": {
+                            "mode": "flex",
+                            "direction": "row",
+                            "gap": "spacing.sm",
+                            "wrap": "wrap"
+                          }
+                        },
+                        "style": {
+                          "base": {
+                            "padding": {
+                              "top": "spacing.md"
+                            }
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "container",
+                            "id": "9PLDkXpq",
+                            "name": "Tag Chess",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.md",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.md"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.lg"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.accent"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "niHbwf8C",
+                                "name": "chess",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "K4WYraET",
+                                "tag": "span",
+                                "content": "Chess",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "ZZJgs49M",
+                            "name": "Tag Astronomy",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.md",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.md"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.lg"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.accent"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "cMJNhSTE",
+                                "name": "star",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "I0OficJx",
+                                "tag": "span",
+                                "content": "Astronomy",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "MM2nh7nw",
+                            "name": "Tag Photography",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.md",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.md"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.lg"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.accent"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "yiToYS6y",
+                                "name": "camera",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "3Wq_04z8",
+                                "tag": "span",
+                                "content": "Photography",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "fak9pu4p",
+                            "name": "Tag Writing",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.md",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.md"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.lg"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.accent"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "FoSW36x9",
+                                "name": "pen",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "9gRKl2Tw",
+                                "tag": "span",
+                                "content": "Writing",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "33Hkc30z",
+                            "name": "Tag Design",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.md",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.md"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.lg"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.accent"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "V_wgwRuv",
+                                "name": "palette",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "btlkw5NT",
+                                "tag": "span",
+                                "content": "Design",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "wiRF9_Mv",
+                            "name": "Tag Gaming",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.md",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.md"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.lg"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.accent"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "u9nfcH0m",
+                                "name": "joystick",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "-EfSRZEM",
+                                "tag": "span",
+                                "content": "Gaming",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "image",
+                "id": "S2Z_BOZW",
+                "alt": "{{author}} at the workstation",
+                "externalUrl": "https://picsum.photos/seed/portfolio-about/800/600",
+                "loading": "lazy",
+                "decoding": "async",
+                "style": {
+                  "base": {
+                    "width": "100%",
+                    "borderRadius": {
+                      "all": "radius.lg"
+                    },
+                    "border": {
+                      "width": "1px",
+                      "style": "solid",
+                      "color": "color.border"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "container",
+            "id": "projects",
+            "name": "Projects",
+            "semanticRole": "section",
+            "layout": {
+              "base": {
+                "mode": "flex",
+                "direction": "column",
+                "gap": "spacing.md"
+              }
+            },
+            "style": {
+              "base": {
+                "padding": {
+                  "top": "spacing.xl",
+                  "right": "spacing.lg",
+                  "bottom": "spacing.xl",
+                  "left": "spacing.lg"
+                },
+                "maxWidth": "1100px"
+              }
+            },
+            "children": [
+              {
+                "type": "text",
+                "id": "GWDTHq1b",
+                "tag": "p",
+                "content": "02 — Projects",
+                "style": {
+                  "base": {
+                    "typography": {
+                      "fontFamily": "fontFamily.mono",
+                      "fontSize": "fontSize.sm",
+                      "color": "color.accent",
+                      "letterSpacing": "0.04em"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "text",
+                "id": "qMcQpR1k",
+                "tag": "h2",
+                "content": "Things I've built.",
+                "style": {
+                  "base": {
+                    "typography": {
+                      "fontSize": "fontSize.xl",
+                      "fontWeight": 700,
+                      "lineHeight": "lineHeight.tight",
+                      "color": "color.text"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "text",
+                "id": "Mvv2L8XJ",
+                "tag": "p",
+                "content": "Real infrastructure, real tools — deployed and running.",
+                "style": {
+                  "base": {
+                    "typography": {
+                      "fontSize": "fontSize.md",
+                      "color": "color.text-secondary",
+                      "lineHeight": "lineHeight.normal"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "container",
+                "id": "IV_CbmwL",
+                "name": "Projects grid",
+                "layout": {
+                  "base": {
+                    "mode": "grid",
+                    "gap": "spacing.md",
+                    "gridTemplateColumns": "1fr 1fr"
+                  },
+                  "mobile": {
+                    "mode": "flex",
+                    "direction": "column",
+                    "gap": "spacing.md"
+                  }
+                },
+                "style": {
+                  "base": {}
+                },
+                "children": [
+                  {
+                    "type": "container",
+                    "id": "dMb2z9P-",
+                    "name": "x-server — deployed from scratch",
+                    "semanticRole": "article",
+                    "layout": {
+                      "base": {
+                        "mode": "flex",
+                        "direction": "column",
+                        "gap": "spacing.md"
+                      }
+                    },
+                    "style": {
+                      "base": {
+                        "padding": {
+                          "top": "spacing.lg",
+                          "right": "spacing.lg",
+                          "bottom": "spacing.lg",
+                          "left": "spacing.lg"
+                        },
+                        "borderRadius": {
+                          "all": "radius.md"
+                        },
+                        "background": [
+                          {
+                            "kind": "solid",
+                            "color": "color.surface"
+                          }
+                        ],
+                        "border": {
+                          "width": "1px",
+                          "style": "solid",
+                          "color": "color.border"
+                        },
+                        "shadows": [
+                          {
+                            "offsetX": "0",
+                            "offsetY": "1px",
+                            "blur": "3px",
+                            "color": "color.surface-shadow"
+                          }
+                        ]
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "id": "XBC-M5iK",
+                        "tag": "h3",
+                        "content": "x-server — deployed from scratch",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontSize": "fontSize.lg",
+                              "fontWeight": 600,
+                              "color": "color.text"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "text",
+                        "id": "HTIBfvoI",
+                        "tag": "p",
+                        "content": "Production Linux server built from zero on repurposed hardware. Containerized stack (Nextcloud, Pi-hole, Portainer), Nginx + auto-renewed SSL, firewalled and monitored.",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontSize": "fontSize.md",
+                              "color": "color.text-secondary",
+                              "lineHeight": "lineHeight.normal"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "container",
+                        "id": "1HYdJdRN",
+                        "name": "Tags",
+                        "layout": {
+                          "base": {
+                            "mode": "flex",
+                            "direction": "row",
+                            "gap": "spacing.sm",
+                            "wrap": "wrap"
+                          }
+                        },
+                        "style": {
+                          "base": {}
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "id": "2rVaxMe8",
+                            "tag": "span",
+                            "content": "Ubuntu Server",
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.sm",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.sm"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.sm"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.text-dim"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "id": "wsIz7Wz5",
+                            "tag": "span",
+                            "content": "Docker",
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.sm",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.sm"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.sm"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.text-dim"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "id": "v8a1O7nu",
+                            "tag": "span",
+                            "content": "Nginx",
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.sm",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.sm"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.sm"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.text-dim"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "id": "A7ISstD6",
+                            "tag": "span",
+                            "content": "Fail2ban",
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.sm",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.sm"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.sm"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.text-dim"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "link",
+                        "id": "02Dbauvg",
+                        "content": "View project →",
+                        "href": "https://example.com/x-server",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontFamily": "fontFamily.mono",
+                              "fontSize": "fontSize.sm",
+                              "color": "color.accent"
+                            }
+                          }
+                        },
+                        "target": "_blank"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "container",
+                    "id": "ADjeLwqI",
+                    "name": "pdfpeek",
+                    "semanticRole": "article",
+                    "layout": {
+                      "base": {
+                        "mode": "flex",
+                        "direction": "column",
+                        "gap": "spacing.md"
+                      }
+                    },
+                    "style": {
+                      "base": {
+                        "padding": {
+                          "top": "spacing.lg",
+                          "right": "spacing.lg",
+                          "bottom": "spacing.lg",
+                          "left": "spacing.lg"
+                        },
+                        "borderRadius": {
+                          "all": "radius.md"
+                        },
+                        "background": [
+                          {
+                            "kind": "solid",
+                            "color": "color.surface"
+                          }
+                        ],
+                        "border": {
+                          "width": "1px",
+                          "style": "solid",
+                          "color": "color.border"
+                        },
+                        "shadows": [
+                          {
+                            "offsetX": "0",
+                            "offsetY": "1px",
+                            "blur": "3px",
+                            "color": "color.surface-shadow"
+                          }
+                        ]
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "id": "XtZeytB_",
+                        "tag": "h3",
+                        "content": "pdfpeek",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontSize": "fontSize.lg",
+                              "fontWeight": 600,
+                              "color": "color.text"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "text",
+                        "id": "fDo-n_Rk",
+                        "tag": "p",
+                        "content": "Python package on PyPI: 10-stage PDF extraction pipeline with per-block confidence scoring, tiered install sizes, CLI + Python API.",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontSize": "fontSize.md",
+                              "color": "color.text-secondary",
+                              "lineHeight": "lineHeight.normal"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "container",
+                        "id": "JAL-twa0",
+                        "name": "Tags",
+                        "layout": {
+                          "base": {
+                            "mode": "flex",
+                            "direction": "row",
+                            "gap": "spacing.sm",
+                            "wrap": "wrap"
+                          }
+                        },
+                        "style": {
+                          "base": {}
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "id": "EtytrEu_",
+                            "tag": "span",
+                            "content": "Python",
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.sm",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.sm"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.sm"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.text-dim"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "id": "J3OVMRai",
+                            "tag": "span",
+                            "content": "PyPI",
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.sm",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.sm"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.sm"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.text-dim"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "id": "ajsc-zPE",
+                            "tag": "span",
+                            "content": "CLI",
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.sm",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.sm"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.sm"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.text-dim"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "id": "2IQ4OV3H",
+                            "tag": "span",
+                            "content": "NLP",
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.sm",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.sm"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.sm"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.text-dim"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "link",
+                        "id": "EH01zNPc",
+                        "content": "View project →",
+                        "href": "https://github.com/example/pdfpeek",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontFamily": "fontFamily.mono",
+                              "fontSize": "fontSize.sm",
+                              "color": "color.accent"
+                            }
+                          }
+                        },
+                        "target": "_blank"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "container",
+                    "id": "mZ-A-Pjk",
+                    "name": "GA-Optimized Decision Trees",
+                    "semanticRole": "article",
+                    "layout": {
+                      "base": {
+                        "mode": "flex",
+                        "direction": "column",
+                        "gap": "spacing.md"
+                      }
+                    },
+                    "style": {
+                      "base": {
+                        "padding": {
+                          "top": "spacing.lg",
+                          "right": "spacing.lg",
+                          "bottom": "spacing.lg",
+                          "left": "spacing.lg"
+                        },
+                        "borderRadius": {
+                          "all": "radius.md"
+                        },
+                        "background": [
+                          {
+                            "kind": "solid",
+                            "color": "color.surface"
+                          }
+                        ],
+                        "border": {
+                          "width": "1px",
+                          "style": "solid",
+                          "color": "color.border"
+                        },
+                        "shadows": [
+                          {
+                            "offsetX": "0",
+                            "offsetY": "1px",
+                            "blur": "3px",
+                            "color": "color.surface-shadow"
+                          }
+                        ]
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "id": "QGPJ6Ce-",
+                        "tag": "h3",
+                        "content": "GA-Optimized Decision Trees",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontSize": "fontSize.lg",
+                              "fontWeight": 600,
+                              "color": "color.text"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "text",
+                        "id": "e35Vl3qT",
+                        "tag": "p",
+                        "content": "Genetic-algorithm framework that finds the accuracy/interpretability sweet spot. Produces 46–82% smaller trees with full CI and 20-fold cross-validation.",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontSize": "fontSize.md",
+                              "color": "color.text-secondary",
+                              "lineHeight": "lineHeight.normal"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "container",
+                        "id": "j_5wjXWB",
+                        "name": "Tags",
+                        "layout": {
+                          "base": {
+                            "mode": "flex",
+                            "direction": "row",
+                            "gap": "spacing.sm",
+                            "wrap": "wrap"
+                          }
+                        },
+                        "style": {
+                          "base": {}
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "id": "hlLhlAco",
+                            "tag": "span",
+                            "content": "Python",
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.sm",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.sm"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.sm"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.text-dim"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "id": "J_ywIlfh",
+                            "tag": "span",
+                            "content": "scikit-learn",
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.sm",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.sm"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.sm"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.text-dim"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "id": "NiyKY6C7",
+                            "tag": "span",
+                            "content": "CI/CD",
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.sm",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.sm"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.sm"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.text-dim"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "text",
+                            "id": "2Cfm0QyY",
+                            "tag": "span",
+                            "content": "Research",
+                            "style": {
+                              "base": {
+                                "padding": {
+                                  "top": "spacing.sm",
+                                  "right": "spacing.sm",
+                                  "bottom": "spacing.sm",
+                                  "left": "spacing.sm"
+                                },
+                                "borderRadius": {
+                                  "all": "radius.sm"
+                                },
+                                "background": [
+                                  {
+                                    "kind": "solid",
+                                    "color": "color.surface-accent"
+                                  }
+                                ],
+                                "typography": {
+                                  "fontFamily": "fontFamily.mono",
+                                  "fontSize": "fontSize.sm",
+                                  "color": "color.text-dim"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "link",
+                        "id": "HD5UZa32",
+                        "content": "View project →",
+                        "href": "https://github.com/example/ga-trees",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontFamily": "fontFamily.mono",
+                              "fontSize": "fontSize.sm",
+                              "color": "color.accent"
+                            }
+                          }
+                        },
+                        "target": "_blank"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "container",
+            "id": "stack",
+            "name": "Stack",
+            "semanticRole": "section",
+            "layout": {
+              "base": {
+                "mode": "flex",
+                "direction": "column",
+                "gap": "spacing.md"
+              }
+            },
+            "style": {
+              "base": {
+                "padding": {
+                  "top": "spacing.xl",
+                  "right": "spacing.lg",
+                  "bottom": "spacing.xl",
+                  "left": "spacing.lg"
+                },
+                "maxWidth": "1100px"
+              }
+            },
+            "children": [
+              {
+                "type": "text",
+                "id": "VBJq9sct",
+                "tag": "p",
+                "content": "03 — Stack",
+                "style": {
+                  "base": {
+                    "typography": {
+                      "fontFamily": "fontFamily.mono",
+                      "fontSize": "fontSize.sm",
+                      "color": "color.accent",
+                      "letterSpacing": "0.04em"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "text",
+                "id": "CSkSOAV-",
+                "tag": "h2",
+                "content": "What I work with.",
+                "style": {
+                  "base": {
+                    "typography": {
+                      "fontSize": "fontSize.xl",
+                      "fontWeight": 700,
+                      "lineHeight": "lineHeight.tight",
+                      "color": "color.text"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "container",
+                "id": "6lAdZIM7",
+                "name": "Stack grid",
+                "layout": {
+                  "base": {
+                    "mode": "grid",
+                    "gap": "spacing.md",
+                    "gridTemplateColumns": "repeat(3, 1fr)"
+                  },
+                  "mobile": {
+                    "mode": "flex",
+                    "direction": "column",
+                    "gap": "spacing.md"
+                  }
+                },
+                "style": {
+                  "base": {}
+                },
+                "children": [
+                  {
+                    "type": "container",
+                    "id": "9CIS-RgL",
+                    "name": "Infrastructure",
+                    "semanticRole": "article",
+                    "layout": {
+                      "base": {
+                        "mode": "flex",
+                        "direction": "column",
+                        "gap": "spacing.md"
+                      }
+                    },
+                    "style": {
+                      "base": {
+                        "padding": {
+                          "top": "spacing.lg",
+                          "right": "spacing.lg",
+                          "bottom": "spacing.lg",
+                          "left": "spacing.lg"
+                        },
+                        "borderRadius": {
+                          "all": "radius.md"
+                        },
+                        "background": [
+                          {
+                            "kind": "solid",
+                            "color": "color.surface"
+                          }
+                        ],
+                        "border": {
+                          "width": "1px",
+                          "style": "solid",
+                          "color": "color.border"
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "id": "sFNQUmHa",
+                        "tag": "h3",
+                        "content": "Infrastructure",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontFamily": "fontFamily.mono",
+                              "fontSize": "fontSize.sm",
+                              "color": "color.accent",
+                              "textTransform": "uppercase",
+                              "letterSpacing": "0.08em"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "container",
+                        "id": "dAGhe_ME",
+                        "name": "Stack items",
+                        "layout": {
+                          "base": {
+                            "mode": "flex",
+                            "direction": "column",
+                            "gap": "spacing.sm"
+                          }
+                        },
+                        "style": {
+                          "base": {}
+                        },
+                        "children": [
+                          {
+                            "type": "container",
+                            "id": "BanJeZhc",
+                            "name": "Docker & Compose",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "z8mNcPSY",
+                                "name": "docker",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "oidp1QXH",
+                                "tag": "span",
+                                "content": "Docker & Compose",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "QpiIVhni",
+                            "name": "Ubuntu Server",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "BZ2KCOPD",
+                                "name": "server",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "eyt3z_Y6",
+                                "tag": "span",
+                                "content": "Ubuntu Server",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "g9mJkymD",
+                            "name": "Nginx",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "VwLgFfbG",
+                                "name": "layers",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "T3TFLsMM",
+                                "tag": "span",
+                                "content": "Nginx",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "Q5nglyG_",
+                            "name": "CI/CD Pipelines",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "46pPOHmo",
+                                "name": "git-branch",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "TCgvaxSJ",
+                                "tag": "span",
+                                "content": "CI/CD Pipelines",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "container",
+                    "id": "rEs5eE64",
+                    "name": "Languages & Runtimes",
+                    "semanticRole": "article",
+                    "layout": {
+                      "base": {
+                        "mode": "flex",
+                        "direction": "column",
+                        "gap": "spacing.md"
+                      }
+                    },
+                    "style": {
+                      "base": {
+                        "padding": {
+                          "top": "spacing.lg",
+                          "right": "spacing.lg",
+                          "bottom": "spacing.lg",
+                          "left": "spacing.lg"
+                        },
+                        "borderRadius": {
+                          "all": "radius.md"
+                        },
+                        "background": [
+                          {
+                            "kind": "solid",
+                            "color": "color.surface"
+                          }
+                        ],
+                        "border": {
+                          "width": "1px",
+                          "style": "solid",
+                          "color": "color.border"
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "id": "R23GZ0L9",
+                        "tag": "h3",
+                        "content": "Languages & Runtimes",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontFamily": "fontFamily.mono",
+                              "fontSize": "fontSize.sm",
+                              "color": "color.accent",
+                              "textTransform": "uppercase",
+                              "letterSpacing": "0.08em"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "container",
+                        "id": "MeFCIesp",
+                        "name": "Stack items",
+                        "layout": {
+                          "base": {
+                            "mode": "flex",
+                            "direction": "column",
+                            "gap": "spacing.sm"
+                          }
+                        },
+                        "style": {
+                          "base": {}
+                        },
+                        "children": [
+                          {
+                            "type": "container",
+                            "id": "5X24gmis",
+                            "name": "Python",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "AOlO0iZz",
+                                "name": "python",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "S6wcqvsS",
+                                "tag": "span",
+                                "content": "Python",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "oHTBb0p_",
+                            "name": "Node.js",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "2K8y5bYE",
+                                "name": "nodejs",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "tZH2omEw",
+                                "tag": "span",
+                                "content": "Node.js",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "Dvno4rdC",
+                            "name": "Bash / Zsh",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "v6sbFCXM",
+                                "name": "terminal",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "DZZ-0ek4",
+                                "tag": "span",
+                                "content": "Bash / Zsh",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "fglcKd_4",
+                            "name": "JavaScript",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "Z9Uz6-Kj",
+                                "name": "javascript",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "qXz97MZA",
+                                "tag": "span",
+                                "content": "JavaScript",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "container",
+                    "id": "jQj9Hd6G",
+                    "name": "DevOps & Tooling",
+                    "semanticRole": "article",
+                    "layout": {
+                      "base": {
+                        "mode": "flex",
+                        "direction": "column",
+                        "gap": "spacing.md"
+                      }
+                    },
+                    "style": {
+                      "base": {
+                        "padding": {
+                          "top": "spacing.lg",
+                          "right": "spacing.lg",
+                          "bottom": "spacing.lg",
+                          "left": "spacing.lg"
+                        },
+                        "borderRadius": {
+                          "all": "radius.md"
+                        },
+                        "background": [
+                          {
+                            "kind": "solid",
+                            "color": "color.surface"
+                          }
+                        ],
+                        "border": {
+                          "width": "1px",
+                          "style": "solid",
+                          "color": "color.border"
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "id": "DCm2vyXS",
+                        "tag": "h3",
+                        "content": "DevOps & Tooling",
+                        "style": {
+                          "base": {
+                            "typography": {
+                              "fontFamily": "fontFamily.mono",
+                              "fontSize": "fontSize.sm",
+                              "color": "color.accent",
+                              "textTransform": "uppercase",
+                              "letterSpacing": "0.08em"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "container",
+                        "id": "6rmvgDZS",
+                        "name": "Stack items",
+                        "layout": {
+                          "base": {
+                            "mode": "flex",
+                            "direction": "column",
+                            "gap": "spacing.sm"
+                          }
+                        },
+                        "style": {
+                          "base": {}
+                        },
+                        "children": [
+                          {
+                            "type": "container",
+                            "id": "R6zK_oIf",
+                            "name": "Git & GitHub Actions",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "nj87pNcy",
+                                "name": "git",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "_2lqi5Yd",
+                                "tag": "span",
+                                "content": "Git & GitHub Actions",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "nyUJ65I4",
+                            "name": "UFW / Fail2ban",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "Us-nUrpo",
+                                "name": "shield",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "cmo5Uqdm",
+                                "tag": "span",
+                                "content": "UFW / Fail2ban",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "OWlX_1Q4",
+                            "name": "DNS / Pi-hole",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "A8BlLXQs",
+                                "name": "filter",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "_aEYmkVL",
+                                "tag": "span",
+                                "content": "DNS / Pi-hole",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "container",
+                            "id": "xmwL-mDb",
+                            "name": "Linux Administration",
+                            "layout": {
+                              "base": {
+                                "mode": "flex",
+                                "direction": "row",
+                                "gap": "spacing.sm",
+                                "align": "center"
+                              }
+                            },
+                            "style": {
+                              "base": {
+                                "typography": {
+                                  "fontSize": "fontSize.md",
+                                  "color": "color.text-secondary"
+                                }
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "icon",
+                                "id": "8QyhA6Y3",
+                                "name": "linux",
+                                "decorative": true,
+                                "style": {
+                                  "base": {
+                                    "width": "20px",
+                                    "height": "20px"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "text",
+                                "id": "DTDs-9yE",
+                                "tag": "span",
+                                "content": "Linux Administration",
+                                "style": {
+                                  "base": {}
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "container",
+            "id": "connect",
+            "name": "Connect",
+            "semanticRole": "section",
+            "layout": {
+              "base": {
+                "mode": "flex",
+                "direction": "column",
+                "gap": "spacing.md",
+                "align": "center"
+              }
+            },
+            "style": {
+              "base": {
+                "padding": {
+                  "top": "spacing.xl",
+                  "right": "spacing.lg",
+                  "bottom": "spacing.xl",
+                  "left": "spacing.lg"
+                },
+                "maxWidth": "1100px"
+              }
+            },
+            "children": [
+              {
+                "type": "text",
+                "id": "FWrA-dGv",
+                "tag": "p",
+                "content": "04 — Connect",
+                "style": {
+                  "base": {
+                    "typography": {
+                      "fontFamily": "fontFamily.mono",
+                      "fontSize": "fontSize.sm",
+                      "color": "color.accent",
+                      "letterSpacing": "0.04em",
+                      "textAlign": "center"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "text",
+                "id": "wfQHpCtS",
+                "tag": "h2",
+                "content": "Say hello.",
+                "style": {
+                  "base": {
+                    "typography": {
+                      "fontSize": "fontSize.xl",
+                      "fontWeight": 700,
+                      "textAlign": "center",
+                      "color": "color.text"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "text",
+                "id": "gG94wFH9",
+                "tag": "p",
+                "content": "Open to work, freelance, or just a good conversation.",
+                "style": {
+                  "base": {
+                    "typography": {
+                      "fontSize": "fontSize.md",
+                      "color": "color.text-secondary",
+                      "textAlign": "center"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "container",
+                "id": "cqyWVwLE",
+                "name": "Social links",
+                "layout": {
+                  "base": {
+                    "mode": "flex",
+                    "direction": "row",
+                    "gap": "spacing.md",
+                    "justify": "center",
+                    "wrap": "wrap"
+                  }
+                },
+                "style": {
+                  "base": {}
+                },
+                "children": [
+                  {
+                    "type": "link",
+                    "id": "NVOY17KH",
+                    "content": "",
+                    "href": "https://github.com/example",
+                    "ariaLabel": "GitHub",
+                    "target": "_blank",
+                    "style": {
+                      "base": {
+                        "width": "52px",
+                        "height": "52px",
+                        "borderRadius": {
+                          "all": "radius.md"
+                        },
+                        "border": {
+                          "width": "1px",
+                          "style": "solid",
+                          "color": "color.border"
+                        },
+                        "background": [
+                          {
+                            "kind": "solid",
+                            "color": "color.surface"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "link",
+                    "id": "VImObJVr",
+                    "content": "",
+                    "href": "https://www.linkedin.com/in/example/",
+                    "ariaLabel": "LinkedIn",
+                    "target": "_blank",
+                    "style": {
+                      "base": {
+                        "width": "52px",
+                        "height": "52px",
+                        "borderRadius": {
+                          "all": "radius.md"
+                        },
+                        "border": {
+                          "width": "1px",
+                          "style": "solid",
+                          "color": "color.border"
+                        },
+                        "background": [
+                          {
+                            "kind": "solid",
+                            "color": "color.surface"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "link",
+                    "id": "PsGn-QOz",
+                    "content": "",
+                    "href": "https://x.com/example",
+                    "ariaLabel": "X (Twitter)",
+                    "target": "_blank",
+                    "style": {
+                      "base": {
+                        "width": "52px",
+                        "height": "52px",
+                        "borderRadius": {
+                          "all": "radius.md"
+                        },
+                        "border": {
+                          "width": "1px",
+                          "style": "solid",
+                          "color": "color.border"
+                        },
+                        "background": [
+                          {
+                            "kind": "solid",
+                            "color": "color.surface"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "link",
+                    "id": "GNpwsIhc",
+                    "content": "",
+                    "href": "mailto:hello@example.com",
+                    "ariaLabel": "Email",
+                    "target": "_blank",
+                    "style": {
+                      "base": {
+                        "width": "52px",
+                        "height": "52px",
+                        "borderRadius": {
+                          "all": "radius.md"
+                        },
+                        "border": {
+                          "width": "1px",
+                          "style": "solid",
+                          "color": "color.border"
+                        },
+                        "background": [
+                          {
+                            "kind": "solid",
+                            "color": "color.surface"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "container",
+        "id": "ckQAPW6b",
+        "name": "Footer",
+        "semanticRole": "footer",
+        "layout": {
+          "base": {
+            "mode": "flex",
+            "direction": "row",
+            "justify": "center"
+          }
+        },
+        "style": {
+          "base": {
+            "padding": {
+              "top": "spacing.lg",
+              "bottom": "spacing.lg"
+            },
+            "border": {
+              "width": "1px",
+              "style": "solid",
+              "color": "color.border"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "text",
+            "id": "TaRFmmyb",
+            "tag": "small",
+            "content": "© {{year}} {{author}} — Self-hosted. No frameworks, no templates.",
+            "style": {
+              "base": {
+                "typography": {
+                  "fontFamily": "fontFamily.mono",
+                  "fontSize": "fontSize.sm",
+                  "color": "color.text-dim",
+                  "textAlign": "center"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "seo": {
+    "title": "Author Name — Systems & DevOps Engineer",
+    "description": "Systems & DevOps engineer specializing in cloud infrastructure, CI/CD automation, container orchestration, and developer tooling.",
+    "keywords": [
+      "DevOps",
+      "Systems Engineer",
+      "Infrastructure",
+      "Docker",
+      "CI/CD",
+      "Linux"
+    ],
+    "author": "Author Name",
+    "lang": "en",
+    "viewport": "width=device-width, initial-scale=1",
+    "charset": "utf-8",
+    "canonical": "https://example.com/",
+    "themeColor": {
+      "light": "#f6f5f2",
+      "dark": "#0a0a10"
+    },
+    "openGraph": {
+      "title": "Author Name — Systems & DevOps Engineer",
+      "description": "Infrastructure, automation, and developer tooling. Production-grade.",
+      "type": "website",
+      "url": "https://example.com/"
+    },
+    "twitter": {
+      "card": "summary_large_image"
+    },
+    "jsonLd": {
+      "kind": "Person",
+      "name": "Author Name",
+      "url": "https://example.com/",
+      "jobTitle": "Systems & DevOps Engineer",
+      "sameAs": [
+        "https://github.com/example",
+        "https://www.linkedin.com/in/example/",
+        "https://x.com/example"
+      ]
+    },
+    "preconnect": [
+      "https://fonts.googleapis.com",
+      "https://fonts.gstatic.com"
+    ],
+    "robots": "index, follow"
+  },
+  "runtime": {
+    "themeToggle": true,
+    "scrollSpy": true,
+    "smoothScroll": true,
+    "mobileNav": true,
+    "navOnScroll": true,
+    "reveals": true,
+    "animationGating": true,
+    "terminalTyping": true
+  },
+  "variables": {
+    "author": "Author Name",
+    "year": "2026"
+  },
+  "settings": {
+    "contrastTarget": "AA",
+    "defaultTheme": "auto",
+    "gridVisible": true,
+    "baseUnit": 8,
+    "decorativeBackdrop": {
+      "before": {
+        "background": [
+          {
+            "kind": "linear-gradient",
+            "angle": "180deg",
+            "stops": [
+              {
+                "color": "rgba(77, 142, 255, 0.02)",
+                "position": "0%"
+              },
+              {
+                "color": "transparent",
+                "position": "100%"
+              }
+            ]
+          }
+        ],
+        "maskImage": "radial-gradient(ellipse 80% 60% at 50% 30%, black 20%, transparent 70%)"
+      }
+    }
+  },
+  "assets": {}
+}

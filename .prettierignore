@@ -1,0 +1,10 @@
+# Generator-emitted fixtures. These are deterministic outputs of
+# `npm run audit:sample` and must match the generator byte-for-byte;
+# prettier reformatting them would mask drift the audit is meant to
+# catch.
+tests/fixtures/output/
+
+# Common build / dependency dirs.
+node_modules/
+out/
+dist/

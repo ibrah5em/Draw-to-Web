@@ -105,6 +105,12 @@ function mergedAttrs(el: ElementNode, _ctx: RenderContext): AttrBag {
       merged[`data-${k}`] = v
     }
   }
+  // Animation gating hook (I-RUN-07). The CSS half (animationDecls in
+  // cssEmitter) emits `animation-play-state: paused`; the data attribute
+  // is what the runtime snippet queries to flip play-state on entry.
+  if (el.animation?.gateOnView === true) {
+    merged['data-dtw-gate-anim'] = ''
+  }
   return merged
 }
 

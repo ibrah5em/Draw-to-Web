@@ -29,16 +29,25 @@ describe('generate(document)', () => {
     expect(html).not.toContain('scripts.js')
   })
 
-  it('does not inject <script> for enabled flags whose snippet is not yet authored', async () => {
-    // Flags whose I-RUN-* tasks have not landed yet (everything except
-    // themeToggle as of I-RUN-01) must opt-in without contributing JS.
+  it('emits scripts.js and a non-empty JS bundle when every runtime flag is on', async () => {
+    // I-RUN-01..08 have all shipped, so every flag now contributes JS.
+    // Replaces the historical "unauthored flags = empty output" guard.
     const doc = {
       ...PORTFOLIO_DOCUMENT,
-      runtime: { ...PORTFOLIO_DOCUMENT.runtime, scrollSpy: true, mobileNav: true },
+      runtime: {
+        themeToggle: true,
+        scrollSpy: true,
+        smoothScroll: true,
+        mobileNav: true,
+        navOnScroll: true,
+        reveals: true,
+        animationGating: true,
+        terminalTyping: true,
+      },
     }
     const { html, js } = await generate(doc)
-    expect(js).toBe('')
-    expect(html).not.toContain('scripts.js')
+    expect(js.length).toBeGreaterThan(0)
+    expect(html).toContain('<script src="scripts.js" defer></script>')
   })
 
   describe('theme toggle (I-RUN-01)', () => {

@@ -20,6 +20,7 @@
     "lint": "eslint . --ext .ts,.tsx && prettier --check .",
     "typecheck": "tsc --noEmit",
     "typecheck:web": "tsc -p tsconfig.web.json --noEmit",
+    "audit:sample": "vite-node scripts/emit-runtime-audit-sample.ts",
     "prepare": "husky"
   },
   "dependencies": {

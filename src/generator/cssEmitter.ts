@@ -761,6 +761,20 @@ export function emitCss(doc: Document): string {
   // currently call `document.startViewTransition()`.
   if (doc.runtime.themeToggle) sections.push(VIEW_TRANSITION_BLOCK)
 
+  // Smooth scroll + scroll-padding-top offset (I-RUN-03). CSS owns the
+  // smoothness; the matching runtime snippet writes `--dtw-nav-pad` so
+  // anchor jumps land flush below a fixed nav. `prefers-reduced-motion`
+  // demotes scroll-behavior to `auto` so users who opted out of motion
+  // do not get an unexpected animated jump.
+  if (doc.runtime.smoothScroll) sections.push(SMOOTH_SCROLL_BLOCK)
+
+  // Terminal typing paused-by-default rule (I-RUN-08). Without this,
+  // typing-line animations would briefly run before the runtime
+  // snippet runs (defer-loaded) and visibly snap. Pausing in CSS keeps
+  // the animation parked at frame 0 until the snippet flips
+  // animation-play-state to `running` on viewport entry.
+  if (doc.runtime.terminalTyping) sections.push(TERMINAL_TYPING_BLOCK)
+
   // Print stylesheet (I-GEN-13). Forces background printing, hides
   // navigation chrome and decorative pseudo-elements, collapses the
   // page to a single column, and adds the URL after links (helpful on
@@ -785,6 +799,46 @@ const VIEW_TRANSITION_BLOCK = `::view-transition-old(root),
   ::view-transition-new(root) {
     animation-duration: 1ms;
   }
+}`
+
+// ---------------------------------------------------------------------------
+// Smooth scroll + scroll-padding-top (I-RUN-03)
+// ---------------------------------------------------------------------------
+
+/**
+ * CSS half of the smooth-scroll runtime. The `--dtw-nav-pad` custom
+ * property is set by the matching JS snippet (`SMOOTH_SCROLL_SNIPPET`)
+ * to the rendered height of the page's first `<nav>`; the fallback `0px`
+ * keeps the rule safe before the snippet runs (or when no nav exists).
+ *
+ * `scroll-behavior: smooth` lives on `html` so it applies to every
+ * in-page anchor jump; the reduced-motion media query demotes it to
+ * `auto` so users with motion sensitivity get an instant jump.
+ */
+const SMOOTH_SCROLL_BLOCK = `html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--dtw-nav-pad, 0px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}`
+
+// ---------------------------------------------------------------------------
+// Terminal typing paused-by-default (I-RUN-08)
+// ---------------------------------------------------------------------------
+
+/**
+ * CSS half of the terminal-typing runtime. Pauses every typing line
+ * up front so the deferred runtime snippet can flip
+ * `animation-play-state` to `running` once the line enters the
+ * viewport, without a one-frame visible "rewind" caused by the
+ * animation kicking off before the script runs.
+ */
+const TERMINAL_TYPING_BLOCK = `[data-dtw-terminal-type] {
+  animation-play-state: paused;
 }`
 
 // ---------------------------------------------------------------------------

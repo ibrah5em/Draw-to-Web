@@ -33,6 +33,7 @@ import { emitSitemap } from '../seo/sitemap'
 import { emitRobots } from '../seo/robots'
 import { validateDocument } from '../document/validation'
 import { minifyHtml, minifyCss, minifyJs } from './minify'
+import { selfHostFonts } from './selfHostFonts'
 import type { Document } from '../document/types'
 import type {
   CanvasElement,
@@ -77,6 +78,14 @@ export interface ExportOptions {
   /** Optional name for the produced zip (no extension). Falls back to "project". */
   projectName?: string
   /**
+   * Skip the bundle + save stages and return the formatted HTML / CSS /
+   * JS strings as a `DryRunResult`. Powers the Code Preview panel
+   * (L-DLG-07). Budget <500 ms on the portfolio template — the a11y
+   * gate is skipped because the preview should show what the author
+   * currently has, not block on violations.
+   */
+  dryRun?: boolean
+  /**
    * Whether to minify HTML/CSS/JS in the output bundle. Powered by
    * `html-minifier-terser`, `lightningcss`, and `terser` respectively
    * (see `./minify.ts`). When `false` (the default) the stage emits a
@@ -94,10 +103,21 @@ export interface ExportOptions {
    */
   inlineJS?: boolean
   /**
-   * Self-host fonts referenced via Google Fonts CDN. Accepted but not
-   * yet implemented (I-EXP-05).
+   * Self-host fonts referenced via Google Fonts CDN. When `true`,
+   * `selfHostFonts` (I-EXP-05) runs after `inject-seo`: every
+   * `https://fonts.googleapis.com/css2?…` reference is fetched, the
+   * woff2 files it points at are written to `fonts/` inside the bundle,
+   * and the `<link>` tag is replaced with an inline `<style>` carrying
+   * the rewritten @font-face rules. No-op when no Google Fonts URLs are
+   * present in the rendered HTML or CSS.
    */
   selfHostFonts?: boolean
+  /**
+   * Network adapter used by the self-host stage. Defaults to the global
+   * `fetch`. Tests inject a stub returning canned responses so the
+   * pipeline can run offline.
+   */
+  fetchFonts?: typeof fetch
   /** Include source comments in the output bundle (debug aid). Default false. */
   includeSourceComments?: boolean
   /** Default theme attribute on the root element (`auto` = OS preference). */
@@ -113,6 +133,18 @@ export interface ExportOptions {
 export type ExportProjectResult =
   | { success: true; filePath: string; report: FullExportReport }
   | { success: false; stage: ExportStage; error: string; report?: FullExportReport }
+
+/**
+ * Result returned by the dry-run path (I-EXP-04). Carries the bytes the
+ * bundle would have packaged, plus the validation report so the preview
+ * can surface findings without blocking the render.
+ */
+export interface DryRunResult {
+  readonly html: string
+  readonly css: string
+  readonly js: string
+  readonly validation: ReturnType<typeof validateDocument>
+}
 
 const DEFAULT_PROJECT_NAME = 'project'
 
@@ -188,16 +220,27 @@ function emitProgress(opts: ExportOptions, stage: ExportStage): void {
  * @param doc - The document to export. Should already be a valid
  *   Document (file load runs Zod), but `validateDocument` still gates on
  *   logical errors (single-h1, missing alt, broken token refs, dup ids).
- * @param options - Optional pipeline tuning + progress callback.
+ * @param options - Optional pipeline tuning + progress callback. When
+ *   `options.dryRun === true`, the bundle + save stages are skipped and
+ *   the function returns a `DryRunResult` carrying the formatted HTML
+ *   / CSS / JS strings (I-EXP-04).
  */
 export async function exportProject(
   doc: Document,
+  options: ExportOptions & { dryRun: true }
+): Promise<DryRunResult>
+export async function exportProject(
+  doc: Document,
+  options?: ExportOptions
+): Promise<ExportProjectResult>
+export async function exportProject(
+  doc: Document,
   options: ExportOptions = {}
-): Promise<ExportProjectResult> {
+): Promise<ExportProjectResult | DryRunResult> {
   // 1. validate ──────────────────────────────────────────────────────
   emitProgress(options, 'validate')
   const validationReport = validateDocument(doc)
-  if (validationReport.errors.length > 0) {
+  if (validationReport.errors.length > 0 && options.dryRun !== true) {
     return {
       success: false,
       stage: 'validate',
@@ -211,6 +254,7 @@ export async function exportProject(
   try {
     generated = await generate(doc)
   } catch (err) {
+    if (options.dryRun === true) throw err
     return { success: false, stage: 'generate', error: toMessage(err) }
   }
 
@@ -220,7 +264,51 @@ export async function exportProject(
   try {
     enrichedHtml = injectSEO(generated.html, doc.seo, doc.assets)
   } catch (err) {
+    if (options.dryRun === true) throw err
     return { success: false, stage: 'inject-seo', error: toMessage(err) }
+  }
+
+  // 3b. self-host fonts (I-EXP-05) — folded into the inject-seo stage
+  // so we don't bloat the canonical 9-stage progress order. Mutates
+  // enrichedHtml + generated.css and produces a bag of `fonts/*.woff2`
+  // files the bundle stage will pack alongside the document.
+  let fontFiles: Record<string, ArrayBuffer> = {}
+  let mutatedCss = generated.css
+  if (options.selfHostFonts === true) {
+    try {
+      const result = await selfHostFonts(enrichedHtml, generated.css, options.fetchFonts)
+      enrichedHtml = result.html
+      mutatedCss = result.css
+      fontFiles = { ...result.files }
+    } catch (err) {
+      if (options.dryRun === true) throw err
+      return { success: false, stage: 'inject-seo', error: toMessage(err) }
+    }
+  }
+
+  // Dry-run short-circuit (I-EXP-04). Honors minify + inlineJS if the
+  // caller asked for them so the preview reflects the real bytes. Skips
+  // a11y-gate, optimize-images, sitemap, bundle, save — the preview
+  // panel should render what the author has, not block on violations.
+  if (options.dryRun === true) {
+    let html = enrichedHtml
+    let css = mutatedCss
+    let js = generated.js
+    if (options.minify === true) {
+      const [mHtml, mCss, mJs] = await Promise.all([
+        minifyHtml(html),
+        minifyCss(css),
+        js.length > 0 ? minifyJs(js) : Promise.resolve(''),
+      ])
+      html = mHtml
+      css = mCss
+      js = mJs
+    }
+    if (options.inlineJS === true && js.length > 0) {
+      html = inlineScriptsJsTag(html, js)
+      js = ''
+    }
+    return { html, css, js, validation: validationReport }
   }
 
   // 4. a11y-gate ────────────────────────────────────────────────────
@@ -267,13 +355,13 @@ export async function exportProject(
   // process via IPC; in Node (tests, main process) it runs in-process.
   emitProgress(options, 'minify')
   let finalHtml = enrichedHtml
-  let finalCss = generated.css
+  let finalCss = mutatedCss
   let finalJs = generated.js
   if (options.minify === true) {
     try {
       const [mHtml, mCss, mJs] = await Promise.all([
         minifyHtml(enrichedHtml),
-        minifyCss(generated.css),
+        minifyCss(mutatedCss),
         generated.js.length > 0 ? minifyJs(generated.js) : Promise.resolve(''),
       ])
       finalHtml = mHtml
@@ -318,6 +406,9 @@ export async function exportProject(
     for (const path of assetPaths) {
       const bytes = assetBytes[path]
       if (bytes) zip.file(path, bytes)
+    }
+    for (const [path, bytes] of Object.entries(fontFiles)) {
+      zip.file(path, bytes)
     }
     buffer = await zip.generateAsync({ type: 'arraybuffer' })
   } catch (err) {

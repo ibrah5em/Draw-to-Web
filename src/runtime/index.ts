@@ -24,6 +24,7 @@
  */
 
 import type { RuntimeFlags } from '../document/types'
+import { ANIMATION_GATING_SNIPPET } from './animationGating'
 import { MOBILE_NAV_SNIPPET } from './mobileNav'
 import { NAV_ON_SCROLL_SNIPPET } from './navOnScroll'
 import { REVEALS_SNIPPET } from './reveals'
@@ -42,6 +43,7 @@ export const RUNTIME_SNIPPETS: Partial<Record<keyof RuntimeFlags, string>> = {
   mobileNav: MOBILE_NAV_SNIPPET,
   navOnScroll: NAV_ON_SCROLL_SNIPPET,
   reveals: REVEALS_SNIPPET,
+  animationGating: ANIMATION_GATING_SNIPPET,
 }
 
 /**

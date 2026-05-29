@@ -30,13 +30,13 @@ describe('generate(document)', () => {
   })
 
   it('does not inject <script> for enabled flags whose snippet is not yet authored', async () => {
-    // I-RUN-01..06 (themeToggle, scrollSpy, smoothScroll, mobileNav,
-    // navOnScroll, reveals) have shipped. Flipping only flags whose
-    // I-RUN-* task has not landed must still produce no JS and no
-    // `<script>` tag.
+    // I-RUN-01..07 (themeToggle, scrollSpy, smoothScroll, mobileNav,
+    // navOnScroll, reveals, animationGating) have shipped. Only
+    // terminalTyping remains, so flipping just that flag must still
+    // produce no JS and no `<script>` tag until I-RUN-08 lands.
     const doc = {
       ...PORTFOLIO_DOCUMENT,
-      runtime: { ...PORTFOLIO_DOCUMENT.runtime, animationGating: true, terminalTyping: true },
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, terminalTyping: true },
     }
     const { html, js } = await generate(doc)
     expect(js).toBe('')

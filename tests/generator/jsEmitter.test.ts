@@ -8,12 +8,13 @@ describe('emitJs(document)', () => {
   })
 
   it('returns an empty string when only unauthored flags are enabled', () => {
-    // I-RUN-01..06 (themeToggle, scrollSpy, smoothScroll, mobileNav,
-    // navOnScroll, reveals) have shipped. Flipping only the still-
-    // unauthored flags must still produce no JS until I-RUN-07..08 land.
+    // I-RUN-01..07 (themeToggle, scrollSpy, smoothScroll, mobileNav,
+    // navOnScroll, reveals, animationGating) have shipped. Only
+    // terminalTyping remains, so flipping just that flag must still
+    // produce no JS until I-RUN-08 lands.
     const doc = {
       ...PORTFOLIO_DOCUMENT,
-      runtime: { ...PORTFOLIO_DOCUMENT.runtime, animationGating: true, terminalTyping: true },
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, terminalTyping: true },
     }
     expect(emitJs(doc)).toBe('')
   })
@@ -135,6 +136,27 @@ describe('emitJs(document)', () => {
     }
     const js = emitJs(doc)
     expect(js.indexOf('/* navOnScroll */')).toBeLessThan(js.indexOf('/* reveals */'))
+  })
+
+  it('emits the animation-gating snippet when animationGating is on (I-RUN-07)', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, animationGating: true },
+    }
+    const js = emitJs(doc)
+    expect(js).toContain('/* animationGating */')
+    expect(js).toContain('data-dtw-gate-anim')
+    expect(js).toContain('animationPlayState')
+    expect(js).toContain('prefers-reduced-motion')
+  })
+
+  it('orders snippets deterministically: reveals before animationGating', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, reveals: true, animationGating: true },
+    }
+    const js = emitJs(doc)
+    expect(js.indexOf('/* reveals */')).toBeLessThan(js.indexOf('/* animationGating */'))
   })
 
   it('produces deterministic output across repeated calls', () => {

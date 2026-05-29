@@ -262,6 +262,57 @@ describe('emitHtml(document)', () => {
     })
   })
 
+  describe('animation gating hook (I-RUN-07)', () => {
+    it('stamps data-dtw-gate-anim on elements whose animation has gateOnView: true', () => {
+      const doc = makeDoc({
+        id: 'r',
+        type: 'container',
+        semanticRole: 'main',
+        style: { base: {} },
+        layout: { base: { mode: 'flex' } },
+        children: [
+          {
+            id: 'gated',
+            type: 'text',
+            tag: 'p',
+            content: 'Hi',
+            style: { base: {} },
+            animation: { name: 'fadeUp', gateOnView: true },
+          } satisfies TextNode,
+        ],
+      })
+      const html = emitHtml(doc)
+      expect(html).toMatch(/<p class="dtw-el-gated"[^>]*data-dtw-gate-anim=""/)
+    })
+
+    it('does not stamp the attribute when the animation is not gated', () => {
+      const doc = makeDoc({
+        id: 'r',
+        type: 'container',
+        semanticRole: 'main',
+        style: { base: {} },
+        layout: { base: { mode: 'flex' } },
+        children: [
+          {
+            id: 'plain',
+            type: 'text',
+            tag: 'p',
+            content: 'Hi',
+            style: { base: {} },
+            animation: { name: 'fadeUp' },
+          } satisfies TextNode,
+        ],
+      })
+      const html = emitHtml(doc)
+      expect(html).not.toContain('data-dtw-gate-anim')
+    })
+
+    it('does not stamp the attribute when there is no animation at all', () => {
+      const html = emitHtml(PORTFOLIO_DOCUMENT)
+      expect(html).not.toContain('data-dtw-gate-anim')
+    })
+  })
+
   describe('mailto helper (I-GEN-18)', () => {
     function makeLink(href: string): Document {
       return makeDoc({

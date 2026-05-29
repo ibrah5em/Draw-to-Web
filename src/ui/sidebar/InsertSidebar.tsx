@@ -1,74 +1,66 @@
 /**
- * Insert sidebar (L-SBR-01).
+ * Insert sidebar (L-SBR-01, L-SBR-02).
  *
- * Three Radix Tabs — Sections / Components / Elements — each listing the
- * draggable items the user can drop onto the canvas. Each item carries a
- * lucide icon and a label. Cards are focusable `<button>`s so the whole
- * surface is keyboard-navigable (arrow keys move between tabs via Radix;
- * Tab/Shift+Tab moves through cards within the active tab).
+ * Three Radix Tabs — Sections / Components / Elements. The Sections and
+ * Components tabs are driven by `presetsRegistry` (C7): the list of cards
+ * comes from `Object.keys(presetsRegistry)`, grouped by category, so adding
+ * a preset to the registry surfaces a card with no UI changes (L-SBR-02
+ * DoD). Icons, labels, categories and tooltip copy are looked up via
+ * {@link getPresetMeta}, which falls back to safe defaults for any preset
+ * that hasn't been curated yet. The Elements tab lists primitives, which
+ * are not in the registry.
  *
- * L-SBR-02 (registry-driven cards), L-SBR-03 (search) and L-SBR-04 (drag
- * via dnd-kit) hang off this skeleton.
+ * Cards are focusable `<button>`s with `title` tooltips, so the surface is
+ * keyboard-navigable (Radix handles arrow-key tab nav; Tab/Shift+Tab moves
+ * through cards). L-SBR-03 adds search, L-SBR-04 wires dnd-kit drag.
  */
 
 import * as Tabs from '@radix-ui/react-tabs'
 import {
-  AppWindow,
-  CreditCard,
   Image as ImageIcon,
-  LayoutGrid,
-  Layout as LayoutIcon,
   Link as LinkIcon,
   List,
-  Megaphone,
+  type LucideIcon,
   Minus,
   MousePointerClick,
-  Navigation,
-  PanelBottom,
-  PanelTop,
   Smile,
   SquareStack,
   Type,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
-import type { JSX } from 'react'
+import { useMemo, type JSX } from 'react'
 
-import type { PresetId } from '@document/presets'
+import { presetsRegistry, type PresetId } from '@document/presets'
 import type { ElementType } from '@document/types'
 
 import styles from './InsertSidebar.module.css'
-
-type IconType = LucideIcon
+import { getPresetMeta, type PresetCategory } from './presetMeta'
 
 interface InsertItem<TId extends string> {
   readonly id: TId
   readonly label: string
-  readonly Icon: IconType
+  readonly description: string
+  readonly Icon: LucideIcon
 }
 
-const SECTION_ITEMS: ReadonlyArray<InsertItem<PresetId>> = [
-  { id: 'nav-fixed', label: 'Nav', Icon: Navigation },
-  { id: 'hero-centered', label: 'Hero (centered)', Icon: PanelTop },
-  { id: 'hero-split', label: 'Hero (split)', Icon: LayoutIcon },
-  { id: 'cta-banner', label: 'CTA banner', Icon: Megaphone },
-  { id: 'footer-simple', label: 'Footer', Icon: PanelBottom },
-  { id: 'footer-columns', label: 'Footer (columns)', Icon: AppWindow },
-]
-
-const COMPONENT_ITEMS: ReadonlyArray<InsertItem<PresetId>> = [
-  { id: 'cards-grid-3col', label: 'Cards grid (3)', Icon: LayoutGrid },
-  { id: 'card-basic', label: 'Card', Icon: CreditCard },
-]
-
 const ELEMENT_ITEMS: ReadonlyArray<InsertItem<ElementType>> = [
-  { id: 'container', label: 'Container', Icon: SquareStack },
-  { id: 'text', label: 'Text', Icon: Type },
-  { id: 'image', label: 'Image', Icon: ImageIcon },
-  { id: 'button', label: 'Button', Icon: MousePointerClick },
-  { id: 'link', label: 'Link', Icon: LinkIcon },
-  { id: 'icon', label: 'Icon', Icon: Smile },
-  { id: 'list', label: 'List', Icon: List },
-  { id: 'divider', label: 'Divider', Icon: Minus },
+  {
+    id: 'container',
+    label: 'Container',
+    description: 'Empty layout container.',
+    Icon: SquareStack,
+  },
+  { id: 'text', label: 'Text', description: 'Text block.', Icon: Type },
+  { id: 'image', label: 'Image', description: 'Image with alt text.', Icon: ImageIcon },
+  {
+    id: 'button',
+    label: 'Button',
+    description: 'Clickable button element.',
+    Icon: MousePointerClick,
+  },
+  { id: 'link', label: 'Link', description: 'Anchor link.', Icon: LinkIcon },
+  { id: 'icon', label: 'Icon', description: 'Inline SVG icon.', Icon: Smile },
+  { id: 'list', label: 'List', description: 'Ordered or unordered list.', Icon: List },
+  { id: 'divider', label: 'Divider', description: 'Horizontal rule.', Icon: Minus },
 ]
 
 const TAB_DEFS = [
@@ -77,11 +69,30 @@ const TAB_DEFS = [
   { value: 'elements', label: 'Elements' },
 ] as const
 
+/** Group every registered preset id by its display category. */
+function groupPresets(): Record<PresetCategory, ReadonlyArray<InsertItem<PresetId>>> {
+  const groups: Record<PresetCategory, InsertItem<PresetId>[]> = { sections: [], components: [] }
+  const ids = Object.keys(presetsRegistry) as PresetId[]
+  for (const id of ids) {
+    const meta = getPresetMeta(id)
+    groups[meta.category].push({
+      id,
+      label: meta.label,
+      description: meta.description,
+      Icon: meta.Icon,
+    })
+  }
+  for (const list of Object.values(groups)) list.sort((a, b) => a.label.localeCompare(b.label))
+  return groups
+}
+
 function InsertCard<TId extends string>({ item }: { item: InsertItem<TId> }): JSX.Element {
-  const { label, Icon } = item
+  const { id, label, description, Icon } = item
   return (
-    <button type="button" className={styles.card} title={label}>
-      <Icon size={22} className={styles.cardIcon} />
+    <button type="button" className={styles.card} title={description} data-insert-id={id}>
+      <span className={styles.cardThumb} aria-hidden>
+        <Icon size={26} className={styles.cardIcon} />
+      </span>
       <span className={styles.cardLabel}>{label}</span>
     </button>
   )
@@ -92,6 +103,9 @@ function InsertGrid<TId extends string>({
 }: {
   items: ReadonlyArray<InsertItem<TId>>
 }): JSX.Element {
+  if (items.length === 0) {
+    return <p className={styles.empty}>Nothing here yet.</p>
+  }
   return (
     <div className={styles.content}>
       {items.map((item) => (
@@ -103,6 +117,8 @@ function InsertGrid<TId extends string>({
 
 /** Three-tab Insert sidebar — Sections / Components / Elements. */
 export function InsertSidebar(): JSX.Element {
+  const presetGroups = useMemo(() => groupPresets(), [])
+
   return (
     <Tabs.Root defaultValue="sections" className={styles.panel}>
       <div className={styles.header}>
@@ -117,10 +133,10 @@ export function InsertSidebar(): JSX.Element {
 
       <div className={styles.body}>
         <Tabs.Content value="sections">
-          <InsertGrid items={SECTION_ITEMS} />
+          <InsertGrid items={presetGroups.sections} />
         </Tabs.Content>
         <Tabs.Content value="components">
-          <InsertGrid items={COMPONENT_ITEMS} />
+          <InsertGrid items={presetGroups.components} />
         </Tabs.Content>
         <Tabs.Content value="elements">
           <InsertGrid items={ELEMENT_ITEMS} />

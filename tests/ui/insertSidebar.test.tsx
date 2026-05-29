@@ -3,7 +3,9 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { presetsRegistry, type PresetId } from '@document/presets'
 import { InsertSidebar } from '@ui/sidebar/InsertSidebar'
+import { getPresetMeta } from '@ui/sidebar/presetMeta'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -33,7 +35,16 @@ function tabs(): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>('[role="tab"]'))
 }
 
-describe('InsertSidebar (L-SBR-01)', () => {
+function cardIdsOn(tabValue: string): string[] {
+  const panel = container.querySelector<HTMLElement>(`[role="tabpanel"][data-state="active"]`)
+  if (!panel) return []
+  void tabValue
+  return Array.from(panel.querySelectorAll<HTMLButtonElement>('[data-insert-id]')).map(
+    (b) => b.dataset.insertId ?? ''
+  )
+}
+
+describe('InsertSidebar (L-SBR-01, L-SBR-02)', () => {
   it('renders Sections / Components / Elements tabs', () => {
     render()
     const labels = tabs().map((t) => t.textContent)
@@ -71,5 +82,27 @@ describe('InsertSidebar (L-SBR-01)', () => {
     })
     active = container.querySelector<HTMLElement>('[role="tab"][data-state="active"]')
     expect(active?.textContent).toBe('Elements')
+  })
+
+  it('cards are driven by presetsRegistry — every registered preset surfaces (L-SBR-02)', () => {
+    render()
+    const sectionIds = cardIdsOn('sections')
+    const [, second] = tabs()
+    act(() => {
+      second.focus()
+      second.click()
+    })
+    const componentIds = cardIdsOn('components')
+    const allIds = new Set<string>([...sectionIds, ...componentIds])
+    for (const id of Object.keys(presetsRegistry) as PresetId[]) {
+      expect(allIds.has(id)).toBe(true)
+    }
+  })
+
+  it('every card carries a tooltip (title attr) sourced from preset meta', () => {
+    render()
+    const card = container.querySelector<HTMLButtonElement>('[data-insert-id="hero-centered"]')
+    expect(card).not.toBeNull()
+    expect(card?.title).toBe(getPresetMeta('hero-centered').description)
   })
 })

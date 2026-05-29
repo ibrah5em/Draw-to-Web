@@ -24,20 +24,20 @@ You complement `/contract-change` (which detects the change) and `code-reviewer`
 
 Source: `docs/0.2.0v/plan.md` Section 6 and `CLAUDE.local.md` "Cross-Owner Contracts".
 
-| ID  | Producer file | Downstream consumer(s) | Consumer-side call sites |
-| --- | ------------- | ---------------------- | ------------------------ |
-| C1  | `src/document/types.ts` | LuF8y, Yousef | `src/ui/**`, `src/store/**` |
-| C2  | `src/document/schemas.ts` | Yousef | `src/store/persistence.ts`, `src/store/documentStore.ts` |
-| C3  | `src/document/operations.ts` | Yousef | `src/store/documentStore.ts`, `src/store/historyStore.ts` |
-| C4  | `src/shared/electronAPI.d.ts` + `src/preload/index.ts` | LuF8y, Yousef | `src/ui/**`, `src/store/persistence.ts` |
-| C5  | `src/store/*.ts` | LuF8y, Ibrahim | `src/ui/**`, `src/generator/index.ts` (indirect via document snapshots) |
-| C6  | `src/generator/index.ts` | self (export) | `src/export/index.ts` |
-| C7  | `src/document/presets/index.ts` | LuF8y, Yousef | `src/ui/sidebar/**`, `src/store/**` |
-| C8  | `src/document/validation.ts` | LuF8y, self | `src/ui/panels/validation/**`, `src/export/index.ts` |
-| C9  | `src/document/tokens.ts` | LuF8y | `src/ui/panels/properties/**`, `src/ui/canvas/**` |
-| C10 | `src/ui/canvas/inferSemantics.ts` | Ibrahim | `src/generator/htmlEmitter.ts` |
-| C11 | `src/main/ipc.ts` + `src/preload/index.ts` (image upload) | LuF8y | `src/ui/sidebar/insert/**`, `src/ui/dialogs/imageDialog.tsx` |
-| C12 | `src/export/index.ts` | LuF8y | `src/ui/topbar/exportButton.tsx`, `src/ui/dialogs/exportDialog.tsx` |
+| ID  | Producer file                                             | Downstream consumer(s) | Consumer-side call sites                                                |
+| --- | --------------------------------------------------------- | ---------------------- | ----------------------------------------------------------------------- |
+| C1  | `src/document/types.ts`                                   | LuF8y, Yousef          | `src/ui/**`, `src/store/**`                                             |
+| C2  | `src/document/schemas.ts`                                 | Yousef                 | `src/store/persistence.ts`, `src/store/documentStore.ts`                |
+| C3  | `src/document/operations.ts`                              | Yousef                 | `src/store/documentStore.ts`, `src/store/historyStore.ts`               |
+| C4  | `src/shared/electronAPI.d.ts` + `src/preload/index.ts`    | LuF8y, Yousef          | `src/ui/**`, `src/store/persistence.ts`                                 |
+| C5  | `src/store/*.ts`                                          | LuF8y, Ibrahim         | `src/ui/**`, `src/generator/index.ts` (indirect via document snapshots) |
+| C6  | `src/generator/index.ts`                                  | self (export)          | `src/export/index.ts`                                                   |
+| C7  | `src/document/presets/index.ts`                           | LuF8y, Yousef          | `src/ui/sidebar/**`, `src/store/**`                                     |
+| C8  | `src/document/validation.ts`                              | LuF8y, self            | `src/ui/panels/validation/**`, `src/export/index.ts`                    |
+| C9  | `src/document/tokens.ts`                                  | LuF8y                  | `src/ui/panels/properties/**`, `src/ui/canvas/**`                       |
+| C10 | `src/ui/canvas/inferSemantics.ts`                         | Ibrahim                | `src/generator/htmlEmitter.ts`                                          |
+| C11 | `src/main/ipc.ts` + `src/preload/index.ts` (image upload) | LuF8y                  | `src/ui/sidebar/insert/**`, `src/ui/dialogs/imageDialog.tsx`            |
+| C12 | `src/export/index.ts`                                     | LuF8y                  | `src/ui/topbar/exportButton.tsx`, `src/ui/dialogs/exportDialog.tsx`     |
 
 ## Review Procedure
 
@@ -61,7 +61,7 @@ Source: `docs/0.2.0v/plan.md` Section 6 and `CLAUDE.local.md` "Cross-Owner Contr
    - Label `contract-change` on the PR.
    - Review request from every named downstream consumer.
    - A PR-body section listing the contracts affected and the migration story for each consumer.
-   If any is missing, surface it under **BLOCKED** at the top of your review.
+     If any is missing, surface it under **BLOCKED** at the top of your review.
 7. **Check the test surface.** Producer tests are the producer's job. **Consumer tests** that exercise the contract through call sites should still pass — if any consumer test was modified or deleted in this PR without justification, flag it (silent regressions slip in here).
 8. **Check for shim opportunities.** If the producer change is a hard break with non-trivial migration cost for the consumer, ask: could the producer ship a temporary deprecation shim (old export forwarding to new) so the consumer can migrate in a follow-up PR? Not always appropriate (e.g. shape changes that can't be backstopped) — but worth surfacing.
 

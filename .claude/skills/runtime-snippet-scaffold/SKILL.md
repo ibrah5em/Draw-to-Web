@@ -21,12 +21,12 @@ Before scaffolding, get:
 
 ## Instructions
 
-1. **Read the closest analogue first.** Pick the I-RUN-* snippet with the most similar mechanism:
+1. **Read the closest analogue first.** Pick the I-RUN-\* snippet with the most similar mechanism:
    - Click-driven state toggle → `themeToggle.ts` or `mobileNav.ts`.
    - `IntersectionObserver` one-shot → `reveals.ts` or `animationGating.ts`.
    - `IntersectionObserver` sticky + bidirectional → `scrollSpy.ts` or `navOnScroll.ts` (sentinel pattern).
    - `ResizeObserver` for layout-derived CSS variable → `smoothScroll.ts`.
-   Copy its IIFE wrapper, error-handling style (`try { ... } catch {}` without binding the err var), and reduced-motion handling.
+     Copy its IIFE wrapper, error-handling style (`try { ... } catch {}` without binding the err var), and reduced-motion handling.
 2. **Create the snippet file.** Path: `src/runtime/<name>.ts`. Required export:
    - `export const <NAME_UPPER>_SNIPPET = \`(() => { ... })();\`;`
    - Optional: `export const <NAME_UPPER>_FOUC_GUARD` if a head-injected pre-render script is needed (only `themeToggle` has this so far).

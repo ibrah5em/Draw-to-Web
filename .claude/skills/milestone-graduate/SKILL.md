@@ -15,18 +15,18 @@ Graduation is a heavier ritual than per-PR sweeps because integration regression
 2. **Run `/phase-status` first.** If any gating task is `- [ ]` or stale `- [~]`, abort and surface the gap. Graduation is only meaningful from a green base.
 3. **Per-milestone sweep matrix.** The relevant skill set per milestone (per the table in CLAUDE.local.md "Per-PR Skill Sweep" + Section 17):
 
-   | Milestone | Sweeps to run |
-   | --- | --- |
-   | M1 Foundation | `/preflight` |
-   | M2 Tokens + Themes | `/token-validate`, `/accessibility-audit`, `/preflight` |
-   | M3 Composition + Responsive | `/token-validate`, `/accessibility-audit`, `/preflight` |
-   | M4 Runtime + Hardening | `/runtime-audit`, `/accessibility-audit`, `/seo-check`, `/export-test`, `/token-validate`, `/preflight` |
-   | M5 Polish + Demo | All of the above + Lighthouse measurement on portfolio + landing templates |
+   | Milestone                   | Sweeps to run                                                                                           |
+   | --------------------------- | ------------------------------------------------------------------------------------------------------- |
+   | M1 Foundation               | `/preflight`                                                                                            |
+   | M2 Tokens + Themes          | `/token-validate`, `/accessibility-audit`, `/preflight`                                                 |
+   | M3 Composition + Responsive | `/token-validate`, `/accessibility-audit`, `/preflight`                                                 |
+   | M4 Runtime + Hardening      | `/runtime-audit`, `/accessibility-audit`, `/seo-check`, `/export-test`, `/token-validate`, `/preflight` |
+   | M5 Polish + Demo            | All of the above + Lighthouse measurement on portfolio + landing templates                              |
 
    Run them in sequence (not parallel — failures are easier to triage one at a time). Capture each verdict.
 
 4. **Integration test matrix.** `npm run lint && npm run typecheck && npx tsc -p tsconfig.web.json --noEmit && npm run test && npm run test:a11y && npm run build`. The web typecheck is the one that's missing from the husky pre-push hook (per `.claude/rules/preflight.md`) — do not skip it.
-5. **Contract surface verification.** Walk every C1–C12 contract: does the producer file exist, does the typed surface match what `CLAUDE.local.md` documents, are downstream consumers wired to the latest shape? Use `/contract-change` semantics — but here we're verifying *steady state*, not a diff.
+5. **Contract surface verification.** Walk every C1–C12 contract: does the producer file exist, does the typed surface match what `CLAUDE.local.md` documents, are downstream consumers wired to the latest shape? Use `/contract-change` semantics — but here we're verifying _steady state_, not a diff.
 6. **Determinism + Invariant-5.4 spot check.** Run the relevant determinism tests explicitly: `npx vitest tests/generator/determinism.test.ts`. M3+ adds `tests/templates/presets.test.ts`, `tests/templates/portfolio.test.ts`, `tests/templates/landing.test.ts`, `tests/templates/resume.test.ts`.
 7. **Bundle budget check.** Per `docs/0.2.0v/plan.md` Section 14:
    - Export of portfolio template < 10s wall clock. Measure with the latest version of `tests/export/e2e-example.test.ts`.
@@ -37,7 +37,7 @@ Graduation is a heavier ritual than per-PR sweeps because integration regression
    - M1: README refresh.
    - M2: `docs/0.2.0v/architecture.md`, `docs/0.2.0v/element-model.md`.
    - M5: `docs/0.2.0v/supervisor-report.md`, README final, JSDoc coverage on every exported function in owned dirs.
-   Confirm the milestone's owe-backs are landed.
+     Confirm the milestone's owe-backs are landed.
 10. **Tag suggestion.** If steps 2–9 all pass:
     - Suggest the tag (`v0.2.0` for M4, `v0.3.0` for M5, `v1.0.0` for M5 demo cut).
     - Show the `git tag -a` + `git push` commands, **do not run them**.

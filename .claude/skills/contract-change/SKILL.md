@@ -11,20 +11,20 @@ invocation: user
 
 Source of truth: `docs/0.2.0v/plan.md` Section 6. Producer → file → downstream consumer(s):
 
-| ID  | Producer | File | Downstream consumer(s) |
-| --- | -------- | ---- | ---------------------- |
-| C1  | Ibrahim  | `src/document/types.ts` | LuF8y, Yousef |
-| C2  | Ibrahim  | `src/document/schemas.ts` | Yousef |
-| C3  | Ibrahim  | `src/document/operations.ts` | Yousef |
-| C4  | Ibrahim  | `src/shared/electronAPI.d.ts` (+ `src/preload/index.ts`) | LuF8y, Yousef |
-| C5  | Yousef   | `src/store/documentStore.ts`, `historyStore.ts`, `sessionStore.ts` | LuF8y, Ibrahim |
-| C6  | Ibrahim  | `src/generator/index.ts` | self (export) |
-| C7  | Ibrahim  | `src/document/presets/index.ts` | LuF8y, Yousef |
-| C8  | Ibrahim  | `src/document/validation.ts` | LuF8y, self |
-| C9  | Ibrahim  | `src/document/tokens.ts` | LuF8y |
-| C10 | LuF8y    | `src/ui/canvas/inferSemantics.ts` | Ibrahim |
-| C11 | Ibrahim  | `src/main/ipc.ts` (image upload) + `src/preload/index.ts` | LuF8y |
-| C12 | Ibrahim  | `src/export/index.ts` | LuF8y |
+| ID  | Producer | File                                                               | Downstream consumer(s) |
+| --- | -------- | ------------------------------------------------------------------ | ---------------------- |
+| C1  | Ibrahim  | `src/document/types.ts`                                            | LuF8y, Yousef          |
+| C2  | Ibrahim  | `src/document/schemas.ts`                                          | Yousef                 |
+| C3  | Ibrahim  | `src/document/operations.ts`                                       | Yousef                 |
+| C4  | Ibrahim  | `src/shared/electronAPI.d.ts` (+ `src/preload/index.ts`)           | LuF8y, Yousef          |
+| C5  | Yousef   | `src/store/documentStore.ts`, `historyStore.ts`, `sessionStore.ts` | LuF8y, Ibrahim         |
+| C6  | Ibrahim  | `src/generator/index.ts`                                           | self (export)          |
+| C7  | Ibrahim  | `src/document/presets/index.ts`                                    | LuF8y, Yousef          |
+| C8  | Ibrahim  | `src/document/validation.ts`                                       | LuF8y, self            |
+| C9  | Ibrahim  | `src/document/tokens.ts`                                           | LuF8y                  |
+| C10 | LuF8y    | `src/ui/canvas/inferSemantics.ts`                                  | Ibrahim                |
+| C11 | Ibrahim  | `src/main/ipc.ts` (image upload) + `src/preload/index.ts`          | LuF8y                  |
+| C12 | Ibrahim  | `src/export/index.ts`                                              | LuF8y                  |
 
 ## Instructions
 
@@ -36,7 +36,7 @@ Source of truth: `docs/0.2.0v/plan.md` Section 6. Producer → file → downstre
    - **Type-level break** — removed export, renamed export, changed function signature, narrowed/widened a Zod schema, changed `Operation` discriminator, added a required field.
    - **Additive non-break** — added optional field, added new export, widened a union with all consumers still covered by the default branch.
    - **Internal-only** — JSDoc, comments, dead-code removal, test-only changes. Not a contract change.
-   Run `git diff origin/main...HEAD -- <file>` to inspect.
+     Run `git diff origin/main...HEAD -- <file>` to inspect.
 4. **For type-level breaks, verify the PR ritual:**
    - Has the `contract-change` label: `gh pr view --json labels -q '.labels[].name' | grep contract-change`.
    - Has a review request from every named downstream consumer (map name → GitHub handle: Ibrahim=`ibrah5em`, LuF8y=`<handle>`, Yousef=`<handle>` — ask the user if unknown). `gh pr view --json reviewRequests -q '.reviewRequests[].login'`.

@@ -8,11 +8,13 @@
  * selection in `sessionStore`; the deepest node wins via `stopPropagation`.
  */
 
-import type { CSSProperties, MouseEvent, JSX } from 'react'
+import { useDroppable } from '@dnd-kit/core'
+import { createElement, type CSSProperties, type MouseEvent, type JSX } from 'react'
 
 import type { ElementNode } from '@document/types'
 import { useSessionStore } from '@store/sessionStore'
 
+import { containerDropId } from '../sidebar/insertDrop'
 import { nodeStyle } from './buildStyle'
 import { useStyleResolver } from './resolverContext'
 
@@ -23,6 +25,13 @@ type ContainerTag = keyof JSX.IntrinsicElements
 const SELECTED_OUTLINE: CSSProperties = {
   outline: '2px solid var(--accent)',
   outlineOffset: '-2px',
+}
+
+/** Outline applied to the container the cursor is over during an Insert drag. */
+const DROP_OVER_OUTLINE: CSSProperties = {
+  outline: '2px dashed var(--accent)',
+  outlineOffset: '-2px',
+  background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
 }
 
 /**
@@ -48,13 +57,7 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
   switch (node.type) {
     case 'container': {
       const Tag = (node.semanticRole ?? 'div') as ContainerTag
-      return (
-        <Tag style={style} {...common}>
-          {node.children.map((child) => (
-            <CanvasNode key={child.id} node={child} />
-          ))}
-        </Tag>
-      )
+      return <ContainerNodeView Tag={Tag} node={node} baseStyle={style} commonProps={common} />
     }
 
     case 'text': {
@@ -135,4 +138,39 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
         <div style={style} {...common} role="separator" aria-orientation="vertical" />
       )
   }
+}
+
+interface ContainerNodeViewProps {
+  readonly Tag: ContainerTag
+  readonly node: Extract<ElementNode, { type: 'container' }>
+  readonly baseStyle: CSSProperties
+  readonly commonProps: { 'data-dtw-id': string; onClick: (event: MouseEvent) => void }
+}
+
+/**
+ * Container renderer split out so it can participate in dnd-kit drops
+ * (L-CAN-12). Highlights itself while the cursor hovers during an Insert
+ * drag so authors see where the drop will land.
+ */
+function ContainerNodeView({
+  Tag,
+  node,
+  baseStyle,
+  commonProps,
+}: ContainerNodeViewProps): JSX.Element {
+  const { setNodeRef, isOver } = useDroppable({
+    id: containerDropId(node.id),
+    data: { accepts: 'insert', containerId: node.id },
+  })
+  const style: CSSProperties = isOver ? { ...baseStyle, ...DROP_OVER_OUTLINE } : baseStyle
+  return createElement(
+    Tag,
+    {
+      ref: setNodeRef,
+      style,
+      ...commonProps,
+      'data-drop-over': isOver || undefined,
+    },
+    node.children.map((child) => <CanvasNode key={child.id} node={child} />)
+  )
 }

@@ -1,18 +1,21 @@
 /**
- * Drag-and-drop context for the Insert sidebar (L-SBR-04).
+ * Drag-and-drop context for the Insert sidebar (L-SBR-04, L-CAN-12).
  *
  * Wraps the editor body in a dnd-kit `DndContext` and renders a
  * `DragOverlay` that paints a 1:1 preview of the dragged Insert card.
- * The drop side (L-CAN-12) is wired separately on the Canvas; this
- * provider stays drop-agnostic so the preview works even when no
- * target is configured yet.
+ * On drop, {@link buildInsertOp} maps the (active, over) pair to a
+ * document operation and dispatches it, materialising the preset
+ * subtree or primitive under the targeted container.
  */
 
 import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
+import { nanoid } from 'nanoid'
 import { useMemo, useState, type JSX, type ReactNode } from 'react'
 
 import { presetsRegistry, type PresetId } from '@document/presets'
+import { dispatch } from '@store/dispatch'
 
+import { buildInsertOp } from './insertDrop'
 import styles from './InsertSidebar.module.css'
 import { ELEMENT_ITEMS, type InsertItem, type InsertKind, insertDraggableId } from './InsertSidebar'
 import { getPresetMeta } from './presetMeta'
@@ -83,8 +86,10 @@ export function InsertDndProvider({ children }: { children: ReactNode }): JSX.El
 
   const handleDragEnd = useMemo(
     () =>
-      (_event: DragEndEvent): void => {
+      (event: DragEndEvent): void => {
         setActiveItem(null)
+        const op = buildInsertOp(event.active.id, event.over?.id ?? null, () => nanoid(8))
+        if (op !== null) dispatch(op)
       },
     []
   )

@@ -27,6 +27,18 @@
 const MODERN_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
+/**
+ * Hostnames the self-host pass is allowed to talk to. Defense-in-depth
+ * on top of the regex filtering below: even if a regex edge case let a
+ * lookalike host through (e.g. `fonts.googleapis.com.evil.example`),
+ * `new URL(...).hostname` resolves to the actual host and the set
+ * membership check rejects it. Exact-match only — no suffix wildcards,
+ * because subdomain-level allowlists are footguns (`com` would match
+ * `evil.com`).
+ */
+const ALLOWED_CSS_HOSTS: ReadonlySet<string> = new Set(['fonts.googleapis.com'])
+const ALLOWED_FONT_HOSTS: ReadonlySet<string> = new Set(['fonts.gstatic.com'])
+
 /** Matches any Google Fonts CSS URL — used to enumerate references. */
 const GOOGLE_CSS_RE = /https:\/\/fonts\.googleapis\.com\/css2?\?[^\s'"<>)]+/g
 /** Matches a `<link …>` tag whose href is a Google Fonts CSS URL. */
@@ -37,6 +49,32 @@ const IMPORT_RE =
   /@import\s+(?:url\()?["']?(https:\/\/fonts\.googleapis\.com\/css2?\?[^"')]+)["']?\)?\s*;?/g
 /** Matches a `.woff2` URL on the gstatic CDN inside the fetched CSS body. */
 const GSTATIC_WOFF2_RE = /https:\/\/fonts\.gstatic\.com\/[^\s'"()]+\.woff2/g
+/** Matches any absolute http(s) URL — used by the body sanitizer. */
+const ANY_HTTP_URL_RE = /https?:\/\/[^\s'"()]+/g
+
+/**
+ * Parse `url` and check its hostname against `allowed`. Returns `false`
+ * on parse failure so malformed input is rejected, not let through.
+ */
+function isAllowedHost(url: string, allowed: ReadonlySet<string>): boolean {
+  try {
+    return allowed.has(new URL(url).hostname)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Strip every absolute URL from `body` whose host is not on the font
+ * allowlist. Runs before we harvest woff2 URLs to fetch, so a compromised
+ * or malicious upstream CSS response can't smuggle in a fetch to an
+ * arbitrary host. Allowed URLs pass through untouched.
+ */
+function sanitizeFontCssBody(body: string): string {
+  return body.replace(ANY_HTTP_URL_RE, (match) =>
+    isAllowedHost(match, ALLOWED_FONT_HOSTS) ? match : ''
+  )
+}
 
 /**
  * Result of the self-host pass. `files` keys are export-relative paths
@@ -97,16 +135,23 @@ export async function selfHostFonts(
   css: string,
   fetchFn: typeof fetch = fetch
 ): Promise<SelfHostFontsResult> {
-  // 1. Enumerate every Google Fonts CSS URL referenced anywhere.
+  // 1. Enumerate every Google Fonts CSS URL referenced anywhere. The
+  //    regex already filters by host, but apply the explicit allowlist
+  //    too so the policy lives in one place rather than two.
   const cssUrls = new Set<string>()
-  for (const m of html.matchAll(GOOGLE_CSS_RE)) cssUrls.add(m[0])
-  for (const m of css.matchAll(GOOGLE_CSS_RE)) cssUrls.add(m[0])
+  for (const m of html.matchAll(GOOGLE_CSS_RE)) {
+    if (isAllowedHost(m[0], ALLOWED_CSS_HOSTS)) cssUrls.add(m[0])
+  }
+  for (const m of css.matchAll(GOOGLE_CSS_RE)) {
+    if (isAllowedHost(m[0], ALLOWED_CSS_HOSTS)) cssUrls.add(m[0])
+  }
   if (cssUrls.size === 0) {
     return { html, css, files: {} }
   }
 
-  // 2. For each, fetch the CSS body, harvest the woff2 URLs it points
-  //    at, fetch the bytes, and produce a rewritten @font-face block.
+  // 2. For each, fetch the CSS body, sanitize it against the font-host
+  //    allowlist, harvest the surviving woff2 URLs, fetch the bytes,
+  //    and produce a rewritten @font-face block.
   const woff2ToLocal = new Map<string, string>()
   const files: Record<string, ArrayBuffer> = {}
   const inlineBlocks: string[] = []
@@ -114,12 +159,19 @@ export async function selfHostFonts(
   for (const cssUrl of cssUrls) {
     const res = await fetchFn(cssUrl, { headers: { 'User-Agent': MODERN_UA } })
     if (!res.ok) continue
-    let fontCss = await res.text()
+    // Sanitize before harvesting: any non-allowlisted URL in the
+    // upstream body is stripped, so a compromised Google Fonts response
+    // cannot cause us to fetch from an arbitrary host or inline a URL
+    // that the browser would later try to load.
+    let fontCss = sanitizeFontCssBody(await res.text())
 
-    // Register every woff2 URL we have not seen.
+    // Register every woff2 URL we have not seen. The host check is
+    // redundant with sanitization above, but kept as the fetch-site
+    // guard so anyone reading the fetch call sees the policy locally.
     for (const m of fontCss.matchAll(GSTATIC_WOFF2_RE)) {
       const url = m[0]
       if (woff2ToLocal.has(url)) continue
+      if (!isAllowedHost(url, ALLOWED_FONT_HOSTS)) continue
       const localPath = `fonts/${hash8(url)}.woff2`
       woff2ToLocal.set(url, `./${localPath}`)
       const fontRes = await fetchFn(url)

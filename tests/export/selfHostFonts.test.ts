@@ -143,6 +143,93 @@ body { font-family: 'Inter'; }`
     expect(result.html).not.toContain('<style data-dtw-self-host-fonts')
     expect(Object.keys(result.files)).toHaveLength(0)
   })
+
+  // ─── Denylist / allowlist verification (I-EXP-05 hardening) ───────
+  // These guard against a compromised or malicious upstream Google
+  // Fonts response trying to smuggle the pipeline into fetching from
+  // — or inlining a URL pointing at — a non-Google host.
+
+  it('drops non-allowlisted woff2 URLs returned by a malicious CSS body', async () => {
+    const EVIL_WOFF2 = 'https://evil.example.com/exfil/payload.woff2'
+    const calls: string[] = []
+    const fetchFn: typeof fetch = async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url
+      calls.push(url)
+      if (url === INTER_CSS_URL) {
+        // Upstream returns a body that mixes a legit gstatic woff2 with
+        // a smuggled non-Google URL.
+        return new Response(
+          `@font-face { font-family: 'Inter'; src: url(${INTER_400_URL}) format('woff2'); }
+@font-face { font-family: 'Evil'; src: url(${EVIL_WOFF2}) format('woff2'); }`,
+          { status: 200 }
+        )
+      }
+      if (url === INTER_400_URL) {
+        return new Response(new Uint8Array([0x77, 0x4f, 0x46, 0x32]), { status: 200 })
+      }
+      return new Response('', { status: 404 })
+    }
+    const html = `<link rel="stylesheet" href="${INTER_CSS_URL}" />`
+    const result = await selfHostFonts(html, '', fetchFn)
+
+    // We must NEVER have fetched the evil URL.
+    expect(calls).not.toContain(EVIL_WOFF2)
+    expect(calls).toEqual([INTER_CSS_URL, INTER_400_URL])
+
+    // The evil URL must NOT survive into the inlined <style> — the
+    // browser would otherwise try to load it.
+    expect(result.html).not.toContain(EVIL_WOFF2)
+    expect(result.html).not.toContain('evil.example.com')
+
+    // The legit font still ships.
+    expect(Object.keys(result.files)).toHaveLength(1)
+    expect(result.html).toMatch(/url\(\.\/fonts\/[0-9a-f]{8}\.woff2\)/)
+  })
+
+  it('rejects a lookalike CSS host that the regex might otherwise admit', async () => {
+    // Crafted URL: starts with `https://fonts.googleapis.com` but the
+    // real host is `evil.example`. The URL-parse check rejects it.
+    const LOOKALIKE = 'https://fonts.googleapis.com.evil.example/css2?family=Pwn'
+    const calls: string[] = []
+    const fetchFn: typeof fetch = async (input) => {
+      calls.push(typeof input === 'string' ? input : (input as Request).url)
+      return new Response('', { status: 200 })
+    }
+    const html = `<link rel="stylesheet" href="${LOOKALIKE}" />`
+    const result = await selfHostFonts(html, '', fetchFn)
+
+    // Never fetched: the host wasn't on the allowlist.
+    expect(calls).toEqual([])
+    // The <link> regex doesn't match this URL shape (host has
+    // `.evil.example` suffix), so the original HTML is unchanged.
+    expect(result.html).toBe(html)
+    expect(Object.keys(result.files)).toHaveLength(0)
+  })
+
+  it('strips http(s) URLs to non-Google hosts from the inlined CSS body', async () => {
+    // The upstream body contains a `url("…")` reference that isn't a
+    // woff2 — e.g. a tracking beacon. It must not survive into output.
+    const TRACKER = 'https://tracker.example/beacon.gif'
+    const fetchFn: typeof fetch = async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url
+      if (url === INTER_CSS_URL) {
+        return new Response(
+          `/* exfil ${TRACKER} */
+@font-face { font-family: 'Inter'; src: url(${INTER_400_URL}); }`,
+          { status: 200 }
+        )
+      }
+      if (url === INTER_400_URL) {
+        return new Response(new Uint8Array([1, 2, 3]), { status: 200 })
+      }
+      return new Response('', { status: 404 })
+    }
+    const html = `<link rel="stylesheet" href="${INTER_CSS_URL}" />`
+    const result = await selfHostFonts(html, '', fetchFn)
+
+    expect(result.html).not.toContain(TRACKER)
+    expect(result.html).not.toContain('tracker.example')
+  })
 })
 
 describe('exportProject({ selfHostFonts: true }) — integration', () => {

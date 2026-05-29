@@ -25,8 +25,9 @@ runtime behaviour is independently toggleable; all flags off → JS-free output.
 
 - Node.js 20+
 - Git
-- Linux or Windows host for development. Cross-platform packaging is supported
-  on Linux via `npm run build:linux` and on Windows via `npm run build:win`.
+- Linux, Windows, or macOS host for development. Per-platform packaging:
+  `npm run build:linux` (AppImage + .deb), `npm run build:win` (NSIS),
+  `npm run build:mac` (dmg + zip, x64 + arm64). CI builds each natively.
 
 ## Setup
 
@@ -46,6 +47,7 @@ npm run dev
 | `npm run build`         | Build + package for the current platform               |
 | `npm run build:win`     | Build + package Windows NSIS installer                 |
 | `npm run build:linux`   | Build + package Linux AppImage and .deb                |
+| `npm run build:mac`     | Build + package macOS dmg + zip (x64 + arm64)          |
 | `npm run build:dir`     | Build only (no installer, fast iteration)              |
 | `npm test`              | Run the full Vitest suite                              |
 | `npm run test:a11y`     | Run only the a11y suites                               |
@@ -121,9 +123,11 @@ helpers in `src/store/persistence.ts`.
 (main + renderer), and the full Vitest suite on every push to `main` and every
 pull request. Compile runs in parallel.
 [`.github/workflows/release.yml`](.github/workflows/release.yml) handles tag
-pushes (`v*`) — re-runs verify, cross-builds the Windows NSIS installer (via
-Wine on Ubuntu) alongside the Linux AppImage + .deb, and attaches all three to
-a GitHub Release with auto-generated notes from merged PRs.
+pushes (`v*`). Three jobs: `verify` re-runs lint/typecheck/test on the tagged
+commit; `package` runs a per-OS matrix (`ubuntu-latest` → AppImage + .deb,
+`windows-latest` → NSIS, `macos-latest` → dmg + zip) so each installer builds
+natively; `publish` collects every `installers-*` artifact and attaches them
+in one shot to a GitHub Release with auto-generated notes from merged PRs.
 
 To cut a release:
 
@@ -131,6 +135,25 @@ To cut a release:
 git tag v0.2.0 -m "release notes"
 git push origin v0.2.0
 ```
+
+### Installing the unsigned builds
+
+v0.2.0 installers are **not code-signed**. The app still runs everywhere, but
+each OS shows a one-time warning that needs a manual bypass:
+
+- **Windows (NSIS)** — Windows SmartScreen shows a blue "Windows protected
+  your PC — Unknown publisher" dialog. Click **More info** → **Run anyway**.
+- **macOS (dmg + zip)** — Gatekeeper blocks the first open: _"can't be opened
+  because Apple cannot check it for malicious software."_ Either right-click
+  the app → **Open** → **Open** (the menu-bar Open allows it; double-click
+  doesn't), or run `xattr -d com.apple.quarantine /Applications/"Draw to Web".app`.
+- **Linux (AppImage / .deb)** — no warning; AppImage may need `chmod +x`.
+
+Code signing (Windows Authenticode + Apple Developer ID notarization) is
+**deferred indefinitely** — see `I-BLD-05` in `CLAUDE.local.md`. Adding it
+later is a one-time config change to `electron-builder.yml` and a
+`signtool` / `notarytool` step in the release workflow; no architectural
+work required.
 
 ## Testing
 

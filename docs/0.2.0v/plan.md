@@ -905,7 +905,6 @@ connect-src 'self';
 ### Dependency hygiene
 
 - `npm audit` in CI; PRs blocked on `high`/`critical` advisories.
-- Dependabot enabled on `main`.
 - Lockfile committed.
 
 ---

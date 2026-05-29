@@ -18,6 +18,7 @@ import { openProject, saveProject } from '@store/persistence'
 import { useSessionStore } from '@store/sessionStore'
 
 import { deleteSelected } from '../canvas/useDeleteSelection'
+import { openLivePreview } from '../preview/livePreview'
 
 import type { ViewToggle } from './ViewToggles'
 import styles from './MenuBar.module.css'
@@ -93,6 +94,12 @@ export function MenuBar({ panels }: { panels: ReadonlyArray<ViewToggle> }): JSX.
 
       <Menu label="View">
         <>
+          <MenuItem
+            label="Live Preview…"
+            shortcut="Ctrl+Shift+P"
+            onSelect={() => void openLivePreview()}
+          />
+          <DropdownMenu.Separator className={styles.separator} />
           {panels.map((panel) => (
             <DropdownMenu.CheckboxItem
               key={panel.id}

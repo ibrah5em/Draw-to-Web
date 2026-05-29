@@ -58,3 +58,15 @@ export function useDeleteSelection(): void {
     { enableOnFormTags: false, enableOnContentEditable: false }
   )
 }
+
+/** Binds Ctrl+Shift+P to open the Live Preview window. */
+export function useLivePreviewShortcut(open: () => void): void {
+  useHotkeys(
+    'ctrl+shift+p, meta+shift+p',
+    (event) => {
+      event.preventDefault()
+      open()
+    },
+    { preventDefault: true }
+  )
+}

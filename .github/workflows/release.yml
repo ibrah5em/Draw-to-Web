@@ -82,7 +82,7 @@ jobs:
       # categorized notes from merged PRs since the previous tag. Pair with a
       # .github/release.yml if we want to customize categories later.
       - name: Attach installers + changelog to GitHub Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             dist/*.AppImage

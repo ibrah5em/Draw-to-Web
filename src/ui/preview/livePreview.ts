@@ -30,9 +30,12 @@ async function pushOnce(doc: Document): Promise<void> {
     const out = await generate(doc)
     if (!isOpen) return
     await api.updatePreview(out.html, out.css)
-  } catch {
+  } catch (error) {
     // Generator hiccup (e.g. missing token) — leave the previous frame on
-    // screen, don't tear the window down.
+    // screen, don't tear the window down. Surface the cause in the dev
+    // console so silent failures are debuggable.
+    // eslint-disable-next-line no-console
+    console.warn('[live-preview] generate/updatePreview failed', error)
   }
 }
 
@@ -75,7 +78,11 @@ function stopBridge(): void {
  */
 export async function openLivePreview(): Promise<boolean> {
   const api = getApi()
-  if (!api?.openPreviewWindow) return false
+  if (!api?.openPreviewWindow) {
+    // eslint-disable-next-line no-console
+    console.warn('[live-preview] electronAPI.openPreviewWindow is not available')
+    return false
+  }
   await api.openPreviewWindow()
   if (isOpen) return true
   isOpen = true
@@ -83,7 +90,13 @@ export async function openLivePreview(): Promise<boolean> {
   if (api.onPreviewClosed) {
     unsubscribeClose = api.onPreviewClosed(() => stopBridge())
   }
-  void pushOnce(useDocumentStore.getState().document)
+  // The main process kicks off `loadURL('about:blank')` and returns before
+  // the load resolves, so the very first push can race the renderer. A
+  // short delay is enough to let the preview window pick up the bytes
+  // without a heavier ready-handshake protocol.
+  setTimeout(() => {
+    if (isOpen) void pushOnce(useDocumentStore.getState().document)
+  }, 400)
   return true
 }
 

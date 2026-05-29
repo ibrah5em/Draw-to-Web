@@ -18,6 +18,7 @@ import { openProject, saveProject } from '@store/persistence'
 import { useSessionStore } from '@store/sessionStore'
 
 import { deleteSelected } from '../canvas/useDeleteSelection'
+import { runExport } from '../export/runExport'
 import { openLivePreview } from '../preview/livePreview'
 
 import type { ViewToggle } from './ViewToggles'
@@ -75,7 +76,19 @@ export function MenuBar({ panels }: { panels: ReadonlyArray<ViewToggle> }): JSX.
           <MenuItem label="Open…" shortcut="Ctrl+O" onSelect={() => void openProject()} />
           <MenuItem label="Save" shortcut="Ctrl+S" onSelect={() => void saveProject()} />
           <DropdownMenu.Separator className={styles.separator} />
-          <MenuItem label="Export…" shortcut="Ctrl+E" disabled />
+          <MenuItem
+            label="Export…"
+            shortcut="Ctrl+E"
+            onSelect={() => {
+              void runExport().then((result) => {
+                // eslint-disable-next-line no-console
+                console[result.ok ? 'log' : 'error'](`[export] ${result.message}`)
+                if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+                  window.alert(result.message)
+                }
+              })
+            }}
+          />
         </>
       </Menu>
 

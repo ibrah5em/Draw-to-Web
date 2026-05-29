@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+# Tag pushes need to write Releases to attach installers + auto-generated notes.
+permissions:
+  contents: write
+
+jobs:
+  # Even on a tag push we re-run the full verify gate first — if a tag points
+  # at a broken commit, we should fail loudly before publishing installers.
+  verify:
+    name: Verify tag (lint, typecheck, test)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint + typecheck (main + renderer)
+        run: |
+          set +e
+          npm run lint > /tmp/lint.log 2>&1 & L=$!
+          npm run typecheck > /tmp/typecheck.log 2>&1 & T=$!
+          npm run typecheck:web > /tmp/typecheck-web.log 2>&1 & W=$!
+          wait $L; LR=$?
+          wait $T; TR=$?
+          wait $W; WR=$?
+          echo '::group::Lint'; cat /tmp/lint.log; echo "exit=$LR"; echo '::endgroup::'
+          echo '::group::Typecheck (main)'; cat /tmp/typecheck.log; echo "exit=$TR"; echo '::endgroup::'
+          echo '::group::Typecheck (renderer)'; cat /tmp/typecheck-web.log; echo "exit=$WR"; echo '::endgroup::'
+          exit $(( LR | TR | WR ))
+
+      - name: Unit tests
+        run: npm test
+
+  release:
+    name: Package cross-platform installers
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # NSIS (Windows installer toolchain) is a 32-bit Windows binary, so Wine
+      # needs the i386 architecture enabled before installing wine32.
+      - name: Install Wine for Windows cross-build
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y wine64 wine32
+
+      # --publish never: electron-builder auto-detects CI + tag and tries to
+      # upload Releases itself, but we use softprops/action-gh-release below
+      # to attach all artifacts in a single step.
+      - name: Package AppImage + deb
+        run: npm run build:linux -- --publish never
+
+      - name: Package Windows installer
+        run: npm run build:win -- --publish never
+
+      # generate_release_notes: true uses GitHub's auto-generator, which builds
+      # categorized notes from merged PRs since the previous tag. Pair with a
+      # .github/release.yml if we want to customize categories later.
+      - name: Attach installers + changelog to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.exe
+          fail_on_unmatched_files: true
+          generate_release_notes: true

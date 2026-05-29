@@ -3,9 +3,18 @@ name: CI
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
     branches: [main]
+
+# Cancel in-flight runs when a PR gets a new push. Main + tag runs are never
+# cancelled — those represent landed history and must complete.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Default to read-only token scope; the release job opts in to `contents: write`.
+permissions:
+  contents: read
 
 jobs:
   verify:
@@ -24,14 +33,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Typecheck (renderer)
-        run: npm run typecheck:web
+      # Run the three static checks concurrently — each takes ~10–15s on its
+      # own and they don't share state, so doing them in parallel inside one
+      # step saves ~20–30s of wall-clock vs. three sequential steps. Per-check
+      # output is buffered to a log and replayed after `wait` so the GitHub UI
+      # shows a clean, per-check block instead of interleaved lines. The exit
+      # code is the bitwise-OR of all three so any failure surfaces, and the
+      # log replay still runs on failure so you can see *why* it failed.
+      - name: Lint + typecheck (main + renderer)
+        run: |
+          set +e
+          npm run lint > /tmp/lint.log 2>&1 & L=$!
+          npm run typecheck > /tmp/typecheck.log 2>&1 & T=$!
+          npm run typecheck:web > /tmp/typecheck-web.log 2>&1 & W=$!
+          wait $L; LR=$?
+          wait $T; TR=$?
+          wait $W; WR=$?
+          echo '::group::Lint'; cat /tmp/lint.log; echo "exit=$LR"; echo '::endgroup::'
+          echo '::group::Typecheck (main)'; cat /tmp/typecheck.log; echo "exit=$TR"; echo '::endgroup::'
+          echo '::group::Typecheck (renderer)'; cat /tmp/typecheck-web.log; echo "exit=$WR"; echo '::endgroup::'
+          exit $(( LR | TR | WR ))
 
       - name: Unit tests
         run: npm test
@@ -39,7 +60,8 @@ jobs:
   build:
     name: Compile renderer + main
     runs-on: ubuntu-latest
-    needs: verify
+    # No `needs: verify` — compile runs in parallel with lint/typecheck/test so
+    # a compile-only break surfaces at the same time as a lint break.
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -55,52 +77,6 @@ jobs:
 
       # `compile` runs electron-vite without electron-builder packaging, which
       # avoids needing native dependencies (wine, rpm-tools) in CI. Packaging
-      # runs on tagged commits only — see the release job below.
+      # runs on tagged commits only — see .github/workflows/release.yml.
       - name: Compile
         run: npm run compile
-
-  release:
-    name: Package cross-platform installers
-    runs-on: ubuntu-latest
-    needs: verify
-    if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: write # needed to attach assets to the GitHub Release
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      # NSIS (Windows installer toolchain) is a 32-bit Windows binary, so Wine
-      # needs the i386 architecture enabled before installing wine32.
-      - name: Install Wine for Windows cross-build
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y wine64 wine32
-
-      # --publish never: electron-builder auto-detects CI + tag and tries to
-      # upload Releases itself, but we use softprops/action-gh-release below
-      # to attach all artifacts in a single step.
-      - name: Package AppImage + deb
-        run: npm run build:linux -- --publish never
-
-      - name: Package Windows installer
-        run: npm run build:win -- --publish never
-
-      - name: Attach installers to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/*.AppImage
-            dist/*.deb
-            dist/*.exe
-          fail_on_unmatched_files: true

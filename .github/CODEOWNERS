@@ -1,0 +1,25 @@
+# Auto-requests reviewers per lane. Mirrors the "Module Ownership" table in
+# CLAUDE.md. By itself this only adds suggested reviewers; enforcement only
+# kicks in if branch protection's "Require review from Code Owners" is on.
+
+# Default fallback
+*                       @ibrah5em
+
+# Ibrahim — Electron shell, Document Model, generator/runtime/seo/export
+/src/main/              @ibrah5em
+/src/preload/           @ibrah5em
+/src/shared/            @ibrah5em
+/src/document/          @ibrah5em
+/src/generator/         @ibrah5em
+/src/runtime/           @ibrah5em
+/src/seo/               @ibrah5em
+/src/export/            @ibrah5em
+/src/templates/         @ibrah5em
+/electron-builder.yml   @ibrah5em
+/.github/               @ibrah5em
+
+# Yousef — Zustand stores, history, persistence
+/src/store/             @yousefdeeb-112004
+
+# LuF8y — Canvas, panels, sidebar, topbar, layers tree
+/src/ui/                @LuF8y

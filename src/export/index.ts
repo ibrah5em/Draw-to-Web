@@ -32,6 +32,7 @@ import { generateFullReport, injectSEO } from '../seo'
 import { emitSitemap } from '../seo/sitemap'
 import { emitRobots } from '../seo/robots'
 import { validateDocument } from '../document/validation'
+import { minifyHtml, minifyCss, minifyJs } from './minify'
 import type { Document } from '../document/types'
 import type {
   CanvasElement,
@@ -76,16 +77,20 @@ export interface ExportOptions {
   /** Optional name for the produced zip (no extension). Falls back to "project". */
   projectName?: string
   /**
-   * Whether to minify HTML/CSS/JS in the output bundle. The minifier
-   * dependencies (`lightningcss`, `html-minifier-terser`, `terser`) land
-   * with I-EXP-03; until then the option is accepted but ignored. The
-   * stage still runs (as a no-op) so progress events stay consistent.
+   * Whether to minify HTML/CSS/JS in the output bundle. Powered by
+   * `html-minifier-terser`, `lightningcss`, and `terser` respectively
+   * (see `./minify.ts`). When `false` (the default) the stage emits a
+   * progress event and returns the prettier-formatted bytes unchanged
+   * so the public progress contract stays stable.
    */
   minify?: boolean
   /**
    * Inline the JS snippet bundle into a `<script>` block instead of
-   * shipping it as a separate `scripts.js` file. Accepted but not yet
-   * implemented (I-EXP-03).
+   * shipping it as a separate `scripts.js` file. Saves one HTTP request
+   * for single-page exports. When `true`, the generator's external
+   * `<script src="scripts.js" defer>` tag is swapped for an inline
+   * `<script>` carrying the (optionally minified) bytes, and no
+   * `scripts.js` entry lands in the ZIP.
    */
   inlineJS?: boolean
   /**
@@ -110,6 +115,56 @@ export type ExportProjectResult =
   | { success: false; stage: ExportStage; error: string; report?: FullExportReport }
 
 const DEFAULT_PROJECT_NAME = 'project'
+
+/**
+ * Returns every export-relative asset path referenced by the document's
+ * sharp manifest, deduped and sorted for deterministic ZIP output. The
+ * generator already emits `<img src|srcset>` against these same paths
+ * (I-GEN-12), so packaging them under their stated names is enough —
+ * no HTML rewriting required.
+ */
+function collectAssetPaths(doc: Document): string[] {
+  const paths = new Set<string>()
+  for (const entry of Object.values(doc.assets)) {
+    for (const path of Object.values(entry.srcset)) {
+      paths.add(path)
+    }
+  }
+  return Array.from(paths).sort()
+}
+
+/**
+ * Renderer path delegates to main via `electronAPI.readImageAssets`;
+ * Node path (tests, main process) returns an empty map. This shape
+ * matches the IPC contract: `Record<path, ArrayBuffer | null>` where
+ * `null` flags a missing-on-disk variant.
+ */
+async function readImageAssets(
+  paths: readonly string[]
+): Promise<Record<string, ArrayBuffer | null>> {
+  if (typeof window !== 'undefined' && window.electronAPI?.readImageAssets) {
+    return window.electronAPI.readImageAssets(paths)
+  }
+  // No-IPC environment — tests can stub `window.electronAPI`, anyone
+  // else gets an empty map (bundle stage will skip the missing files).
+  return {}
+}
+
+/**
+ * Tolerant regex matching the `<script src="scripts.js" …></script>` tag
+ * emitted by the generator (`src/generator/index.ts`). Allows both
+ * attribute orders, optional quoting, and post-minify whitespace
+ * collapse. We anchor on `scripts.js` rather than the full tag to stay
+ * robust if the minifier reorders `defer` / `src`.
+ */
+const SCRIPTS_JS_TAG_RE = /<script\b[^>]*\bsrc\s*=\s*["']?scripts\.js["']?[^>]*>\s*<\/script>/i
+
+function inlineScriptsJsTag(html: string, js: string): string {
+  // Escape `</script>` sequences inside the JS payload so they don't
+  // terminate the wrapping tag (XSS-equivalent in a single-page bundle).
+  const safe = js.replace(/<\/script/gi, '<\\/script')
+  return html.replace(SCRIPTS_JS_TAG_RE, `<script>${safe}</script>`)
+}
 
 function sanitizeFilename(name: string): string {
   // Allowlist: alnum, dash, underscore. Path separators, dots, and shell metas are dropped.
@@ -189,29 +244,54 @@ export async function exportProject(
   }
 
   // 5. optimize-images ───────────────────────────────────────────────
-  // The sharp manifest (`document.assets`) is already produced upstream
-  // by the image upload IPC handler (I-ELE-05). This stage rewrites
-  // <img> srcset references against the manifest. Passthrough until
-  // I-ELE-05 lands; the asset map keys/values are wired so the stage
-  // becomes a substitution when sharp output is available.
+  // The sharp pipeline (I-ELE-05) wrote each WebP/SVG variant to
+  // `<userData>/dtw-assets/`. Here we collect every export-relative
+  // path the document references, batch-read the bytes via IPC, and
+  // hand the map off to the bundle stage. The HTML emitter (I-GEN-12)
+  // already wired `<img srcset>` against these same paths, so no
+  // rewriting is needed — only packaging.
   emitProgress(options, 'optimize-images')
-  // (no-op for now — generator already emits `src="assets/<id>.webp"`)
+  const assetPaths = collectAssetPaths(doc)
+  let assetBytes: Record<string, ArrayBuffer | null> = {}
+  if (assetPaths.length > 0) {
+    try {
+      assetBytes = await readImageAssets(assetPaths)
+    } catch (err) {
+      return { success: false, stage: 'optimize-images', error: toMessage(err), report }
+    }
+  }
 
   // 6. minify ────────────────────────────────────────────────────────
-  // lightningcss + html-minifier-terser + terser are dev deps that have
-  // not been installed yet (I-EXP-03 territory). The stage is present
-  // so the public progress contract is stable.
+  // Real minification (I-EXP-03) — html-minifier-terser, lightningcss,
+  // terser. In the sandboxed renderer each call delegates to the main
+  // process via IPC; in Node (tests, main process) it runs in-process.
   emitProgress(options, 'minify')
   let finalHtml = enrichedHtml
   let finalCss = generated.css
   let finalJs = generated.js
   if (options.minify === true) {
-    // TODO(I-EXP-03): wire lightningcss + html-minifier-terser + terser.
-    // For now the option is a no-op so callers can light it up later
-    // without changing their call sites.
-    finalHtml = enrichedHtml
-    finalCss = generated.css
-    finalJs = generated.js
+    try {
+      const [mHtml, mCss, mJs] = await Promise.all([
+        minifyHtml(enrichedHtml),
+        minifyCss(generated.css),
+        generated.js.length > 0 ? minifyJs(generated.js) : Promise.resolve(''),
+      ])
+      finalHtml = mHtml
+      finalCss = mCss
+      finalJs = mJs
+    } catch (err) {
+      return { success: false, stage: 'minify', error: toMessage(err), report }
+    }
+  }
+
+  // 6b. inlineJS ─────────────────────────────────────────────────────
+  // When the author opts in, swap the external `<script src="scripts.js">`
+  // for an inline `<script>` carrying the same bytes. Saves one HTTP
+  // round-trip for single-page exports at the cost of cacheability.
+  // Tolerant of post-minify attribute reorder (`defer src=…` etc.).
+  if (options.inlineJS === true && finalJs.length > 0) {
+    finalHtml = inlineScriptsJsTag(finalHtml, finalJs)
+    finalJs = ''
   }
 
   // 7. sitemap-robots ────────────────────────────────────────────────
@@ -235,6 +315,10 @@ export async function exportProject(
     if (finalJs.length > 0) zip.file('scripts.js', finalJs)
     zip.file('sitemap.xml', sitemapXml)
     zip.file('robots.txt', robotsTxt)
+    for (const path of assetPaths) {
+      const bytes = assetBytes[path]
+      if (bytes) zip.file(path, bytes)
+    }
     buffer = await zip.generateAsync({ type: 'arraybuffer' })
   } catch (err) {
     return { success: false, stage: 'bundle', error: toMessage(err), report }

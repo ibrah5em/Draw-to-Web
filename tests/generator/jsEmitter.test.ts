@@ -8,9 +8,9 @@ describe('emitJs(document)', () => {
   })
 
   it('returns an empty string when only unauthored flags are enabled', () => {
-    // I-RUN-01 (themeToggle) and I-RUN-02 (scrollSpy) have shipped.
+    // I-RUN-01..03 (themeToggle, scrollSpy, smoothScroll) have shipped.
     // Flipping only the still-unauthored flags must still produce no JS
-    // until I-RUN-03..08 land.
+    // until I-RUN-04..08 land.
     const doc = {
       ...PORTFOLIO_DOCUMENT,
       runtime: { ...PORTFOLIO_DOCUMENT.runtime, mobileNav: true, reveals: true },
@@ -50,6 +50,27 @@ describe('emitJs(document)', () => {
     }
     const js = emitJs(doc)
     expect(js.indexOf('/* themeToggle */')).toBeLessThan(js.indexOf('/* scrollSpy */'))
+  })
+
+  it('emits the smooth-scroll snippet when smoothScroll is on (I-RUN-03)', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, smoothScroll: true },
+    }
+    const js = emitJs(doc)
+    expect(js).toContain('/* smoothScroll */')
+    expect(js).toContain('--dtw-nav-pad')
+    expect(js).toContain("document.querySelector('nav')")
+    expect(js).toContain('ResizeObserver')
+  })
+
+  it('orders snippets deterministically: scrollSpy before smoothScroll', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, scrollSpy: true, smoothScroll: true },
+    }
+    const js = emitJs(doc)
+    expect(js.indexOf('/* scrollSpy */')).toBeLessThan(js.indexOf('/* smoothScroll */'))
   })
 
   it('produces deterministic output across repeated calls', () => {

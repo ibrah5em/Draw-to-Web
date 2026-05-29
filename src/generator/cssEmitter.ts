@@ -761,6 +761,13 @@ export function emitCss(doc: Document): string {
   // currently call `document.startViewTransition()`.
   if (doc.runtime.themeToggle) sections.push(VIEW_TRANSITION_BLOCK)
 
+  // Smooth scroll + scroll-padding-top offset (I-RUN-03). CSS owns the
+  // smoothness; the matching runtime snippet writes `--dtw-nav-pad` so
+  // anchor jumps land flush below a fixed nav. `prefers-reduced-motion`
+  // demotes scroll-behavior to `auto` so users who opted out of motion
+  // do not get an unexpected animated jump.
+  if (doc.runtime.smoothScroll) sections.push(SMOOTH_SCROLL_BLOCK)
+
   // Print stylesheet (I-GEN-13). Forces background printing, hides
   // navigation chrome and decorative pseudo-elements, collapses the
   // page to a single column, and adds the URL after links (helpful on
@@ -784,6 +791,31 @@ const VIEW_TRANSITION_BLOCK = `::view-transition-old(root),
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation-duration: 1ms;
+  }
+}`
+
+// ---------------------------------------------------------------------------
+// Smooth scroll + scroll-padding-top (I-RUN-03)
+// ---------------------------------------------------------------------------
+
+/**
+ * CSS half of the smooth-scroll runtime. The `--dtw-nav-pad` custom
+ * property is set by the matching JS snippet (`SMOOTH_SCROLL_SNIPPET`)
+ * to the rendered height of the page's first `<nav>`; the fallback `0px`
+ * keeps the rule safe before the snippet runs (or when no nav exists).
+ *
+ * `scroll-behavior: smooth` lives on `html` so it applies to every
+ * in-page anchor jump; the reduced-motion media query demotes it to
+ * `auto` so users with motion sensitivity get an instant jump.
+ */
+const SMOOTH_SCROLL_BLOCK = `html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--dtw-nav-pad, 0px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }`
 

@@ -19,14 +19,20 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import {
   createElement,
+  useEffect,
+  useRef,
+  useState,
   type CSSProperties,
+  type FocusEvent,
   type HTMLAttributes,
+  type KeyboardEvent,
   type MouseEvent,
   type JSX,
   type Ref,
 } from 'react'
 
-import type { ElementNode } from '@document/types'
+import type { ElementNode, TextNode } from '@document/types'
+import { dispatch } from '@store/dispatch'
 import { useSessionStore } from '@store/sessionStore'
 
 import { containerDropId } from '../sidebar/insertDrop'
@@ -119,18 +125,7 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
     }
 
     case 'text': {
-      const Tag = node.tag
-      return createElement(
-        Tag,
-        {
-          ref: sortable.ref,
-          style,
-          ...sortable.attributes,
-          ...sortable.listeners,
-          ...common,
-        },
-        node.content
-      )
+      return <TextNodeView node={node} style={style} sortable={sortable} commonProps={common} />
     }
 
     case 'image': {
@@ -272,5 +267,97 @@ function ContainerNodeView({
         <CanvasNode key={child.id} node={child} />
       ))}
     </SortableContext>
+  )
+}
+
+interface TextNodeViewProps {
+  readonly node: TextNode
+  readonly style: CSSProperties
+  readonly sortable: SortableHandle
+  readonly commonProps: { 'data-dtw-id': string; onClick: (event: MouseEvent) => void }
+}
+
+/**
+ * Text renderer with inline edit-on-double-click (L-CAN-07). While editing,
+ * the element is `contentEditable` and the sortable drag listeners are
+ * detached so typing / native text selection isn't hijacked by dnd-kit. Blur
+ * dispatches `updateNode` with the raw `textContent` — using the DOM text
+ * node round-trips whitespace and special characters verbatim. Escape
+ * cancels without dispatch.
+ */
+function TextNodeView({ node, style, sortable, commonProps }: TextNodeViewProps): JSX.Element {
+  const [editing, setEditing] = useState(false)
+  const elementRef = useRef<HTMLElement | null>(null)
+
+  // Place the cursor at the end of the text and focus the element when the
+  // edit mode opens. Done in an effect so the contentEditable attribute is
+  // already on the DOM by the time we touch the selection.
+  useEffect(() => {
+    if (!editing) return
+    const el = elementRef.current
+    if (!el) return
+    el.focus()
+    const range = document.createRange()
+    range.selectNodeContents(el)
+    range.collapse(false)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+  }, [editing])
+
+  const setRef = (el: HTMLElement | null): void => {
+    elementRef.current = el
+    // Defer to dnd-kit only while not editing — keeps drag wiring off the
+    // node so the activator pointerdown doesn't steal text selection.
+    if (!editing && typeof sortable.ref === 'function') sortable.ref(el)
+  }
+
+  const onDoubleClick = (event: MouseEvent): void => {
+    event.preventDefault()
+    event.stopPropagation()
+    setEditing(true)
+  }
+
+  const onBlur = (event: FocusEvent<HTMLElement>): void => {
+    setEditing(false)
+    const next = event.currentTarget.textContent ?? ''
+    if (next !== node.content) {
+      dispatch({ kind: 'updateNode', id: node.id, path: ['content'], value: next })
+    }
+  }
+
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      if (elementRef.current) elementRef.current.textContent = node.content
+      setEditing(false)
+      elementRef.current?.blur()
+    }
+  }
+
+  const dragProps = editing ? {} : { ...sortable.attributes, ...sortable.listeners }
+  const clickProps = editing ? {} : commonProps
+
+  return createElement(
+    node.tag,
+    {
+      ref: setRef,
+      style,
+      ...dragProps,
+      ...clickProps,
+      'data-dtw-id': node.id,
+      onDoubleClick,
+      ...(editing
+        ? {
+            contentEditable: true,
+            suppressContentEditableWarning: true,
+            spellCheck: true,
+            onBlur,
+            onKeyDown,
+            'data-editing': true,
+          }
+        : {}),
+    },
+    node.content
   )
 }

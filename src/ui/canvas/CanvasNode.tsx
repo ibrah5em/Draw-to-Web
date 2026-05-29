@@ -84,6 +84,7 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
   const resolve = useStyleResolver()
   const selected = useSessionStore((s) => s.selectedIds.includes(node.id))
   const setSelectedIds = useSessionStore((s) => s.setSelectedIds)
+  const toggleSelected = useSessionStore((s) => s.toggleSelected)
   const sortable = useNodeSortable(node.id)
 
   const base = nodeStyle(node, resolve)
@@ -93,6 +94,13 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
   const onClick = (event: MouseEvent): void => {
     event.preventDefault()
     event.stopPropagation()
+    // Shift / Ctrl / Cmd toggle the element in/out of the current selection
+    // (L-CAN-06). Plain click replaces it. The store's `toggleSelected`
+    // preserves selection order which the Layers tree relies on.
+    if (event.shiftKey || event.ctrlKey || event.metaKey) {
+      toggleSelected(node.id)
+      return
+    }
     setSelectedIds([node.id])
   }
   const common = { 'data-dtw-id': node.id, onClick }

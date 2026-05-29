@@ -6,6 +6,7 @@ import { Canvas } from './canvas/Canvas'
 import { LayerPanel } from './layers/LayerPanel'
 import { PropertiesPanel } from './panels/properties/PropertiesPanel'
 import { TokensPanel } from './panels/tokens/TokensPanel'
+import { InsertSidebar } from './sidebar/InsertSidebar'
 import { MenuBar } from './topbar/MenuBar'
 import { ThemeToggle } from './topbar/ThemeToggle'
 import { ViewToggles, type ViewToggle } from './topbar/ViewToggles'
@@ -14,6 +15,7 @@ import styles from './App.module.css'
 /** localStorage keys for each persisted panel group. */
 const COLUMNS_KEY = 'dtw.layout.main'
 const ROWS_KEY = 'dtw.layout.vertical'
+const SIDEBAR_KEY = 'dtw.layout.sidebar'
 
 /** Panel ids — also the keys in each persisted {@link Layout} map. */
 const PANEL = {
@@ -22,6 +24,8 @@ const PANEL = {
   properties: 'properties',
   workspace: 'workspace',
   tokens: 'tokens',
+  insert: 'insert',
+  layers: 'layers',
 } as const
 
 const DEFAULT_COLUMNS: Layout = {
@@ -33,6 +37,11 @@ const DEFAULT_COLUMNS: Layout = {
 const DEFAULT_ROWS: Layout = {
   [PANEL.workspace]: 74,
   [PANEL.tokens]: 26,
+}
+
+const DEFAULT_SIDEBAR: Layout = {
+  [PANEL.insert]: 55,
+  [PANEL.layers]: 45,
 }
 
 /** Narrow an unknown JSON value to a {@link Layout} (id → numeric percentage). */
@@ -73,6 +82,7 @@ function saveLayout(key: string, layout: Layout): void {
 export function App(): JSX.Element {
   const [columns] = useState(() => loadLayout(COLUMNS_KEY, DEFAULT_COLUMNS))
   const [rows] = useState(() => loadLayout(ROWS_KEY, DEFAULT_ROWS))
+  const [sidebarRows] = useState(() => loadLayout(SIDEBAR_KEY, DEFAULT_SIDEBAR))
 
   const sidebarRef = usePanelRef()
   const propertiesRef = usePanelRef()
@@ -154,8 +164,29 @@ export function App(): JSX.Element {
               collapsedSize={0}
               onResize={() => setSidebarCollapsed(sidebarRef.current?.isCollapsed() ?? false)}
             >
-              <section className={styles.sidebar} aria-label="Layers">
-                <LayerPanel />
+              <section className={styles.sidebar} aria-label="Insert and Layers">
+                <Group
+                  orientation="vertical"
+                  className={styles.sidebarStack}
+                  defaultLayout={sidebarRows}
+                  onLayoutChanged={(layout) => saveLayout(SIDEBAR_KEY, layout)}
+                >
+                  <Panel id={PANEL.insert} defaultSize="55" minSize="20">
+                    <div className={styles.sidebarRegion} aria-label="Insert">
+                      <InsertSidebar />
+                    </div>
+                  </Panel>
+
+                  <Separator className={styles.handleH}>
+                    <div className={styles.handleHInner} />
+                  </Separator>
+
+                  <Panel id={PANEL.layers} defaultSize="45" minSize="15">
+                    <div className={styles.sidebarRegion} aria-label="Layers">
+                      <LayerPanel />
+                    </div>
+                  </Panel>
+                </Group>
               </section>
             </Panel>
 

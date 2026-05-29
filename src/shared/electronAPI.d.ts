@@ -80,6 +80,26 @@ interface ElectronAPI {
    * second round-trip.
    */
   addRecentFile: (filePath: string) => Promise<readonly RecentFile[]>
+  /**
+   * Reads on-disk image-variant bytes for the export-relative paths produced
+   * by the sharp pipeline (I-ELE-05). Each path looks like
+   * `assets/<assetId>-<width>.webp` (or `.svg`). The handler strips the
+   * leading `assets/` prefix and reads from `<userData>/dtw-assets/`.
+   * Missing or unreadable entries map to `null` so the renderer can decide
+   * how to surface the gap (broken asset vs. transport error). Used by the
+   * `optimize-images` stage of the export pipeline.
+   */
+  readImageAssets: (paths: readonly string[]) => Promise<Record<string, ArrayBuffer | null>>
+  /**
+   * Minifies an HTML string in the main process (I-EXP-03). Native bindings
+   * (`html-minifier-terser` is pure JS but is wired alongside lightningcss
+   * for symmetry) live outside the sandboxed renderer.
+   */
+  minifyHtml: (html: string) => Promise<string>
+  /** Minifies a CSS string via `lightningcss` in the main process. */
+  minifyCss: (css: string) => Promise<string>
+  /** Minifies a JS string via `terser` in the main process. */
+  minifyJs: (js: string) => Promise<string>
 }
 
 declare global {

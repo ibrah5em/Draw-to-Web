@@ -5,6 +5,7 @@ import { extname, join, normalize, isAbsolute, basename } from 'path'
 import { runAxeGate } from '../seo/axeGate'
 import type { RecentFile } from '../shared/electronAPI'
 import { IMAGE_ASSETS_DIRNAME, processImage } from './imagePipeline'
+import { minifyHtml, minifyCss, minifyJs } from '../export/minify'
 
 let previewWin: BrowserWindow | null = null
 
@@ -321,6 +322,63 @@ export function registerIpcHandlers(): void {
       // list so the UI reflects the user's action this session.
     }
     return next
+  })
+
+  // Reads the on-disk WebP/SVG variants the sharp pipeline (I-ELE-05)
+  // wrote under `<userData>/dtw-assets/`. The renderer requests them by
+  // their export-relative paths (`assets/<id>-<width>.webp`); we strip
+  // the leading `assets/` segment and re-anchor at the variants dir.
+  // Used by the `optimize-images` stage of the export pipeline.
+  ipcMain.handle('assets:read-images', async (_event, paths: unknown) => {
+    if (!Array.isArray(paths)) return {}
+    const root = join(app.getPath('userData'), IMAGE_ASSETS_DIRNAME)
+    const out: Record<string, ArrayBuffer | null> = {}
+    await Promise.all(
+      paths.map(async (rawPath) => {
+        if (typeof rawPath !== 'string' || rawPath.length === 0) return
+        // Allowlist: must look like `assets/<basename>` with no traversal.
+        if (!rawPath.startsWith('assets/')) {
+          out[rawPath] = null
+          return
+        }
+        const variantName = basename(rawPath.slice('assets/'.length))
+        if (variantName.length === 0 || variantName.startsWith('.')) {
+          out[rawPath] = null
+          return
+        }
+        const onDisk = join(root, variantName)
+        // Final guard against any path escape that survived basename().
+        if (!onDisk.startsWith(root)) {
+          out[rawPath] = null
+          return
+        }
+        try {
+          const buf = await readFile(onDisk)
+          // Slice to a fresh ArrayBuffer so the structured-clone IPC
+          // transport doesn't carry shared-pool Node Buffer memory.
+          out[rawPath] = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+        } catch {
+          out[rawPath] = null
+        }
+      })
+    )
+    return out
+  })
+
+  // I-EXP-03 — minification lives in main because lightningcss is a
+  // native addon. Reject bad payloads via thrown TypeError so the
+  // pipeline can distinguish transport errors from empty outputs.
+  ipcMain.handle('minify:html', async (_event, html: unknown) => {
+    if (typeof html !== 'string') throw new TypeError('minify:html expects a string')
+    return minifyHtml(html)
+  })
+  ipcMain.handle('minify:css', async (_event, css: unknown) => {
+    if (typeof css !== 'string') throw new TypeError('minify:css expects a string')
+    return minifyCss(css)
+  })
+  ipcMain.handle('minify:js', async (_event, js: unknown) => {
+    if (typeof js !== 'string') throw new TypeError('minify:js expects a string')
+    return minifyJs(js)
   })
 
   // Synchronous — called once at preload startup to stamp the version into the bridge.

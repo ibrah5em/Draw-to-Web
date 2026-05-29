@@ -49,4 +49,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   listRecentFiles: () => ipcRenderer.invoke('recent:list'),
 
   addRecentFile: (filePath: string) => ipcRenderer.invoke('recent:add', filePath),
+
+  readImageAssets: (paths: readonly string[]) => ipcRenderer.invoke('assets:read-images', paths),
+
+  minifyHtml: (html: string) => ipcRenderer.invoke('minify:html', html),
+  minifyCss: (css: string) => ipcRenderer.invoke('minify:css', css),
+  minifyJs: (js: string) => ipcRenderer.invoke('minify:js', js),
 })

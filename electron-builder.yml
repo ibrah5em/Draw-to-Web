@@ -18,10 +18,14 @@ files:
 
 # sharp ships prebuilt libvips binaries under `@img/sharp-*` and
 # `@img/sharp-libvips-*` that must live outside the asar archive — the
-# native loader dlopens them at runtime.
+# native loader dlopens them at runtime. lightningcss ships a per-arch
+# `*.node` addon for the same reason; the export pipeline loads it from
+# the main process during the `minify` stage (I-EXP-03).
 asarUnpack:
   - node_modules/sharp/**/*
   - node_modules/@img/**/*
+  - node_modules/lightningcss/**/*
+  - node_modules/lightningcss-*/**/*
 
 win:
   executableName: draw-to-web

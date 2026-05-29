@@ -156,7 +156,9 @@ describe('exportProject(doc, options) — C12 pipeline', () => {
     }
   })
 
-  it('accepts the minify / inlineJS / selfHostFonts options without altering output (PR-3 passthrough)', async () => {
+  it('accepts the full ExportOptions surface and still produces a bundle', async () => {
+    // `minify` runs for real (covered by optimizeImagesAndMinify.test);
+    // `inlineJS` + `selfHostFonts` remain pass-throughs for now (I-EXP-05).
     const captured = setupElectronAPI({ success: true, filePath: '/tmp/x.zip' })
     await exportProject(PORTFOLIO_DOCUMENT, {
       minify: true,
@@ -165,8 +167,6 @@ describe('exportProject(doc, options) — C12 pipeline', () => {
       includeSourceComments: true,
       theme: 'dark',
     })
-    // The options are accepted but currently a no-op; we assert the
-    // pipeline still produced a bundle (i.e. didn't crash on them).
     expect(captured.capturedBuffer).toBeInstanceOf(ArrayBuffer)
   })
 })

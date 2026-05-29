@@ -69,6 +69,36 @@ describe('export pipeline — end to end', () => {
     if (result.success) expect(result.report.accessibility.passed).toBe(true)
   })
 
+  it('stays under the 10s portfolio budget with minify=true and inlineJS=true', async () => {
+    // The default-options run is timed in the test above; this one
+    // exercises the heaviest path (html-minifier-terser + lightningcss
+    // + terser + inline-JS splice) so the budget covers both shapes.
+    // Use a local IPC stub so the minified buffer doesn't clobber the
+    // `savedBuffer` the `bundle contents` describe inspects below.
+    const win = globalThis.window as { electronAPI: unknown }
+    const prevElectronAPI = win.electronAPI
+    win.electronAPI = {
+      async exportZip() {
+        return { success: true, filePath: '/tmp/minify-budget.zip' }
+      },
+    }
+    try {
+      const t0 = performance.now()
+      const result = await exportProject(doc, {
+        projectName: 'portfolio-min',
+        minify: true,
+        inlineJS: true,
+      })
+      const elapsedMs = performance.now() - t0
+      // eslint-disable-next-line no-console
+      console.log(`[e2e] minify+inline: ${elapsedMs.toFixed(0)}ms (budget <10000ms)`)
+      expect(result.success).toBe(true)
+      expect(elapsedMs).toBeLessThan(10_000)
+    } finally {
+      win.electronAPI = prevElectronAPI
+    }
+  })
+
   it('validates clean (no errors block the gate)', () => {
     const report = validateDocument(doc)
     console.log(

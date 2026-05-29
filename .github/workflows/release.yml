@@ -44,10 +44,33 @@ jobs:
       - name: Unit tests
         run: npm test
 
-  release:
-    name: Package cross-platform installers
-    runs-on: ubuntu-latest
+  # One runner per target OS so each installer is built natively — avoids the
+  # wine fragility that ubuntu-only builds had, and lets macOS notarize once
+  # I-BLD-05 wires the Developer ID cert. Each job uploads its artifacts to a
+  # shared bucket; the `publish` job downloads everything and creates the
+  # Release in one shot so release notes aren't raced across matrix entries.
+  package:
+    name: Package (${{ matrix.os }})
     needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            script: build:linux
+            artifacts: |
+              dist/*.AppImage
+              dist/*.deb
+          - os: windows-latest
+            script: build:win
+            artifacts: |
+              dist/*.exe
+          - os: macos-latest
+            script: build:mac
+            artifacts: |
+              dist/*.dmg
+              dist/*.zip
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,22 +84,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # NSIS (Windows installer toolchain) is a 32-bit Windows binary, so Wine
-      # needs the i386 architecture enabled before installing wine32.
-      - name: Install Wine for Windows cross-build
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y wine64 wine32
-
       # --publish never: electron-builder auto-detects CI + tag and tries to
-      # upload Releases itself, but we use softprops/action-gh-release below
-      # to attach all artifacts in a single step.
-      - name: Package AppImage + deb
-        run: npm run build:linux -- --publish never
+      # upload Releases itself, but we collect artifacts and let the publish
+      # job attach them in a single step so release notes aren't raced.
+      - name: Build installer
+        run: npm run ${{ matrix.script }} -- --publish never
 
-      - name: Package Windows installer
-        run: npm run build:win -- --publish never
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish GitHub Release
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: installers-*
+          path: dist
+          merge-multiple: true
 
       # generate_release_notes: true uses GitHub's auto-generator, which builds
       # categorized notes from merged PRs since the previous tag. Pair with a
@@ -88,5 +120,7 @@ jobs:
             dist/*.AppImage
             dist/*.deb
             dist/*.exe
+            dist/*.dmg
+            dist/*.zip
           fail_on_unmatched_files: true
           generate_release_notes: true

@@ -42,6 +42,25 @@ nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
 
+mac:
+  category: public.app-category.graphics-design
+  # `identity: null` disables auto-signing so unsigned local builds and
+  # CI runs without a Developer ID cert succeed. I-BLD-05 will flip this
+  # to a real identity (+ notarization) once certs are in place.
+  identity: null
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+
+dmg:
+  artifactName: ${name}-${version}-${arch}.${ext}
+
 linux:
   category: Graphics
   synopsis: Convert visual canvas layouts into clean, semantic HTML/CSS

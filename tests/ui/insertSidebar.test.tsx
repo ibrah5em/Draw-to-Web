@@ -4,7 +4,8 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { presetsRegistry, type PresetId } from '@document/presets'
-import { InsertSidebar } from '@ui/sidebar/InsertSidebar'
+import { InsertDndProvider } from '@ui/sidebar/InsertDnd'
+import { insertDraggableId, InsertSidebar } from '@ui/sidebar/InsertSidebar'
 import { getPresetMeta } from '@ui/sidebar/presetMeta'
 
 declare global {
@@ -29,6 +30,26 @@ afterEach(() => {
 
 function render(): void {
   act(() => root.render(<InsertSidebar />))
+}
+
+function renderWithDnd(): void {
+  act(() =>
+    root.render(
+      <InsertDndProvider>
+        <InsertSidebar />
+      </InsertDndProvider>
+    )
+  )
+}
+
+function setSearch(value: string): void {
+  const input = container.querySelector<HTMLInputElement>('input[aria-label="Search insert items"]')
+  if (!input) throw new Error('search input not found')
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
+  act(() => {
+    setter?.call(input, value)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
 }
 
 function tabs(): HTMLElement[] {
@@ -104,5 +125,44 @@ describe('InsertSidebar (L-SBR-01, L-SBR-02)', () => {
     const card = container.querySelector<HTMLButtonElement>('[data-insert-id="hero-centered"]')
     expect(card).not.toBeNull()
     expect(card?.title).toBe(getPresetMeta('hero-centered').description)
+  })
+
+  it('search filters to matching presets — "her" surfaces both Hero cards (L-SBR-03)', () => {
+    render()
+    setSearch('her')
+    const ids = cardIdsOn('sections')
+    expect(ids).toContain('hero-centered')
+    expect(ids).toContain('hero-split')
+    expect(ids).not.toContain('nav-fixed')
+  })
+
+  it('clearing the search restores the full list (L-SBR-03)', () => {
+    render()
+    setSearch('her')
+    expect(cardIdsOn('sections').length).toBe(2)
+    setSearch('')
+    expect(cardIdsOn('sections').length).toBeGreaterThan(2)
+  })
+
+  it('search matches primitives on the Elements tab', () => {
+    render()
+    const [, , third] = tabs()
+    act(() => {
+      third.focus()
+      third.click()
+    })
+    setSearch('butt')
+    const ids = cardIdsOn('elements')
+    expect(ids).toEqual(['button'])
+  })
+
+  it('cards expose dnd-kit draggable wiring (L-SBR-04)', () => {
+    renderWithDnd()
+    const card = container.querySelector<HTMLButtonElement>('[data-insert-id="hero-centered"]')
+    expect(card).not.toBeNull()
+    expect(card?.getAttribute('aria-roledescription')).toBe('draggable')
+    expect(insertDraggableId({ id: 'hero-centered', kind: 'preset' } as never)).toBe(
+      'insert:preset:hero-centered'
+    )
   })
 })

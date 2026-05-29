@@ -2,12 +2,21 @@ import { useEffect, useState, type JSX } from 'react'
 import { Group, Panel, Separator, usePanelRef, type Layout } from 'react-resizable-panels'
 import { PanelBottom, PanelLeft, PanelRight } from 'lucide-react'
 
+import { createBlankTemplate } from '@templates/blank'
+import { createPortfolioTemplate } from '@templates/portfolio'
+import { useDocumentStore } from '@store/documentStore'
+import { useSessionStore } from '@store/sessionStore'
+
 import { Canvas } from './canvas/Canvas'
+import { useDeleteSelection, useLivePreviewShortcut } from './canvas/useDeleteSelection'
+import { openLivePreview } from './preview/livePreview'
+import { Welcome, type WelcomeTemplate } from './dialogs/Welcome'
 import { LayerPanel } from './layers/LayerPanel'
 import { PropertiesPanel } from './panels/properties/PropertiesPanel'
 import { TokensPanel } from './panels/tokens/TokensPanel'
 import { InsertDndProvider } from './sidebar/InsertDnd'
 import { InsertSidebar } from './sidebar/InsertSidebar'
+import { BreakpointSwitcher } from './topbar/BreakpointSwitcher'
 import { MenuBar } from './topbar/MenuBar'
 import { ThemeToggle } from './topbar/ThemeToggle'
 import { ViewToggles, type ViewToggle } from './topbar/ViewToggles'
@@ -84,6 +93,55 @@ export function App(): JSX.Element {
   const [columns] = useState(() => loadLayout(COLUMNS_KEY, DEFAULT_COLUMNS))
   const [rows] = useState(() => loadLayout(ROWS_KEY, DEFAULT_ROWS))
   const [sidebarRows] = useState(() => loadLayout(SIDEBAR_KEY, DEFAULT_SIDEBAR))
+  const [welcomeOpen, setWelcomeOpen] = useState(
+    () => useSessionStore.getState().currentFilePath === null
+  )
+
+  useDeleteSelection()
+  useLivePreviewShortcut(() => void openLivePreview())
+
+  const closeWelcome = (): void => setWelcomeOpen(false)
+  const openWelcome = (): void => setWelcomeOpen(true)
+
+  const newBlank = (): void => {
+    useDocumentStore.getState().hydrate(createBlankTemplate())
+    closeWelcome()
+  }
+  const openProject = async (): Promise<void> => {
+    const api = (globalThis as { electronAPI?: Window['electronAPI'] }).electronAPI
+    if (!api?.openProject) {
+      closeWelcome()
+      return
+    }
+    const result = await api.openProject()
+    if (result.success && result.json) {
+      try {
+        const parsed = JSON.parse(result.json) as Parameters<
+          ReturnType<typeof useDocumentStore.getState>['hydrate']
+        >[0]
+        useDocumentStore.getState().hydrate(parsed)
+        if (result.filePath) useSessionStore.getState().setCurrentFilePath(result.filePath)
+        closeWelcome()
+      } catch {
+        // Bad JSON — leave the welcome open so the user can try again.
+      }
+    }
+  }
+  const openTemplate = (template: WelcomeTemplate): void => {
+    if (template === 'portfolio') {
+      useDocumentStore.getState().hydrate(createPortfolioTemplate())
+    } else if (template === 'blank') {
+      useDocumentStore.getState().hydrate(createBlankTemplate())
+    }
+    closeWelcome()
+  }
+  const openRecent = async (path: string): Promise<void> => {
+    void path
+    // Recent-open requires a `loadFromPath` IPC that isn't wired yet (I-ELE-07
+    // covers persistence; reading by absolute path is downstream of that). Fall
+    // back to the standard open flow so the user still gets to a project.
+    await openProject()
+  }
 
   const sidebarRef = usePanelRef()
   const propertiesRef = usePanelRef()
@@ -137,6 +195,7 @@ export function App(): JSX.Element {
       <header className={styles.titlebar}>
         <MenuBar panels={panelToggles} />
         <div className={styles.titlebarActions}>
+          <BreakpointSwitcher />
           <ViewToggles toggles={panelToggles} />
           <ThemeToggle />
         </div>
@@ -248,7 +307,18 @@ export function App(): JSX.Element {
         </Group>
       </InsertDndProvider>
 
+      <Welcome
+        open={welcomeOpen}
+        onClose={closeWelcome}
+        onNew={newBlank}
+        onOpen={() => void openProject()}
+        onTemplate={openTemplate}
+        onRecent={(path) => void openRecent(path)}
+      />
+
       <footer className={styles.statusbar} />
+      {/* expose welcome opener for future MenuBar wiring */}
+      <span hidden data-testid="welcome-opener" onClick={openWelcome} />
     </div>
   )
 }

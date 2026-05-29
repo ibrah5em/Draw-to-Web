@@ -74,10 +74,11 @@ describe('MenuBar', () => {
     expect(doc.tree.type === 'container' && doc.tree.children).toHaveLength(0)
   })
 
-  it('disables Export until the export task lands', () => {
+  it('exposes Export as an enabled menu item', () => {
     render()
     openMenu('File')
-    expect(menuItem('Export').getAttribute('aria-disabled')).toBe('true')
+    const item = menuItem('Export')
+    expect(item.getAttribute('aria-disabled')).not.toBe('true')
   })
 
   it('View toggles invoke the panel handler', () => {

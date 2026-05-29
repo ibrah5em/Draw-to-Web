@@ -1,0 +1,50 @@
+.group {
+  display: inline-flex;
+  align-items: stretch;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  min-width: 36px;
+  height: 24px;
+  padding: 0 var(--sp-2);
+  border: none;
+  background: transparent;
+  color: var(--icon);
+  font-family: var(--font);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.button + .button {
+  border-left: 1px solid var(--border);
+}
+
+.button:hover {
+  background: var(--bg-hover);
+  color: var(--icon-active);
+}
+
+.button[data-active='true'] {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.button:focus-visible {
+  outline: none;
+  background: var(--bg-active);
+  color: var(--icon-active);
+}
+
+.label {
+  font-variant-numeric: tabular-nums;
+}

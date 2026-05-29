@@ -48,11 +48,22 @@ function rawString(value: Bindable<string> | undefined): string {
   return typeof value === 'string' && !isTokenRef(value) ? value : ''
 }
 
-/** A labelled inspector row. */
-export function Field({ label, children }: { label: string; children: ReactNode }): JSX.Element {
+/** A labelled inspector row. Optional `badge` slot renders next to the label. */
+export function Field({
+  label,
+  badge,
+  children,
+}: {
+  label: string
+  badge?: ReactNode
+  children: ReactNode
+}): JSX.Element {
   return (
     <div className={styles.field}>
-      <span className={styles.fieldLabel}>{label}</span>
+      <span className={styles.fieldLabel}>
+        {label}
+        {badge}
+      </span>
       <div className={styles.fieldControl}>{children}</div>
     </div>
   )

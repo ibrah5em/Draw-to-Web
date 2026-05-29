@@ -17,6 +17,10 @@ import { useHistoryStore } from '@store/historyStore'
 import { openProject, saveProject } from '@store/persistence'
 import { useSessionStore } from '@store/sessionStore'
 
+import { deleteSelected } from '../canvas/useDeleteSelection'
+import { runExport } from '../export/runExport'
+import { openLivePreview } from '../preview/livePreview'
+
 import type { ViewToggle } from './ViewToggles'
 import styles from './MenuBar.module.css'
 
@@ -72,7 +76,19 @@ export function MenuBar({ panels }: { panels: ReadonlyArray<ViewToggle> }): JSX.
           <MenuItem label="Open…" shortcut="Ctrl+O" onSelect={() => void openProject()} />
           <MenuItem label="Save" shortcut="Ctrl+S" onSelect={() => void saveProject()} />
           <DropdownMenu.Separator className={styles.separator} />
-          <MenuItem label="Export…" shortcut="Ctrl+E" disabled />
+          <MenuItem
+            label="Export…"
+            shortcut="Ctrl+E"
+            onSelect={() => {
+              void runExport().then((result) => {
+                // eslint-disable-next-line no-console
+                console[result.ok ? 'log' : 'error'](`[export] ${result.message}`)
+                if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+                  window.alert(result.message)
+                }
+              })
+            }}
+          />
         </>
       </Menu>
 
@@ -80,11 +96,23 @@ export function MenuBar({ panels }: { panels: ReadonlyArray<ViewToggle> }): JSX.
         <>
           <MenuItem label="Undo" shortcut="Ctrl+Z" onSelect={() => undo()} />
           <MenuItem label="Redo" shortcut="Ctrl+Shift+Z" onSelect={() => redo()} />
+          <DropdownMenu.Separator className={styles.separator} />
+          <MenuItem
+            label="Delete selection"
+            shortcut="Del"
+            onSelect={() => void deleteSelected()}
+          />
         </>
       </Menu>
 
       <Menu label="View">
         <>
+          <MenuItem
+            label="Live Preview…"
+            shortcut="Ctrl+Shift+P"
+            onSelect={() => void openLivePreview()}
+          />
+          <DropdownMenu.Separator className={styles.separator} />
           {panels.map((panel) => (
             <DropdownMenu.CheckboxItem
               key={panel.id}

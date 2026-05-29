@@ -25,6 +25,7 @@
 
 import type { RuntimeFlags } from '../document/types'
 import { MOBILE_NAV_SNIPPET } from './mobileNav'
+import { NAV_ON_SCROLL_SNIPPET } from './navOnScroll'
 import { SCROLL_SPY_SNIPPET } from './scrollSpy'
 import { SMOOTH_SCROLL_SNIPPET } from './smoothScroll'
 import { THEME_TOGGLE_FOUC_GUARD, THEME_TOGGLE_SNIPPET } from './themeToggle'
@@ -38,6 +39,7 @@ export const RUNTIME_SNIPPETS: Partial<Record<keyof RuntimeFlags, string>> = {
   scrollSpy: SCROLL_SPY_SNIPPET,
   smoothScroll: SMOOTH_SCROLL_SNIPPET,
   mobileNav: MOBILE_NAV_SNIPPET,
+  navOnScroll: NAV_ON_SCROLL_SNIPPET,
 }
 
 /**

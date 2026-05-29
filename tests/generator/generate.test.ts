@@ -30,12 +30,12 @@ describe('generate(document)', () => {
   })
 
   it('does not inject <script> for enabled flags whose snippet is not yet authored', async () => {
-    // I-RUN-01..04 (themeToggle, scrollSpy, smoothScroll, mobileNav) have
-    // shipped. Flipping only flags whose I-RUN-* task has not landed must
-    // still produce no JS and no `<script>` tag.
+    // I-RUN-01..05 (themeToggle, scrollSpy, smoothScroll, mobileNav,
+    // navOnScroll) have shipped. Flipping only flags whose I-RUN-* task
+    // has not landed must still produce no JS and no `<script>` tag.
     const doc = {
       ...PORTFOLIO_DOCUMENT,
-      runtime: { ...PORTFOLIO_DOCUMENT.runtime, navOnScroll: true, reveals: true },
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, reveals: true, animationGating: true },
     }
     const { html, js } = await generate(doc)
     expect(js).toBe('')

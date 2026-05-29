@@ -8,12 +8,12 @@ describe('emitJs(document)', () => {
   })
 
   it('returns an empty string when only unauthored flags are enabled', () => {
-    // I-RUN-01..04 (themeToggle, scrollSpy, smoothScroll, mobileNav) have
-    // shipped. Flipping only the still-unauthored flags must still produce
-    // no JS until I-RUN-05..08 land.
+    // I-RUN-01..05 (themeToggle, scrollSpy, smoothScroll, mobileNav,
+    // navOnScroll) have shipped. Flipping only the still-unauthored flags
+    // must still produce no JS until I-RUN-06..08 land.
     const doc = {
       ...PORTFOLIO_DOCUMENT,
-      runtime: { ...PORTFOLIO_DOCUMENT.runtime, navOnScroll: true, reveals: true },
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, reveals: true, animationGating: true },
     }
     expect(emitJs(doc)).toBe('')
   })
@@ -92,6 +92,27 @@ describe('emitJs(document)', () => {
     }
     const js = emitJs(doc)
     expect(js.indexOf('/* smoothScroll */')).toBeLessThan(js.indexOf('/* mobileNav */'))
+  })
+
+  it('emits the nav-on-scroll snippet when navOnScroll is on (I-RUN-05)', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, navOnScroll: true },
+    }
+    const js = emitJs(doc)
+    expect(js).toContain('/* navOnScroll */')
+    expect(js).toContain('IntersectionObserver')
+    expect(js).toContain('data-dtw-scroll-sentinel')
+    expect(js).toContain('scrolled')
+  })
+
+  it('orders snippets deterministically: mobileNav before navOnScroll', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, mobileNav: true, navOnScroll: true },
+    }
+    const js = emitJs(doc)
+    expect(js.indexOf('/* mobileNav */')).toBeLessThan(js.indexOf('/* navOnScroll */'))
   })
 
   it('produces deterministic output across repeated calls', () => {

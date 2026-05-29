@@ -519,16 +519,8 @@ function buildRoot(authorName: string): ContainerNode {
     children: [
       buildHeader(authorName),
       buildSection('summary', 'Summary', [summaryBody]),
-      buildSection(
-        'experience',
-        'Experience',
-        EXPERIENCE.map(buildExperienceEntry)
-      ),
-      buildSection(
-        'education',
-        'Education',
-        EDUCATION.map(buildEducationEntry)
-      ),
+      buildSection('experience', 'Experience', EXPERIENCE.map(buildExperienceEntry)),
+      buildSection('education', 'Education', EDUCATION.map(buildEducationEntry)),
       buildSection('skills', 'Skills', [buildSkills()]),
     ],
   }

@@ -151,7 +151,8 @@ describe('exportProject({ selfHostFonts: true }) — integration', () => {
     const doc = createPortfolioTemplate('Ada')
 
     let captured: ArrayBuffer | null = null
-    ;(globalThis as { window?: unknown }).window = {
+    const g = globalThis as { window?: unknown }
+    g.window = {
       electronAPI: {
         async exportZip(buffer: ArrayBuffer) {
           captured = buffer

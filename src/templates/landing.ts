@@ -176,7 +176,8 @@ function buildRoot(): ContainerNode {
   const cta = presetsRegistry['cta-banner'](
     {
       title: 'Ready to ship?',
-      subtitle: 'Open the editor, drop in a template, and export your first page in under a minute.',
+      subtitle:
+        'Open the editor, drop in a template, and export your first page in under a minute.',
       ctaLabel: 'Open the editor',
     },
     ctx
@@ -239,7 +240,8 @@ export function createLandingTemplate(productName: string = 'Acme'): Document {
     themeColor: { light: '#ffffff', dark: '#0b0b10' },
     openGraph: {
       title: `${productName} — Ship the page you sketched`,
-      description: 'Compose modern, semantic, responsive pages on a canvas. No framework, no lock-in.',
+      description:
+        'Compose modern, semantic, responsive pages on a canvas. No framework, no lock-in.',
       type: 'website',
       url: 'https://example.com/',
     },

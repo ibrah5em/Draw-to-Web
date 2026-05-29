@@ -41,13 +41,14 @@ describe('exportProject — dry-run mode (I-EXP-04)', () => {
     // no IPC is reached: `window.electronAPI` is undefined in this
     // test context, and the bundle path would throw on the save stage.
     // Dry-run resolves cleanly → IPC never touched.
-    const prevWindow = (globalThis as { window?: unknown }).window
+    const g = globalThis as { window?: unknown }
+    const prevWindow = g.window
     try {
-      ;(globalThis as { window?: unknown }).window = undefined
+      g.window = undefined
       const result = await exportProject(doc, { dryRun: true })
       expect(result.html).toBeTruthy()
     } finally {
-      ;(globalThis as { window?: unknown }).window = prevWindow
+      g.window = prevWindow
     }
   })
 

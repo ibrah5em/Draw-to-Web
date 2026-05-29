@@ -57,9 +57,7 @@ describe('createResumeTemplate (I-TPL-04)', () => {
   it('groups content under semantic <section> landmarks', () => {
     const { tree } = createResumeTemplate()
     if (tree.type !== 'container') throw new Error('unreachable')
-    const sectionRoles = tree.children
-      .filter((c) => c.semanticRole === 'section')
-      .map((c) => c.id)
+    const sectionRoles = tree.children.filter((c) => c.semanticRole === 'section').map((c) => c.id)
     // header + summary + experience + education + skills sections.
     expect(sectionRoles).toEqual(
       expect.arrayContaining(['summary', 'experience', 'education', 'skills'])

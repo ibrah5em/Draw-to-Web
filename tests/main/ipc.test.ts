@@ -413,3 +413,133 @@ describe('recent files IPC', () => {
     expect(list).toEqual([])
   })
 })
+
+// ───────────── watcher:start / watcher:stop (I-ELE-06) ─────────────
+
+describe('watcher IPC handlers', () => {
+  /** Build a minimal `event` carrying a `sender.send` spy + `isDestroyed`. */
+  function fakeSender() {
+    const send = vi.fn()
+    return { send, event: { sender: { send, isDestroyed: () => false } } }
+  }
+
+  /** Drive the handler with a custom event (the default helper supplies `{}`). */
+  async function invokeWithSender<T>(
+    channel: string,
+    event: unknown,
+    ...args: unknown[]
+  ): Promise<T> {
+    const handler = handlers.get(channel)
+    if (!handler) throw new Error(`No handler registered for ${channel}`)
+    return Promise.resolve(handler(event, ...args) as T)
+  }
+
+  /** Spin until the predicate is true or the timeout elapses. */
+  async function waitFor(pred: () => boolean, timeoutMs = 4000): Promise<void> {
+    const start = Date.now()
+    while (!pred()) {
+      if (Date.now() - start > timeoutMs) throw new Error('waitFor timeout')
+      await new Promise((r) => setTimeout(r, 25))
+    }
+  }
+
+  afterEach(async () => {
+    // Tear down whatever watcher the test left behind so subsequent tests
+    // don't share state (the handler keeps a module-level watcher).
+    try {
+      await invoke('watcher:stop')
+    } catch {
+      // ignore
+    }
+  })
+
+  it('rejects non-string paths', async () => {
+    const { event } = fakeSender()
+    const result = await invokeWithSender<{ success: boolean; error?: string }>(
+      'watcher:start',
+      event,
+      42
+    )
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects extensions other than .dtw', async () => {
+    const wrong = join(tempDir, 'project.txt')
+    await writeFile(wrong, '{}', 'utf8')
+    const { event } = fakeSender()
+    const result = await invokeWithSender<{ success: boolean; error?: string }>(
+      'watcher:start',
+      event,
+      wrong
+    )
+    expect(result.success).toBe(false)
+    expect(result.error).toMatch(/dtw/i)
+  })
+
+  it('rejects missing files', async () => {
+    const { event } = fakeSender()
+    const result = await invokeWithSender<{ success: boolean; error?: string }>(
+      'watcher:start',
+      event,
+      join(tempDir, 'nope.dtw')
+    )
+    expect(result.success).toBe(false)
+    expect(result.error).toMatch(/exist/i)
+  })
+
+  it('fires file:changed when the watched file is written externally', async () => {
+    const projectPath = join(tempDir, 'live.dtw')
+    await writeFile(projectPath, '{"version":"0.2.0"}', 'utf8')
+
+    const { send, event } = fakeSender()
+    const result = await invokeWithSender<{ success: boolean }>('watcher:start', event, projectPath)
+    expect(result.success).toBe(true)
+
+    // Chokidar needs a tick to attach its fs.watch handle before the
+    // first event will be observed.
+    await new Promise((r) => setTimeout(r, 200))
+    await writeFile(projectPath, '{"version":"0.2.0","ping":1}', 'utf8')
+
+    await waitFor(() => send.mock.calls.length > 0)
+    const [channel, firedPath] = send.mock.calls[0]
+    expect(channel).toBe('file:changed')
+    expect(firedPath).toBe(projectPath)
+  }, 10_000)
+
+  it('watcher:stop tears down the watcher and is idempotent', async () => {
+    // First call without an active watcher still succeeds.
+    const idle = await invoke<{ success: boolean; filePath?: string | null }>('watcher:stop')
+    expect(idle.success).toBe(true)
+
+    const projectPath = join(tempDir, 'closeable.dtw')
+    await writeFile(projectPath, '{}', 'utf8')
+    const { event } = fakeSender()
+    await invokeWithSender('watcher:start', event, projectPath)
+
+    const stopped = await invoke<{ success: boolean; filePath?: string | null }>('watcher:stop')
+    expect(stopped.success).toBe(true)
+    expect(stopped.filePath).toBe(projectPath)
+  }, 10_000)
+
+  it('starting a new watcher tears down the previous one', async () => {
+    const first = join(tempDir, 'first.dtw')
+    const second = join(tempDir, 'second.dtw')
+    await writeFile(first, '{}', 'utf8')
+    await writeFile(second, '{}', 'utf8')
+
+    const a = fakeSender()
+    const b = fakeSender()
+    await invokeWithSender('watcher:start', a.event, first)
+    await invokeWithSender('watcher:start', b.event, second)
+
+    await new Promise((r) => setTimeout(r, 200))
+    // Modifying `first` should now be silent (its watcher was closed); a
+    // modification to `second` should fire on the second sender.
+    await writeFile(first, '{"x":1}', 'utf8')
+    await writeFile(second, '{"y":1}', 'utf8')
+    await waitFor(() => b.send.mock.calls.length > 0)
+    expect(a.send).not.toHaveBeenCalled()
+    expect(b.send.mock.calls[0][0]).toBe('file:changed')
+    expect(b.send.mock.calls[0][1]).toBe(second)
+  }, 10_000)
+})

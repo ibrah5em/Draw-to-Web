@@ -68,8 +68,8 @@ interface ElectronAPI {
   /**
    * Subscribes to external file-change notifications for the currently open
    * `.dtw` project (I-ELE-06). Fires with the absolute file path that
-   * changed. The chokidar watcher lands with I-ELE-06; until then the
-   * subscription is wired but no events fire.
+   * changed when the active watcher (see `watchProject`) detects a
+   * `change` or `unlink` event.
    */
   onFileChanged: (callback: (filePath: string) => void) => () => void
   /** Returns the persisted MRU list of recently opened projects. */
@@ -100,6 +100,22 @@ interface ElectronAPI {
   minifyCss: (css: string) => Promise<string>
   /** Minifies a JS string via `terser` in the main process. */
   minifyJs: (js: string) => Promise<string>
+  /**
+   * Begin watching a `.dtw` project file for external changes (I-ELE-06).
+   * Tears down any previous watcher first — only one project is open at
+   * a time. While the watcher is active, edits made outside the editor
+   * fire the `onFileChanged` subscription so the renderer can prompt the
+   * user to reload. Returns `{ success: true, filePath }` once the
+   * watcher is armed, or `{ success: false, error }` on a bad path.
+   */
+  watchProject: (
+    filePath: string
+  ) => Promise<{ success: boolean; filePath?: string; error?: string }>
+  /**
+   * Stop the active project watcher (I-ELE-06). Idempotent — calling
+   * with no watcher running succeeds and returns `filePath: null`.
+   */
+  unwatchProject: () => Promise<{ success: boolean; filePath?: string | null }>
 }
 
 declare global {

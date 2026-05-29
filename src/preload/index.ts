@@ -55,4 +55,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minifyHtml: (html: string) => ipcRenderer.invoke('minify:html', html),
   minifyCss: (css: string) => ipcRenderer.invoke('minify:css', css),
   minifyJs: (js: string) => ipcRenderer.invoke('minify:js', js),
+
+  watchProject: (filePath: string) => ipcRenderer.invoke('watcher:start', filePath),
+  unwatchProject: () => ipcRenderer.invoke('watcher:stop'),
 })

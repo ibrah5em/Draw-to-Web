@@ -11,12 +11,13 @@
  *     hints so containers render with their landmark tag.
  */
 
-import { useMemo, type JSX } from 'react'
+import { useMemo, type CSSProperties, type JSX } from 'react'
 
 import { isTokenRef, resolveToken } from '@document/tokens'
 import { useTokens, useTree } from '@store/documentStore'
 import { useSessionStore } from '@store/sessionStore'
 
+import { BREAKPOINT_WIDTH_PX } from '../topbar/BreakpointSwitcher'
 import type { StyleResolver } from './buildStyle'
 import { CanvasNode } from './CanvasNode'
 import styles from './Canvas.module.css'
@@ -28,6 +29,7 @@ export function Canvas(): JSX.Element {
   const tree = useTree()
   const tokens = useTokens()
   const theme = useSessionStore((s) => s.theme)
+  const activeBreakpoint = useSessionStore((s) => s.activeBreakpoint)
 
   const resolve = useMemo<StyleResolver>(
     () => (value) => {
@@ -41,9 +43,19 @@ export function Canvas(): JSX.Element {
 
   const clearSelection = useSessionStore((s) => s.clearSelection)
 
+  const pageStyle: CSSProperties = useMemo(
+    () => ({ maxWidth: `${BREAKPOINT_WIDTH_PX[activeBreakpoint]}px` }),
+    [activeBreakpoint]
+  )
+
   return (
     <div className={styles.viewport} onClick={clearSelection}>
-      <div className={styles.page} data-theme={theme}>
+      <div
+        className={styles.page}
+        data-theme={theme}
+        data-breakpoint={activeBreakpoint}
+        style={pageStyle}
+      >
         <StyleResolverProvider value={resolve}>
           <CanvasNode node={annotated} />
         </StyleResolverProvider>

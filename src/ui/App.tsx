@@ -8,6 +8,7 @@ import { PropertiesPanel } from './panels/properties/PropertiesPanel'
 import { TokensPanel } from './panels/tokens/TokensPanel'
 import { InsertDndProvider } from './sidebar/InsertDnd'
 import { InsertSidebar } from './sidebar/InsertSidebar'
+import { BreakpointSwitcher } from './topbar/BreakpointSwitcher'
 import { MenuBar } from './topbar/MenuBar'
 import { ThemeToggle } from './topbar/ThemeToggle'
 import { ViewToggles, type ViewToggle } from './topbar/ViewToggles'
@@ -137,6 +138,7 @@ export function App(): JSX.Element {
       <header className={styles.titlebar}>
         <MenuBar panels={panelToggles} />
         <div className={styles.titlebarActions}>
+          <BreakpointSwitcher />
           <ViewToggles toggles={panelToggles} />
           <ThemeToggle />
         </div>

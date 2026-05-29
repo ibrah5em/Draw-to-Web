@@ -91,9 +91,11 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
   const selected = useSessionStore((s) => s.selectedIds.includes(node.id))
   const setSelectedIds = useSessionStore((s) => s.setSelectedIds)
   const toggleSelected = useSessionStore((s) => s.toggleSelected)
+  const activeBreakpoint = useSessionStore((s) => s.activeBreakpoint)
+  const activeState = useSessionStore((s) => s.activeState)
   const sortable = useNodeSortable(node.id)
 
-  const base = nodeStyle(node, resolve)
+  const base = nodeStyle(node, resolve, activeBreakpoint, activeState)
   const styleWithSelection = selected ? { ...base, ...SELECTED_OUTLINE } : base
   const style: CSSProperties = { ...styleWithSelection, ...sortable.style }
 

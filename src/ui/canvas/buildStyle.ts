@@ -19,11 +19,13 @@ import type {
   Bindable,
   BorderRadius,
   BorderSpec,
+  BreakpointKey,
   DimensionValue,
   ElementNode,
   LayoutConfig,
   ShadowLayer,
   SpacingBox,
+  StateKey,
   StyleBlock,
   Typography,
 } from '@document/types'
@@ -247,19 +249,45 @@ function applyBlock(style: CSSProperties, block: StyleBlock, resolve: StyleResol
   if (block.typography) Object.assign(style, typographyToStyle(block.typography, resolve))
 }
 
+/** Active state slot mirrored from `sessionStore.activeState`. */
+type ActiveStateKey = 'default' | StateKey
+
 /**
- * Build the inline `CSSProperties` for a node at its base breakpoint.
+ * Build the inline `CSSProperties` for a node, layering the active
+ * breakpoint and active state overrides on top of the base style so
+ * authors see their edits land live (L-PRP-05 / L-PRP-09).
  *
- * Containers get their auto-layout (flex/grid) applied first, then every
- * node's base `StyleBlock` is layered on top. Per-breakpoint and per-state
- * overrides are handled by later tasks (L-TOP-02, L-PRP-05/09).
+ * Order, from lowest to highest precedence: base → breakpoint → state.
+ * Containers also get their `layout` block (base + breakpoint override)
+ * applied before any style block, since flex / grid props live there.
  *
  * @param node - The element to style.
  * @param resolve - Bindable-value resolver (see {@link StyleResolver}).
+ * @param breakpoint - Active breakpoint from the session store.
+ * @param state - Active pseudo-state from the session store.
  */
-export function nodeStyle(node: ElementNode, resolve: StyleResolver): CSSProperties {
+export function nodeStyle(
+  node: ElementNode,
+  resolve: StyleResolver,
+  breakpoint: BreakpointKey = 'base',
+  state: ActiveStateKey = 'default'
+): CSSProperties {
   const style: CSSProperties = {}
-  if (node.type === 'container') Object.assign(style, layoutToStyle(node.layout.base, resolve))
+  if (node.type === 'container') {
+    Object.assign(style, layoutToStyle(node.layout.base, resolve))
+    if (breakpoint !== 'base') {
+      const layoutOverride = node.layout[breakpoint]
+      if (layoutOverride) Object.assign(style, layoutToStyle(layoutOverride, resolve))
+    }
+  }
   applyBlock(style, node.style.base, resolve)
+  if (breakpoint !== 'base') {
+    const bpBlock = node.style[breakpoint]
+    if (bpBlock) applyBlock(style, bpBlock, resolve)
+  }
+  if (state !== 'default') {
+    const stateBlock = node.states?.[state]
+    if (stateBlock) applyBlock(style, stateBlock, resolve)
+  }
   return style
 }

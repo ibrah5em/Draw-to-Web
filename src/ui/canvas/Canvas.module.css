@@ -20,10 +20,20 @@
 .page {
   flex: 1;
   max-width: 1280px;
-  min-height: min-content;
+  min-height: 100%;
   background: #ffffff;
   color: #111111;
   box-shadow: 0 0 0 1px var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+/* The root element rendered inside the page must fill it so the dnd-kit
+   drop target has a visible area to land on, even when the document is
+   empty. Otherwise authors can't make their first drop. */
+.page > * {
+  flex: 1;
+  min-height: 100%;
 }
 
 /* Preview backdrop follows the toggled theme so light/dark is visible even

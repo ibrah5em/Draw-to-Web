@@ -290,26 +290,154 @@ function LayoutSection({ node }: { node: ContainerNode }): JSX.Element {
   )
 }
 
-function AppearanceSection({ node }: { node: ElementNode }): JSX.Element {
-  const base = node.style.base
-  const textColor = base.typography?.color
-  const bg = base.background
-  const bgColor = bg && bg[0]?.kind === 'solid' ? bg[0].color : undefined
+const TEXT_ALIGN_OPTIONS = [
+  { value: 'left', label: 'L' },
+  { value: 'center', label: 'C' },
+  { value: 'right', label: 'R' },
+  { value: 'justify', label: 'J' },
+] as const
+
+const TEXT_DECORATION_OPTIONS = [
+  { value: 'none', label: 'None' },
+  { value: 'underline', label: 'Underline' },
+  { value: 'line-through', label: 'Strike' },
+] as const
+
+const TEXT_TRANSFORM_OPTIONS = [
+  { value: 'none', label: 'aa' },
+  { value: 'uppercase', label: 'AB' },
+  { value: 'capitalize', label: 'Ab' },
+] as const
+
+const FONT_STYLE_OPTIONS = [
+  { value: 'normal', label: 'Normal' },
+  { value: 'italic', label: 'Italic' },
+] as const
+
+function TypographySection({ node }: { node: ElementNode }): JSX.Element {
+  const t = node.style.base.typography ?? {}
+  const write = (key: string, value: unknown): void =>
+    writeActiveStyle(node.id, ['typography', key], value)
 
   return (
     <section className={styles.section}>
-      <h3 className={styles.sectionTitle}>Appearance</h3>
+      <h3 className={styles.sectionTitle}>Typography</h3>
 
       <Field
-        label="Text color"
-        badge={<OverrideBadge node={node} path={['typography', 'color']} />}
+        label="Font family"
+        badge={<OverrideBadge node={node} path={['typography', 'fontFamily']} />}
       >
-        <ColorControl
-          value={textColor}
-          onChange={(next) => writeActiveStyle(node.id, ['typography', 'color'], next)}
+        <BindableInput
+          value={t.fontFamily}
+          category="fontFamily"
+          placeholder="Inter, system-ui"
+          onChange={(next) => write('fontFamily', next)}
         />
       </Field>
 
+      <Field
+        label="Font size"
+        badge={<OverrideBadge node={node} path={['typography', 'fontSize']} />}
+      >
+        <BindableInput
+          value={t.fontSize}
+          category="fontSize"
+          placeholder="16px"
+          onChange={(next) => write('fontSize', next)}
+        />
+      </Field>
+
+      <Field label="Weight">
+        <input
+          className={styles.textInput}
+          value={typeof t.fontWeight === 'number' ? String(t.fontWeight) : (t.fontWeight ?? '')}
+          onChange={(event) => {
+            const raw = event.target.value
+            if (raw === '') {
+              write('fontWeight', undefined)
+              return
+            }
+            const num = Number(raw)
+            write('fontWeight', Number.isFinite(num) ? num : raw)
+          }}
+          placeholder="400"
+          aria-label="Font weight"
+          spellCheck={false}
+        />
+      </Field>
+
+      <Field
+        label="Line height"
+        badge={<OverrideBadge node={node} path={['typography', 'lineHeight']} />}
+      >
+        <BindableInput
+          value={typeof t.lineHeight === 'string' ? t.lineHeight : undefined}
+          category="lineHeight"
+          placeholder="1.4"
+          onChange={(next) => write('lineHeight', next)}
+        />
+      </Field>
+
+      <Field label="Letter spacing">
+        <input
+          className={styles.textInput}
+          value={typeof t.letterSpacing === 'string' ? t.letterSpacing : ''}
+          onChange={(event) => write('letterSpacing', event.target.value || undefined)}
+          placeholder="0.02em"
+          aria-label="Letter spacing"
+          spellCheck={false}
+        />
+      </Field>
+
+      <Field label="Align">
+        <Segmented
+          ariaLabel="Text align"
+          value={t.textAlign ?? 'left'}
+          options={TEXT_ALIGN_OPTIONS}
+          onChange={(next) => write('textAlign', next === 'left' ? undefined : next)}
+        />
+      </Field>
+
+      <Field label="Decoration">
+        <Segmented
+          ariaLabel="Text decoration"
+          value={t.textDecoration ?? 'none'}
+          options={TEXT_DECORATION_OPTIONS}
+          onChange={(next) => write('textDecoration', next === 'none' ? undefined : next)}
+        />
+      </Field>
+
+      <Field label="Transform">
+        <Segmented
+          ariaLabel="Text transform"
+          value={t.textTransform === 'lowercase' ? 'none' : (t.textTransform ?? 'none')}
+          options={TEXT_TRANSFORM_OPTIONS}
+          onChange={(next) => write('textTransform', next === 'none' ? undefined : next)}
+        />
+      </Field>
+
+      <Field label="Style">
+        <Segmented
+          ariaLabel="Font style"
+          value={t.fontStyle ?? 'normal'}
+          options={FONT_STYLE_OPTIONS}
+          onChange={(next) => write('fontStyle', next === 'normal' ? undefined : next)}
+        />
+      </Field>
+
+      <Field label="Color" badge={<OverrideBadge node={node} path={['typography', 'color']} />}>
+        <ColorControl value={t.color} onChange={(next) => write('color', next)} />
+      </Field>
+    </section>
+  )
+}
+
+function FillSection({ node }: { node: ElementNode }): JSX.Element {
+  const bg = node.style.base.background
+  const bgColor = bg && bg[0]?.kind === 'solid' ? bg[0].color : undefined
+  return (
+    <section className={styles.section}>
+      <h3 className={styles.sectionTitle}>Fill</h3>
       <Field label="Background" badge={<OverrideBadge node={node} path={['background']} />}>
         <ColorControl
           value={bgColor}
@@ -317,6 +445,88 @@ function AppearanceSection({ node }: { node: ElementNode }): JSX.Element {
             writeActiveStyle(node.id, ['background'], [{ kind: 'solid', color: next }])
           }
         />
+      </Field>
+    </section>
+  )
+}
+
+function SizeSection({ node }: { node: ElementNode }): JSX.Element {
+  const base = node.style.base
+  const dimToString = (value: unknown): string => (typeof value === 'string' ? value : '')
+  const setDim =
+    (key: 'width' | 'height' | 'minWidth' | 'maxWidth') =>
+    (raw: string): void => {
+      writeActiveStyle(node.id, [key], raw === '' ? undefined : raw)
+    }
+  return (
+    <section className={styles.section}>
+      <h3 className={styles.sectionTitle}>Size</h3>
+      <Field label="Width" badge={<OverrideBadge node={node} path={['width']} />}>
+        <input
+          className={styles.textInput}
+          value={dimToString(base.width)}
+          onChange={(event) => setDim('width')(event.target.value)}
+          placeholder="auto"
+          aria-label="Width"
+          spellCheck={false}
+        />
+      </Field>
+      <Field label="Height" badge={<OverrideBadge node={node} path={['height']} />}>
+        <input
+          className={styles.textInput}
+          value={dimToString(base.height)}
+          onChange={(event) => setDim('height')(event.target.value)}
+          placeholder="auto"
+          aria-label="Height"
+          spellCheck={false}
+        />
+      </Field>
+      <Field label="Max width">
+        <input
+          className={styles.textInput}
+          value={dimToString(base.maxWidth)}
+          onChange={(event) => setDim('maxWidth')(event.target.value)}
+          placeholder="none"
+          aria-label="Max width"
+          spellCheck={false}
+        />
+      </Field>
+    </section>
+  )
+}
+
+function SpacingSection({ node }: { node: ElementNode }): JSX.Element {
+  const base = node.style.base
+  const setBox = (kind: 'padding' | 'margin', side: string, value: Bindable<string>): void =>
+    writeActiveStyle(node.id, [kind, side], value)
+  return (
+    <section className={styles.section}>
+      <h3 className={styles.sectionTitle}>Spacing</h3>
+      <Field label="Padding" badge={<OverrideBadge node={node} path={['padding']} />}>
+        <div className={styles.box}>
+          {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
+            <BindableInput
+              key={`p-${side}`}
+              value={base.padding?.[side]}
+              category="spacing"
+              placeholder={side[0]?.toUpperCase()}
+              onChange={(next) => setBox('padding', side, next)}
+            />
+          ))}
+        </div>
+      </Field>
+      <Field label="Margin" badge={<OverrideBadge node={node} path={['margin']} />}>
+        <div className={styles.box}>
+          {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
+            <BindableInput
+              key={`m-${side}`}
+              value={base.margin?.[side]}
+              category="spacing"
+              placeholder={side[0]?.toUpperCase()}
+              onChange={(next) => setBox('margin', side, next)}
+            />
+          ))}
+        </div>
       </Field>
     </section>
   )
@@ -577,7 +787,10 @@ export function PropertiesPanel(): JSX.Element {
       <StateTabs />
       <BreakpointBanner node={node} />
       {node.type === 'container' ? <LayoutSection node={node} /> : null}
-      <AppearanceSection node={node} />
+      <SizeSection node={node} />
+      <SpacingSection node={node} />
+      <TypographySection node={node} />
+      <FillSection node={node} />
       {node.type === 'image' ? <ImageSection node={node} /> : null}
       <AnimationSection node={node} />
       <RuntimeSection node={node} />

@@ -8,11 +8,12 @@ describe('emitJs(document)', () => {
   })
 
   it('returns an empty string when only unauthored flags are enabled', () => {
-    // Only `themeToggle` has shipped a snippet (I-RUN-01). Enabling
-    // I-RUN-02..08 flags must still produce no JS until those tasks land.
+    // I-RUN-01 (themeToggle) and I-RUN-02 (scrollSpy) have shipped.
+    // Flipping only the still-unauthored flags must still produce no JS
+    // until I-RUN-03..08 land.
     const doc = {
       ...PORTFOLIO_DOCUMENT,
-      runtime: { ...PORTFOLIO_DOCUMENT.runtime, scrollSpy: true, mobileNav: true },
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, mobileNav: true, reveals: true },
     }
     expect(emitJs(doc)).toBe('')
   })
@@ -28,6 +29,27 @@ describe('emitJs(document)', () => {
     expect(js).toContain('data-dtw-theme-toggle')
     expect(js).toMatch(/["']dtw-theme["']/)
     expect(js).toMatch(/\}\)\(\);\s*$/)
+  })
+
+  it('emits the scroll-spy snippet when scrollSpy is on (I-RUN-02)', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, scrollSpy: true },
+    }
+    const js = emitJs(doc)
+    expect(js).toContain('/* scrollSpy */')
+    expect(js).toContain('nav a[href^="#"]')
+    expect(js).toContain('IntersectionObserver')
+    expect(js).toContain('is-active')
+  })
+
+  it('orders snippets deterministically: themeToggle before scrollSpy', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, themeToggle: true, scrollSpy: true },
+    }
+    const js = emitJs(doc)
+    expect(js.indexOf('/* themeToggle */')).toBeLessThan(js.indexOf('/* scrollSpy */'))
   })
 
   it('produces deterministic output across repeated calls', () => {

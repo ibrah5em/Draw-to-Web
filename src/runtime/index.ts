@@ -24,6 +24,7 @@
  */
 
 import type { RuntimeFlags } from '../document/types'
+import { SCROLL_SPY_SNIPPET } from './scrollSpy'
 import { THEME_TOGGLE_FOUC_GUARD, THEME_TOGGLE_SNIPPET } from './themeToggle'
 
 /**
@@ -32,6 +33,7 @@ import { THEME_TOGGLE_FOUC_GUARD, THEME_TOGGLE_SNIPPET } from './themeToggle'
  */
 export const RUNTIME_SNIPPETS: Partial<Record<keyof RuntimeFlags, string>> = {
   themeToggle: THEME_TOGGLE_SNIPPET,
+  scrollSpy: SCROLL_SPY_SNIPPET,
 }
 
 /**

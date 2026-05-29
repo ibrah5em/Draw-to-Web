@@ -7,7 +7,7 @@
 - Never force-push to main
 - Run `npm run test` before every commit
 - **Before every `git push`, run all three: `npm run lint`, `npm run typecheck`, `npm run test`.** The husky pre-push hook (`.husky/pre-push`, installed automatically by `npm install` via the `prepare` script) runs these on every push and aborts on failure. Never bypass with `--no-verify`. CI (`.github/workflows/ci.yml`) runs the same three commands; pushing a known-failing build wastes Actions minutes and breaks main. Markdown edits that change cell widths in a prettier-formatted table will fail lint until the table is re-padded (`npx prettier --write <file>`)
-- Any change to a Section 6 contract (C1–C12) requires a PR labeled `contract-change` and a review from the downstream consumer named in that contract row
+- Any change to a Section 6 contract (C1–C12) requires a PR labeled `contract-change` and a review from the downstream consumer named in that contract row. Run `/contract-change` to auto-detect touched contracts and verify the ritual; have the downstream consumer run the `contract-reviewer` agent on the diff
 - Tag releases: `v0.1.0` (shipped), `v0.2.0` (M4 / Runtime + Output Hardening), `v0.3.0` (M5 polish), `v1.0.0` (sprint demo cut)
 - Never add a Claude co-author or any AI attribution to commit messages (no `Co-Authored-By: Claude` lines)
 - When commenting on PRs, issues, or reviews via GitHub MCP, post as the authenticated GitHub user only — no AI signatures, no "as Claude", no bot disclaimers

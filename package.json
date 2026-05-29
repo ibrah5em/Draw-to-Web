@@ -37,6 +37,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
     "axe-core": "^4.8.3",
+    "chokidar": "^5.0.0",
     "chroma-js": "^3.2.0",
     "clsx": "^2.1.1",
     "immer": "^11.1.8",

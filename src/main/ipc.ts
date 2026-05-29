@@ -2,12 +2,36 @@ import { ipcMain, dialog, app, BrowserWindow } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import { extname, join, normalize, isAbsolute, basename } from 'path'
+import chokidar, { type FSWatcher } from 'chokidar'
 import { runAxeGate } from '../seo/axeGate'
 import type { RecentFile } from '../shared/electronAPI'
 import { IMAGE_ASSETS_DIRNAME, processImage } from './imagePipeline'
 import { minifyHtml, minifyCss, minifyJs } from '../export/minify'
 
 let previewWin: BrowserWindow | null = null
+
+/**
+ * Singleton .dtw file watcher (I-ELE-06). Only one project is open at a
+ * time, so we keep a single chokidar instance and tear it down on
+ * `watcher:stop` or when a new path is registered. The watcher fires
+ * `file:changed` on the originating renderer's WebContents so the
+ * renderer can prompt the user to reload the externally-modified file.
+ */
+let currentWatcher: FSWatcher | null = null
+let currentWatchedPath: string | null = null
+
+async function closeCurrentWatcher(): Promise<void> {
+  if (currentWatcher) {
+    try {
+      await currentWatcher.close()
+    } catch {
+      // Best-effort teardown — chokidar can throw if the underlying fs
+      // event source is already gone (e.g. file deleted mid-close).
+    }
+    currentWatcher = null
+    currentWatchedPath = null
+  }
+}
 
 const MAX_ZIP_BYTES = 50 * 1024 * 1024 // 50 MB
 const MAX_PROJECT_BYTES = 10 * 1024 * 1024 // 10 MB — well above expected document size
@@ -379,6 +403,54 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('minify:js', async (_event, js: unknown) => {
     if (typeof js !== 'string') throw new TypeError('minify:js expects a string')
     return minifyJs(js)
+  })
+
+  // I-ELE-06 — chokidar watcher for the currently open .dtw file.
+  // `watcher:start` validates the path, tears down any previous watcher,
+  // and opens a new one that fires `file:changed` on the originating
+  // WebContents on every `change` / `unlink` event. `ignoreInitial: true`
+  // suppresses the synthetic "add" event chokidar emits on the first scan
+  // so the renderer only sees external edits.
+  ipcMain.handle('watcher:start', async (event, filePath: unknown) => {
+    if (typeof filePath !== 'string') {
+      return { success: false, error: 'Invalid path' }
+    }
+    const safe = sanitizePath(filePath)
+    if (!safe) return { success: false, error: 'Invalid path' }
+    if (extname(safe).slice(1).toLowerCase() !== PROJECT_EXT) {
+      return { success: false, error: `Only .${PROJECT_EXT} files can be watched` }
+    }
+    if (!existsSync(safe)) return { success: false, error: 'File does not exist' }
+
+    await closeCurrentWatcher()
+
+    const sender = event.sender
+    try {
+      const watcher = chokidar.watch(safe, {
+        ignoreInitial: true,
+        // Stabilize to avoid firing while an editor is still writing.
+        // 250 ms is short enough for the watch to feel "live" but long
+        // enough to coalesce a save-on-write burst into one event.
+        awaitWriteFinish: { stabilityThreshold: 250, pollInterval: 50 },
+      })
+      const onEvent = (changedPath: string): void => {
+        if (sender.isDestroyed()) return
+        sender.send('file:changed', changedPath)
+      }
+      watcher.on('change', onEvent)
+      watcher.on('unlink', onEvent)
+      currentWatcher = watcher
+      currentWatchedPath = safe
+      return { success: true, filePath: safe }
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Watcher failed' }
+    }
+  })
+
+  ipcMain.handle('watcher:stop', async () => {
+    const watched = currentWatchedPath
+    await closeCurrentWatcher()
+    return { success: true, filePath: watched }
   })
 
   // Synchronous — called once at preload startup to stamp the version into the bridge.

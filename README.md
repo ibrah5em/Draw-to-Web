@@ -1,17 +1,25 @@
 # Draw to Web
 
-A desktop application that converts visual canvas layouts into clean, semantic
-HTML/CSS. Draw on a canvas → get a portable, zero-JS web page.
+A desktop application that lets you author modern, semantic, responsive web
+pages by composing them on a canvas — no code required. Draw on a canvas → get a
+portable HTML/CSS bundle plus opt-in vetted JS snippets (theme toggle,
+scroll-spy, mobile menu, reveals, animation gating, terminal typing). All
+runtime behaviour is independently toggleable; all flags off → JS-free output.
 
 ## Stack
 
 - **Electron 28** — desktop shell
-- **React 18 + TypeScript 5.3** — UI
-- **Konva.js** — canvas rendering
-- **Zustand** — element store
-- **Vite + electron-vite** — dev server + build
-- **electron-builder** — Windows NSIS / Linux AppImage + .deb packaging
-- **Vitest + axe-core + jsdom** — testing
+- **React 18 + TypeScript 5** — UI
+- **Zustand + immer** — document store + history (immer patches for undo/redo)
+- **@dnd-kit + react-arborist** — canvas drag & drop + layers tree
+- **Radix UI + react-resizable-panels** — UI primitives
+- **Zod** — document schema + IPC validation
+- **sharp** — image pipeline (WebP + srcset, in the main process)
+- **prettier + lightningcss + html-minifier-terser** — output formatting + minification
+- **jszip** — export bundling
+- **axe-core** — accessibility hard gate (blocks export on critical/serious)
+- **Vite + electron-vite + electron-builder** — dev + build + packaging
+- **Vitest** — testing (~740 tests across document, generator, runtime, seo, export, templates, store, ui)
 
 ## Requirements
 
@@ -31,117 +39,137 @@ npm run dev
 
 ## Commands
 
-| Command               | Description                                            |
-| --------------------- | ------------------------------------------------------ |
-| `npm run dev`         | Start Electron in dev mode (HMR for main + renderer)   |
-| `npm run compile`     | Build main + preload + renderer bundles (no installer) |
-| `npm run build`       | Build + package for the current platform               |
-| `npm run build:win`   | Build + package Windows NSIS installer                 |
-| `npm run build:linux` | Build + package Linux AppImage and .deb                |
-| `npm run build:dir`   | Build only (no installer, fast iteration)              |
-| `npm test`            | Run the full Vitest suite                              |
-| `npm run lint`        | ESLint + Prettier check                                |
-| `npm run typecheck`   | TypeScript `tsc --noEmit` on every tsconfig            |
+| Command                 | Description                                            |
+| ----------------------- | ------------------------------------------------------ |
+| `npm run dev`           | Start Electron in dev mode (HMR for main + renderer)   |
+| `npm run compile`       | Build main + preload + renderer bundles (no installer) |
+| `npm run build`         | Build + package for the current platform               |
+| `npm run build:win`     | Build + package Windows NSIS installer                 |
+| `npm run build:linux`   | Build + package Linux AppImage and .deb                |
+| `npm run build:dir`     | Build only (no installer, fast iteration)              |
+| `npm test`              | Run the full Vitest suite                              |
+| `npm run test:a11y`     | Run only the a11y suites                               |
+| `npm run lint`          | ESLint + Prettier check                                |
+| `npm run typecheck`     | TypeScript `tsc --noEmit` (main + preload)             |
+| `npm run typecheck:web` | TypeScript `tsc --noEmit` (renderer)                   |
 
 ## Architecture
 
 ```
-Canvas ──► Element Store ──► Engine ──► Generator ──► SEO Injector ──► axe-core gate ──► JSZip ──► IPC ──► fs.writeFile
+UI ─► Document Store ─► Generator ─► SEO ─► Validation ─► Export (axe gate ─► minify ─► ZIP) ─► IPC ─► fs.writeFile
 ```
 
-Three layers, one data direction:
+Data flows in one direction: **UI writes to the store; generator reads from the
+store.** The canvas is a _rendering_ of the document tree, never the model
+itself.
 
-- **UI layer** (`src/renderer/`) — Canvas, toolbar, properties panel, live preview, export/report dialogs
-- **Core layer** (`src/store/`, `src/engine/`, `src/generator/`, `src/seo/`) — element store and pure transforms
-- **Output layer** (`src/export/`, `src/project/`, `src/main/`) — pipeline orchestrator, .dtw (de)serializer, native file ops
+- **UI** (`src/ui/`) — Canvas, sidebar, properties panel, layers, topbar, tokens, validation console
+- **Document Model** (`src/document/`) — Types, Zod schemas, operations, tokens, validation, migrations, presets — the source of truth
+- **Stores** (`src/store/`) — Zustand stores for document + history (immer patches)
+- **Output pipeline** (`src/generator/`, `src/runtime/`, `src/seo/`, `src/export/`) — HTML/CSS/JS emit, runtime snippets, SEO injection, export bundling
+- **Shell** (`src/main/`, `src/preload/`, `src/shared/`) — Electron lifecycle, IPC handlers, native file ops, typed bridge
 
 ### Process boundaries
 
-- **Main** (`src/main/`) — Electron lifecycle, native dialogs, `fs` writes. No business logic.
+- **Main** (`src/main/`) — Electron lifecycle, native dialogs, `fs` writes, `sharp` image pipeline. No business logic.
 - **Renderer** — All UI and business logic; talks to main only via the preload bridge.
-- **Preload** (`src/preload/`) — Typed `window.electronAPI`; no raw `ipcRenderer` in the renderer.
+- **Preload** (`src/preload/`) — Typed `window.electronAPI`; no raw `ipcRenderer` reachable from the renderer.
 
 ### Key invariants
 
-- Generated HTML contains zero JavaScript.
-- Layout uses CSS Grid/Flexbox — never `position: absolute`.
-- Element positions snap to a 12-column grid.
-- Export is blocked if axe-core reports any `critical` or `serious` violation.
-- The element store is the only mutable source of truth; the canvas reads from it.
+- The Document Model is the only mutable source of truth; the canvas renders it, the generator walks it.
+- Output is HTML5 + CSS3 with **opt-in vetted runtime snippets**. All flags off → JS-free output.
+- Layout uses CSS Grid + Flexbox + `clamp()` — never `position: absolute`. Regex-guarded in tests.
+- Tokens-driven CSS — element styles reference `var(--token)`, never raw hex (except via the editor's "free value" escape hatch).
+- Every visual property supports `base / tablet / mobile / small` breakpoints; the generator emits media queries.
+- axe-core hard gate — any `critical` or `serious` violation blocks export.
+- Exactly one `<h1>`, no heading-level skips, `alt` on every `<img>`, ARIA labels on icon-only buttons, `prefers-reduced-motion` honoured.
+- Deterministic output — same input tree → byte-equal HTML/CSS.
 
-See [`docs/architecture.md`](docs/architecture.md) and
-[`docs/element-model.md`](docs/element-model.md) for the full design.
+See [`docs/0.2.0v/plan.md`](docs/0.2.0v/plan.md) for the v0.2.0 execution plan.
+Archived v0.1.0 docs live in [`docs/0.1.0v/`](docs/0.1.0v/).
 
 ## Export pipeline
 
-`exportProject(elements, seoConfig)` in `src/export/index.ts` chains six stages:
+`exportProject(document, options)` in `src/export/index.ts` chains nine stages
+with structured progress events:
 
-1. `inferSemantics(elements)` — spatial → semantic tag inference (engine)
-2. `generate(tree)` — emit HTML + CSS strings (generator)
-3. `injectSEO(html, config)` — meta tags, OG tags, ARIA landmark roles, `lang`
-4. `generateFullReport(html, config)` — axe-core gate via jsdom
-5. `JSZip` — bundle `index.html` + `styles.css`
-6. IPC `export:zip` → main process → native save dialog → `fs.writeFile`
+1. `validate` — Zod schema + custom rules (`validateDocument`)
+2. `generate` — emit HTML + CSS + JS strings (`generate(document)`)
+3. `inject-seo` — `<meta>`, OG, Twitter Card, JSON-LD, theme-color, canonical
+4. `a11y-gate` — lazy-loaded axe-core in jsdom; critical/serious blocks export
+5. `optimize-images` — read sharp-produced WebP variants off disk, pack into the bundle
+6. `minify` — `lightningcss` + `html-minifier-terser` + `terser` (opt-in)
+7. `sitemap-robots` — emit `sitemap.xml` + `robots.txt`
+8. `bundle` — JSZip packaging (`index.html`, `styles.css`, `scripts.js`, `assets/`, `fonts/`)
+9. `save` — IPC `export:zip` → main process → native save dialog → `fs.writeFile`
 
-Each stage returns a discriminated `{ success, stage, error, report? }` result.
-The accessibility report is returned even on failure so the user can fix
-violations and retry.
+Each stage failure surfaces `{ success: false, stage, error, report? }`. Pass
+`{ dryRun: true }` to short-circuit after `inject-seo` and get
+`{ html, css, js }` strings (used by the code-preview dialog).
 
 ## Project files (`.dtw`)
 
-`File → Save Project…` (Ctrl+S) serializes the element store to a versioned JSON
-file. `File → Open Project…` (Ctrl+O) reads and validates the payload before
-hydrating the store. The schema lives in `src/project/index.ts`.
+`File → Save Project…` (Ctrl+S) serializes the document to a versioned JSON
+file. `File → Open Project…` (Ctrl+O) validates the payload (Zod) before
+hydrating the store. Schema lives in `src/document/schemas.ts`; persistence
+helpers in `src/store/persistence.ts`.
 
 ## CI
 
-`.github/workflows/ci.yml` runs lint, typecheck, and unit tests on every push
-and pull request. Tagged commits matching `v*` additionally cross-build the
-Windows NSIS installer (via Wine on the Ubuntu runner) alongside the Linux
-AppImage + .deb and attach all three to a GitHub Release.
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs lint, typecheck
+(main + renderer), and the full Vitest suite on every push to `main` and every
+pull request. Compile runs in parallel.
+[`.github/workflows/release.yml`](.github/workflows/release.yml) handles tag
+pushes (`v*`) — re-runs verify, cross-builds the Windows NSIS installer (via
+Wine on Ubuntu) alongside the Linux AppImage + .deb, and attaches all three to
+a GitHub Release with auto-generated notes from merged PRs.
 
 To cut a release:
 
 ```bash
-git tag v0.1.0 -m "release notes"
-git push origin v0.1.0
+git tag v0.2.0 -m "release notes"
+git push origin v0.2.0
 ```
-
-The workflow publishes the installers to
-`github.com/<owner>/<repo>/releases/tag/v0.1.0`.
 
 ## Testing
 
-| Suite                         | Coverage                                      |
-| ----------------------------- | --------------------------------------------- |
-| `tests/generator/`            | HTML + CSS emitter snapshots                  |
-| `tests/seo/injectSEO.test.ts` | Meta/OG/ARIA injection, escaping              |
-| `tests/seo/axeGate.test.ts`   | axe-core gate pass/fail behaviour             |
-| `tests/export/`               | Full pipeline including filename sanitization |
-| `tests/project/`              | `.dtw` schema (de)serialization               |
-| `tests/main/ipc.test.ts`      | IPC round-trip — writes & reads real files    |
+| Suite              | Coverage                                                |
+| ------------------ | ------------------------------------------------------- |
+| `tests/document/`  | Types, schemas, operations, tokens, validation, presets |
+| `tests/generator/` | HTML + CSS + JS emitters, determinism, prettier         |
+| `tests/runtime/`   | Runtime snippet behaviour in jsdom                      |
+| `tests/seo/`       | head / OG / JSON-LD / sitemap / robots + axe gate       |
+| `tests/export/`    | Full pipeline incl. minify + dry-run + self-host fonts  |
+| `tests/templates/` | Blank / portfolio / landing / resume round-trips        |
+| `tests/main/`      | IPC handlers — real temp dirs                           |
+| `tests/store/`     | Document + history stores, persistence                  |
+| `tests/ui/`        | Renderer components (Testing Library + jsdom)           |
+| `tests/a11y/`      | End-to-end axe-core runs on rendered output             |
 
-Run a single suite with `npm test -- --run tests/seo/`.
+Run a single suite with `npx vitest run tests/seo/`.
 
 ## Project structure
 
 ```
 src/
-  main/             Electron lifecycle + IPC handlers
+  main/             Electron lifecycle + IPC handlers + sharp pipeline
   preload/          contextBridge → window.electronAPI
-  renderer/         React UI (Canvas, Toolbar, LivePreview, dialogs)
-  store/            Zustand element store
-  engine/           Semantic inference (spatial → tag)
-  generator/        HTML + CSS emitters
-  seo/              SEO injector + axe-core gate
-  export/           Pipeline orchestrator + JSZip bundler
-  project/          .dtw schema (de)serializer
-  shared/           Cross-process types
+  shared/           Cross-process types + electronAPI surface
+  document/         Document Model — types, schemas, operations, tokens, validation, migrations, presets
+  store/            Zustand document + history stores (immer patches)
+  ui/               React UI (Canvas, Sidebar, Properties, Layers, Topbar)
+  generator/        HTML + CSS + JS emitters
+  runtime/          Vanilla JS snippets injected into output (opt-in)
+  seo/              Head, OG, JSON-LD, sitemap, robots emitters
+  export/           Pipeline orchestrator + axe gate + minify + ZIP + self-host fonts
+  templates/        Blank, portfolio, landing, resume starters
 tests/              Vitest suites mirroring src/
-docs/               architecture.md, element-model.md
-.github/workflows/  CI configuration
+docs/0.2.0v/        v0.2.0 execution plan + architecture docs
+docs/0.1.0v/        v0.1.0 archived docs (historical reference)
+.github/workflows/  CI + release configuration
 ```
 
 ## License
 
-[MIT](LICENSE) — © 2026 ibrah5em, Luf8y, Yousef-Deep
+[MIT](LICENSE) — © 2026 ibrah5em, LuF8y, yousefdeeb-112004

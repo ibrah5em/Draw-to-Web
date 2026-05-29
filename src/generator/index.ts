@@ -26,8 +26,25 @@
  * ids, no `Date.now()` — guarded by `tests/generator/determinism.test.ts`.
  */
 
-import { format as prettierFormat } from 'prettier'
+import { format as prettierFormat, type Plugin } from 'prettier'
+// Prettier v3's browser bundle (used by Vite in the renderer) ships no
+// parsers by default — the `parser: 'html' | 'css' | 'babel'` calls below
+// must receive the plugins explicitly or they throw with "Couldn't
+// resolve parser". Node tests don't hit this because Node's prettier
+// resolves the parsers internally. Importing the plugin modules is safe
+// in both environments.
+import babelPlugin from 'prettier/plugins/babel'
+import estreePlugin from 'prettier/plugins/estree'
+import htmlPlugin from 'prettier/plugins/html'
+import postcssPlugin from 'prettier/plugins/postcss'
 import type { Document } from '../document/types'
+
+const PRETTIER_PLUGINS: Plugin[] = [
+  htmlPlugin as unknown as Plugin,
+  postcssPlugin as unknown as Plugin,
+  babelPlugin as unknown as Plugin,
+  estreePlugin as unknown as Plugin,
+]
 import { emitHtml } from './htmlEmitter'
 import { emitCss } from './cssEmitter'
 import { emitJs } from './jsEmitter'
@@ -135,16 +152,28 @@ function composeHtml(doc: Document, body: string, hasJs: boolean): string {
 }
 
 async function formatHtml(src: string): Promise<string> {
-  return prettierFormat(src, { ...PRETTIER_OPTIONS, parser: 'html' })
+  return prettierFormat(src, {
+    ...PRETTIER_OPTIONS,
+    parser: 'html',
+    plugins: PRETTIER_PLUGINS,
+  })
 }
 
 async function formatCss(src: string): Promise<string> {
-  return prettierFormat(src, { ...PRETTIER_OPTIONS, parser: 'css' })
+  return prettierFormat(src, {
+    ...PRETTIER_OPTIONS,
+    parser: 'css',
+    plugins: PRETTIER_PLUGINS,
+  })
 }
 
 async function formatJs(src: string): Promise<string> {
   if (src.length === 0) return ''
-  return prettierFormat(src, { ...PRETTIER_OPTIONS, parser: 'babel' })
+  return prettierFormat(src, {
+    ...PRETTIER_OPTIONS,
+    parser: 'babel',
+    plugins: PRETTIER_PLUGINS,
+  })
 }
 
 /**

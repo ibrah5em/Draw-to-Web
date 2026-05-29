@@ -399,6 +399,23 @@ describe('emitCss(document)', () => {
     })
   })
 
+  describe('terminal typing paused-by-default (I-RUN-08)', () => {
+    it('pauses [data-dtw-terminal-type] animations when the flag is on', () => {
+      const doc: Document = JSON.parse(JSON.stringify(PORTFOLIO_DOCUMENT))
+      ;(doc as { runtime: Record<string, boolean> }).runtime = {
+        ...doc.runtime,
+        terminalTyping: true,
+      }
+      const out = emitCss(doc)
+      expect(out).toMatch(/\[data-dtw-terminal-type\] \{[\s\S]*?animation-play-state:\s*paused/)
+    })
+
+    it('omits the rule when the flag is off', () => {
+      // Portfolio fixture has terminalTyping off out of the box.
+      expect(css).not.toContain('data-dtw-terminal-type')
+    })
+  })
+
   describe('animations + prefers-reduced-motion (I-GEN-11)', () => {
     function withAnimation(animation: Record<string, unknown>, id = 'title'): Document {
       const doc: Document = JSON.parse(JSON.stringify(PORTFOLIO_DOCUMENT))

@@ -7,16 +7,41 @@ describe('emitJs(document)', () => {
     expect(emitJs(PORTFOLIO_DOCUMENT)).toBe('')
   })
 
-  it('returns an empty string when only unauthored flags are enabled', () => {
-    // I-RUN-01..07 (themeToggle, scrollSpy, smoothScroll, mobileNav,
-    // navOnScroll, reveals, animationGating) have shipped. Only
-    // terminalTyping remains, so flipping just that flag must still
-    // produce no JS until I-RUN-08 lands.
+  it('emits every snippet, in stable order, with every runtime flag on', () => {
+    // I-RUN-01..08 have all shipped, so the historical "unauthored
+    // flags = empty output" guard no longer applies. The new contract:
+    // every authored snippet appears, in the order declared by
+    // FLAG_ORDER, when every flag is on.
     const doc = {
       ...PORTFOLIO_DOCUMENT,
-      runtime: { ...PORTFOLIO_DOCUMENT.runtime, terminalTyping: true },
+      runtime: {
+        themeToggle: true,
+        scrollSpy: true,
+        smoothScroll: true,
+        mobileNav: true,
+        navOnScroll: true,
+        reveals: true,
+        animationGating: true,
+        terminalTyping: true,
+      },
     }
-    expect(emitJs(doc)).toBe('')
+    const js = emitJs(doc)
+    const labels = [
+      '/* themeToggle */',
+      '/* scrollSpy */',
+      '/* smoothScroll */',
+      '/* mobileNav */',
+      '/* navOnScroll */',
+      '/* reveals */',
+      '/* animationGating */',
+      '/* terminalTyping */',
+    ]
+    let cursor = 0
+    for (const label of labels) {
+      const idx = js.indexOf(label, cursor)
+      expect(idx).toBeGreaterThanOrEqual(cursor)
+      cursor = idx + label.length
+    }
   })
 
   it('emits the theme toggle snippet wrapped in an outer IIFE when themeToggle is on', () => {
@@ -157,6 +182,26 @@ describe('emitJs(document)', () => {
     }
     const js = emitJs(doc)
     expect(js.indexOf('/* reveals */')).toBeLessThan(js.indexOf('/* animationGating */'))
+  })
+
+  it('emits the terminal-typing snippet when terminalTyping is on (I-RUN-08)', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, terminalTyping: true },
+    }
+    const js = emitJs(doc)
+    expect(js).toContain('/* terminalTyping */')
+    expect(js).toContain('data-dtw-terminal-type')
+    expect(js).toContain('animationPlayState')
+  })
+
+  it('orders snippets deterministically: animationGating before terminalTyping', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, animationGating: true, terminalTyping: true },
+    }
+    const js = emitJs(doc)
+    expect(js.indexOf('/* animationGating */')).toBeLessThan(js.indexOf('/* terminalTyping */'))
   })
 
   it('produces deterministic output across repeated calls', () => {

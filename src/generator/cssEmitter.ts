@@ -768,6 +768,13 @@ export function emitCss(doc: Document): string {
   // do not get an unexpected animated jump.
   if (doc.runtime.smoothScroll) sections.push(SMOOTH_SCROLL_BLOCK)
 
+  // Terminal typing paused-by-default rule (I-RUN-08). Without this,
+  // typing-line animations would briefly run before the runtime
+  // snippet runs (defer-loaded) and visibly snap. Pausing in CSS keeps
+  // the animation parked at frame 0 until the snippet flips
+  // animation-play-state to `running` on viewport entry.
+  if (doc.runtime.terminalTyping) sections.push(TERMINAL_TYPING_BLOCK)
+
   // Print stylesheet (I-GEN-13). Forces background printing, hides
   // navigation chrome and decorative pseudo-elements, collapses the
   // page to a single column, and adds the URL after links (helpful on
@@ -817,6 +824,21 @@ const SMOOTH_SCROLL_BLOCK = `html {
   html {
     scroll-behavior: auto;
   }
+}`
+
+// ---------------------------------------------------------------------------
+// Terminal typing paused-by-default (I-RUN-08)
+// ---------------------------------------------------------------------------
+
+/**
+ * CSS half of the terminal-typing runtime. Pauses every typing line
+ * up front so the deferred runtime snippet can flip
+ * `animation-play-state` to `running` once the line enters the
+ * viewport, without a one-frame visible "rewind" caused by the
+ * animation kicking off before the script runs.
+ */
+const TERMINAL_TYPING_BLOCK = `[data-dtw-terminal-type] {
+  animation-play-state: paused;
 }`
 
 // ---------------------------------------------------------------------------

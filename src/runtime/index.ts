@@ -30,6 +30,7 @@ import { NAV_ON_SCROLL_SNIPPET } from './navOnScroll'
 import { REVEALS_SNIPPET } from './reveals'
 import { SCROLL_SPY_SNIPPET } from './scrollSpy'
 import { SMOOTH_SCROLL_SNIPPET } from './smoothScroll'
+import { TERMINAL_TYPING_SNIPPET } from './terminalTyping'
 import { THEME_TOGGLE_FOUC_GUARD, THEME_TOGGLE_SNIPPET } from './themeToggle'
 
 /**
@@ -44,6 +45,7 @@ export const RUNTIME_SNIPPETS: Partial<Record<keyof RuntimeFlags, string>> = {
   navOnScroll: NAV_ON_SCROLL_SNIPPET,
   reveals: REVEALS_SNIPPET,
   animationGating: ANIMATION_GATING_SNIPPET,
+  terminalTyping: TERMINAL_TYPING_SNIPPET,
 }
 
 /**

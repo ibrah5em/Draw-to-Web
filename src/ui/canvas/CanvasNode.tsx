@@ -6,10 +6,25 @@
  * (invariant 3, `.claude/rules/canvas.md`). The canvas is a *rendering* of
  * the document tree; it owns no state. Clicking a node records its id as the
  * selection in `sessionStore`; the deepest node wins via `stopPropagation`.
+ *
+ * Drag wiring: containers register a dnd-kit drop target for Insert cards
+ * (L-CAN-12) and host a `SortableContext` over their children so siblings
+ * can be reordered by drag (L-CAN-13). Every node calls `useSortable` so
+ * it participates in its parent's sortable list; clicks still work because
+ * the parent `DndContext` activates drag only after a small pointer delta.
  */
 
 import { useDroppable } from '@dnd-kit/core'
-import { createElement, type CSSProperties, type MouseEvent, type JSX } from 'react'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
+  createElement,
+  type CSSProperties,
+  type HTMLAttributes,
+  type MouseEvent,
+  type JSX,
+  type Ref,
+} from 'react'
 
 import type { ElementNode } from '@document/types'
 import { useSessionStore } from '@store/sessionStore'
@@ -34,6 +49,32 @@ const DROP_OVER_OUTLINE: CSSProperties = {
   background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
 }
 
+interface SortableHandle {
+  readonly ref: Ref<HTMLElement>
+  readonly style: CSSProperties
+  readonly listeners: Record<string, unknown>
+  readonly attributes: Record<string, unknown>
+}
+
+/**
+ * Hook wrapping `useSortable` so every CanvasNode participates in its
+ * parent's sortable list. Returns ref + listeners + transform style ready
+ * to spread onto the rendered DOM node.
+ */
+function useNodeSortable(id: string): SortableHandle {
+  const sortable = useSortable({ id, data: { source: 'canvas' } })
+  return {
+    ref: sortable.setNodeRef as unknown as Ref<HTMLElement>,
+    style: {
+      transform: CSS.Transform.toString(sortable.transform),
+      transition: sortable.transition,
+      opacity: sortable.isDragging ? 0.4 : undefined,
+    },
+    listeners: (sortable.listeners ?? {}) as Record<string, unknown>,
+    attributes: sortable.attributes as unknown as Record<string, unknown>,
+  }
+}
+
 /**
  * Render a single document element and (for containers) its descendants.
  *
@@ -43,9 +84,11 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
   const resolve = useStyleResolver()
   const selected = useSessionStore((s) => s.selectedIds.includes(node.id))
   const setSelectedIds = useSessionStore((s) => s.setSelectedIds)
+  const sortable = useNodeSortable(node.id)
 
   const base = nodeStyle(node, resolve)
-  const style = selected ? { ...base, ...SELECTED_OUTLINE } : base
+  const styleWithSelection = selected ? { ...base, ...SELECTED_OUTLINE } : base
+  const style: CSSProperties = { ...styleWithSelection, ...sortable.style }
 
   const onClick = (event: MouseEvent): void => {
     event.preventDefault()
@@ -57,15 +100,28 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
   switch (node.type) {
     case 'container': {
       const Tag = (node.semanticRole ?? 'div') as ContainerTag
-      return <ContainerNodeView Tag={Tag} node={node} baseStyle={style} commonProps={common} />
+      return (
+        <ContainerNodeView
+          Tag={Tag}
+          node={node}
+          baseStyle={styleWithSelection}
+          commonProps={common}
+        />
+      )
     }
 
     case 'text': {
       const Tag = node.tag
-      return (
-        <Tag style={style} {...common}>
-          {node.content}
-        </Tag>
+      return createElement(
+        Tag,
+        {
+          ref: sortable.ref,
+          style,
+          ...sortable.attributes,
+          ...sortable.listeners,
+          ...common,
+        },
+        node.content
       )
     }
 
@@ -73,7 +129,10 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
       const src = node.externalUrl ?? (node.assetId ? `asset:${node.assetId}` : undefined)
       return (
         <img
+          ref={sortable.ref as Ref<HTMLImageElement>}
           style={style}
+          {...(sortable.attributes as HTMLAttributes<HTMLImageElement>)}
+          {...(sortable.listeners as HTMLAttributes<HTMLImageElement>)}
           {...common}
           src={src}
           alt={node.alt}
@@ -86,8 +145,11 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
     case 'button':
       return (
         <button
+          ref={sortable.ref as Ref<HTMLButtonElement>}
           type={node.buttonType ?? 'button'}
           style={style}
+          {...(sortable.attributes as HTMLAttributes<HTMLButtonElement>)}
+          {...(sortable.listeners as HTMLAttributes<HTMLButtonElement>)}
           {...common}
           aria-label={node.ariaLabel}
         >
@@ -98,10 +160,13 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
     case 'link':
       return (
         <a
+          ref={sortable.ref as Ref<HTMLAnchorElement>}
           href={node.href}
           target={node.target}
           rel={node.rel}
           style={style}
+          {...(sortable.attributes as HTMLAttributes<HTMLAnchorElement>)}
+          {...(sortable.listeners as HTMLAttributes<HTMLAnchorElement>)}
           {...common}
           aria-label={node.ariaLabel}
         >
@@ -112,7 +177,10 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
     case 'icon':
       return (
         <span
+          ref={sortable.ref as Ref<HTMLSpanElement>}
           style={style}
+          {...(sortable.attributes as HTMLAttributes<HTMLSpanElement>)}
+          {...(sortable.listeners as HTMLAttributes<HTMLSpanElement>)}
           {...common}
           aria-hidden={node.decorative ? true : undefined}
           aria-label={node.decorative ? undefined : node.ariaLabel}
@@ -122,20 +190,38 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
 
     case 'list': {
       const Tag = node.ordered ? 'ol' : 'ul'
-      return (
-        <Tag style={{ ...style, listStyleType: node.marker }} {...common}>
-          {node.items.map((item, index) => (
-            <li key={index}>{item}</li>
-          ))}
-        </Tag>
+      return createElement(
+        Tag,
+        {
+          ref: sortable.ref,
+          style: { ...style, listStyleType: node.marker },
+          ...sortable.attributes,
+          ...sortable.listeners,
+          ...common,
+        },
+        node.items.map((item, index) => <li key={index}>{item}</li>)
       )
     }
 
     case 'divider':
       return node.orientation === 'horizontal' ? (
-        <hr style={style} {...common} />
+        <hr
+          ref={sortable.ref as Ref<HTMLHRElement>}
+          style={style}
+          {...(sortable.attributes as HTMLAttributes<HTMLHRElement>)}
+          {...(sortable.listeners as HTMLAttributes<HTMLHRElement>)}
+          {...common}
+        />
       ) : (
-        <div style={style} {...common} role="separator" aria-orientation="vertical" />
+        <div
+          ref={sortable.ref as Ref<HTMLDivElement>}
+          style={style}
+          {...(sortable.attributes as HTMLAttributes<HTMLDivElement>)}
+          {...(sortable.listeners as HTMLAttributes<HTMLDivElement>)}
+          {...common}
+          role="separator"
+          aria-orientation="vertical"
+        />
       )
   }
 }
@@ -150,7 +236,8 @@ interface ContainerNodeViewProps {
 /**
  * Container renderer split out so it can participate in dnd-kit drops
  * (L-CAN-12). Highlights itself while the cursor hovers during an Insert
- * drag so authors see where the drop will land.
+ * drag so authors see where the drop will land. Hosts a SortableContext
+ * over its children so sibling reorder (L-CAN-13) works inside the canvas.
  */
 function ContainerNodeView({
   Tag,
@@ -163,6 +250,7 @@ function ContainerNodeView({
     data: { accepts: 'insert', containerId: node.id },
   })
   const style: CSSProperties = isOver ? { ...baseStyle, ...DROP_OVER_OUTLINE } : baseStyle
+  const childIds = node.children.map((child) => child.id)
   return createElement(
     Tag,
     {
@@ -171,6 +259,10 @@ function ContainerNodeView({
       ...commonProps,
       'data-drop-over': isOver || undefined,
     },
-    node.children.map((child) => <CanvasNode key={child.id} node={child} />)
+    <SortableContext items={childIds} strategy={verticalListSortingStrategy}>
+      {node.children.map((child) => (
+        <CanvasNode key={child.id} node={child} />
+      ))}
+    </SortableContext>
   )
 }

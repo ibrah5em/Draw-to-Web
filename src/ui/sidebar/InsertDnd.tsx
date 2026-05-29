@@ -8,12 +8,22 @@
  * subtree or primitive under the targeted container.
  */
 
-import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
 import { nanoid } from 'nanoid'
 import { useMemo, useState, type JSX, type ReactNode } from 'react'
 
 import { presetsRegistry, type PresetId } from '@document/presets'
 import { dispatch } from '@store/dispatch'
+import { useDocumentStore } from '@store/documentStore'
+import { buildReorderOp } from '../canvas/sortableReorder'
 
 import { buildInsertOp } from './insertDrop'
 import styles from './InsertSidebar.module.css'
@@ -88,14 +98,24 @@ export function InsertDndProvider({ children }: { children: ReactNode }): JSX.El
     () =>
       (event: DragEndEvent): void => {
         setActiveItem(null)
-        const op = buildInsertOp(event.active.id, event.over?.id ?? null, () => nanoid(8))
-        if (op !== null) dispatch(op)
+        const over = event.over?.id ?? null
+        const insertOp = buildInsertOp(event.active.id, over, () => nanoid(8))
+        if (insertOp !== null) {
+          dispatch(insertOp)
+          return
+        }
+        const tree = useDocumentStore.getState().document.tree
+        const reorderOp = buildReorderOp(event.active.id, over, tree)
+        if (reorderOp !== null) dispatch(reorderOp)
       },
     []
   )
 
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+
   return (
     <DndContext
+      sensors={sensors}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveItem(null)}

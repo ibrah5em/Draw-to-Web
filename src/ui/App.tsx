@@ -6,6 +6,8 @@ import { Canvas } from './canvas/Canvas'
 import { LayerPanel } from './layers/LayerPanel'
 import { PropertiesPanel } from './panels/properties/PropertiesPanel'
 import { TokensPanel } from './panels/tokens/TokensPanel'
+import { InsertDndProvider } from './sidebar/InsertDnd'
+import { InsertSidebar } from './sidebar/InsertSidebar'
 import { MenuBar } from './topbar/MenuBar'
 import { ThemeToggle } from './topbar/ThemeToggle'
 import { ViewToggles, type ViewToggle } from './topbar/ViewToggles'
@@ -14,6 +16,7 @@ import styles from './App.module.css'
 /** localStorage keys for each persisted panel group. */
 const COLUMNS_KEY = 'dtw.layout.main'
 const ROWS_KEY = 'dtw.layout.vertical'
+const SIDEBAR_KEY = 'dtw.layout.sidebar'
 
 /** Panel ids — also the keys in each persisted {@link Layout} map. */
 const PANEL = {
@@ -22,6 +25,8 @@ const PANEL = {
   properties: 'properties',
   workspace: 'workspace',
   tokens: 'tokens',
+  insert: 'insert',
+  layers: 'layers',
 } as const
 
 const DEFAULT_COLUMNS: Layout = {
@@ -33,6 +38,11 @@ const DEFAULT_COLUMNS: Layout = {
 const DEFAULT_ROWS: Layout = {
   [PANEL.workspace]: 74,
   [PANEL.tokens]: 26,
+}
+
+const DEFAULT_SIDEBAR: Layout = {
+  [PANEL.insert]: 55,
+  [PANEL.layers]: 45,
 }
 
 /** Narrow an unknown JSON value to a {@link Layout} (id → numeric percentage). */
@@ -73,6 +83,7 @@ function saveLayout(key: string, layout: Layout): void {
 export function App(): JSX.Element {
   const [columns] = useState(() => loadLayout(COLUMNS_KEY, DEFAULT_COLUMNS))
   const [rows] = useState(() => loadLayout(ROWS_KEY, DEFAULT_ROWS))
+  const [sidebarRows] = useState(() => loadLayout(SIDEBAR_KEY, DEFAULT_SIDEBAR))
 
   const sidebarRef = usePanelRef()
   const propertiesRef = usePanelRef()
@@ -131,86 +142,111 @@ export function App(): JSX.Element {
         </div>
       </header>
 
-      <Group
-        orientation="vertical"
-        className={styles.main}
-        defaultLayout={rows}
-        onLayoutChanged={(layout) => saveLayout(ROWS_KEY, layout)}
-      >
-        <Panel id={PANEL.workspace} defaultSize="74" minSize="40">
-          <Group
-            orientation="horizontal"
-            className={styles.workspace}
-            defaultLayout={columns}
-            onLayoutChanged={(layout) => saveLayout(COLUMNS_KEY, layout)}
-          >
-            <Panel
-              id={PANEL.sidebar}
-              panelRef={sidebarRef}
-              defaultSize="18"
-              minSize="12"
-              maxSize="35"
-              collapsible
-              collapsedSize={0}
-              onResize={() => setSidebarCollapsed(sidebarRef.current?.isCollapsed() ?? false)}
-            >
-              <section className={styles.sidebar} aria-label="Layers">
-                <LayerPanel />
-              </section>
-            </Panel>
-
-            <Separator className={styles.handle}>
-              <div className={styles.handleInner} />
-            </Separator>
-
-            <Panel id={PANEL.canvas} defaultSize="62" minSize="30">
-              <section className={styles.canvas} aria-label="Canvas">
-                <Canvas />
-              </section>
-            </Panel>
-
-            <Separator className={styles.handle}>
-              <div className={styles.handleInner} />
-            </Separator>
-
-            <Panel
-              id={PANEL.properties}
-              panelRef={propertiesRef}
-              defaultSize="20"
-              minSize="14"
-              maxSize="40"
-              collapsible
-              collapsedSize={0}
-              onResize={() => setPropertiesCollapsed(propertiesRef.current?.isCollapsed() ?? false)}
-            >
-              <section className={styles.properties} aria-label="Properties">
-                <PropertiesPanel />
-              </section>
-            </Panel>
-          </Group>
-        </Panel>
-
-        <Separator className={styles.handleH}>
-          <div className={styles.handleHInner} />
-        </Separator>
-
-        <Panel
-          id={PANEL.tokens}
-          panelRef={tokensRef}
-          defaultSize="26"
-          minSize="12"
-          collapsible
-          collapsedSize="34px"
-          onResize={() => setTokensCollapsed(tokensRef.current?.isCollapsed() ?? false)}
+      <InsertDndProvider>
+        <Group
+          orientation="vertical"
+          className={styles.main}
+          defaultLayout={rows}
+          onLayoutChanged={(layout) => saveLayout(ROWS_KEY, layout)}
         >
-          <section className={styles.tokens} aria-label="Tokens">
-            <TokensPanel
-              collapsed={tokensCollapsed}
-              onToggleCollapse={() => togglePanel(tokensRef)}
-            />
-          </section>
-        </Panel>
-      </Group>
+          <Panel id={PANEL.workspace} defaultSize="74" minSize="40">
+            <Group
+              orientation="horizontal"
+              className={styles.workspace}
+              defaultLayout={columns}
+              onLayoutChanged={(layout) => saveLayout(COLUMNS_KEY, layout)}
+            >
+              <Panel
+                id={PANEL.sidebar}
+                panelRef={sidebarRef}
+                defaultSize="18"
+                minSize="12"
+                maxSize="35"
+                collapsible
+                collapsedSize={0}
+                onResize={() => setSidebarCollapsed(sidebarRef.current?.isCollapsed() ?? false)}
+              >
+                <section className={styles.sidebar} aria-label="Insert and Layers">
+                  <Group
+                    orientation="vertical"
+                    className={styles.sidebarStack}
+                    defaultLayout={sidebarRows}
+                    onLayoutChanged={(layout) => saveLayout(SIDEBAR_KEY, layout)}
+                  >
+                    <Panel id={PANEL.insert} defaultSize="55" minSize="20">
+                      <div className={styles.sidebarRegion} aria-label="Insert">
+                        <InsertSidebar />
+                      </div>
+                    </Panel>
+
+                    <Separator className={styles.handleH}>
+                      <div className={styles.handleHInner} />
+                    </Separator>
+
+                    <Panel id={PANEL.layers} defaultSize="45" minSize="15">
+                      <div className={styles.sidebarRegion} aria-label="Layers">
+                        <LayerPanel />
+                      </div>
+                    </Panel>
+                  </Group>
+                </section>
+              </Panel>
+
+              <Separator className={styles.handle}>
+                <div className={styles.handleInner} />
+              </Separator>
+
+              <Panel id={PANEL.canvas} defaultSize="62" minSize="30">
+                <section className={styles.canvas} aria-label="Canvas">
+                  <Canvas />
+                </section>
+              </Panel>
+
+              <Separator className={styles.handle}>
+                <div className={styles.handleInner} />
+              </Separator>
+
+              <Panel
+                id={PANEL.properties}
+                panelRef={propertiesRef}
+                defaultSize="20"
+                minSize="14"
+                maxSize="40"
+                collapsible
+                collapsedSize={0}
+                onResize={() =>
+                  setPropertiesCollapsed(propertiesRef.current?.isCollapsed() ?? false)
+                }
+              >
+                <section className={styles.properties} aria-label="Properties">
+                  <PropertiesPanel />
+                </section>
+              </Panel>
+            </Group>
+          </Panel>
+
+          <Separator className={styles.handleH}>
+            <div className={styles.handleHInner} />
+          </Separator>
+
+          <Panel
+            id={PANEL.tokens}
+            panelRef={tokensRef}
+            defaultSize="26"
+            minSize="12"
+            collapsible
+            collapsedSize="34px"
+            onResize={() => setTokensCollapsed(tokensRef.current?.isCollapsed() ?? false)}
+          >
+            <section className={styles.tokens} aria-label="Tokens">
+              <TokensPanel
+                collapsed={tokensCollapsed}
+                onToggleCollapse={() => togglePanel(tokensRef)}
+              />
+            </section>
+          </Panel>
+        </Group>
+      </InsertDndProvider>
 
       <footer className={styles.statusbar} />
     </div>

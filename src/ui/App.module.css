@@ -47,6 +47,16 @@
   overflow: hidden;
 }
 
+.sidebarStack {
+  height: 100%;
+  overflow: hidden;
+}
+
+.sidebarRegion {
+  height: 100%;
+  overflow: hidden;
+}
+
 .canvas {
   height: 100%;
   background: var(--bg-base);

@@ -17,6 +17,8 @@ import { useHistoryStore } from '@store/historyStore'
 import { openProject, saveProject } from '@store/persistence'
 import { useSessionStore } from '@store/sessionStore'
 
+import { deleteSelected } from '../canvas/useDeleteSelection'
+
 import type { ViewToggle } from './ViewToggles'
 import styles from './MenuBar.module.css'
 
@@ -80,6 +82,12 @@ export function MenuBar({ panels }: { panels: ReadonlyArray<ViewToggle> }): JSX.
         <>
           <MenuItem label="Undo" shortcut="Ctrl+Z" onSelect={() => undo()} />
           <MenuItem label="Redo" shortcut="Ctrl+Shift+Z" onSelect={() => redo()} />
+          <DropdownMenu.Separator className={styles.separator} />
+          <MenuItem
+            label="Delete selection"
+            shortcut="Del"
+            onSelect={() => void deleteSelected()}
+          />
         </>
       </Menu>
 

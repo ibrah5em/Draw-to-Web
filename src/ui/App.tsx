@@ -8,6 +8,7 @@ import { useDocumentStore } from '@store/documentStore'
 import { useSessionStore } from '@store/sessionStore'
 
 import { Canvas } from './canvas/Canvas'
+import { useDeleteSelection } from './canvas/useDeleteSelection'
 import { Welcome, type WelcomeTemplate } from './dialogs/Welcome'
 import { LayerPanel } from './layers/LayerPanel'
 import { PropertiesPanel } from './panels/properties/PropertiesPanel'
@@ -94,6 +95,8 @@ export function App(): JSX.Element {
   const [welcomeOpen, setWelcomeOpen] = useState(
     () => useSessionStore.getState().currentFilePath === null
   )
+
+  useDeleteSelection()
 
   const closeWelcome = (): void => setWelcomeOpen(false)
   const openWelcome = (): void => setWelcomeOpen(true)

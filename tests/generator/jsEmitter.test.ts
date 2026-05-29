@@ -8,12 +8,12 @@ describe('emitJs(document)', () => {
   })
 
   it('returns an empty string when only unauthored flags are enabled', () => {
-    // I-RUN-01..03 (themeToggle, scrollSpy, smoothScroll) have shipped.
-    // Flipping only the still-unauthored flags must still produce no JS
-    // until I-RUN-04..08 land.
+    // I-RUN-01..04 (themeToggle, scrollSpy, smoothScroll, mobileNav) have
+    // shipped. Flipping only the still-unauthored flags must still produce
+    // no JS until I-RUN-05..08 land.
     const doc = {
       ...PORTFOLIO_DOCUMENT,
-      runtime: { ...PORTFOLIO_DOCUMENT.runtime, mobileNav: true, reveals: true },
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, navOnScroll: true, reveals: true },
     }
     expect(emitJs(doc)).toBe('')
   })
@@ -71,6 +71,27 @@ describe('emitJs(document)', () => {
     }
     const js = emitJs(doc)
     expect(js.indexOf('/* scrollSpy */')).toBeLessThan(js.indexOf('/* smoothScroll */'))
+  })
+
+  it('emits the mobile-nav snippet when mobileNav is on (I-RUN-04)', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, mobileNav: true },
+    }
+    const js = emitJs(doc)
+    expect(js).toContain('/* mobileNav */')
+    expect(js).toContain('data-dtw-mobile-nav-toggle')
+    expect(js).toContain('data-dtw-mobile-nav-panel')
+    expect(js).toContain('aria-expanded')
+  })
+
+  it('orders snippets deterministically: smoothScroll before mobileNav', () => {
+    const doc = {
+      ...PORTFOLIO_DOCUMENT,
+      runtime: { ...PORTFOLIO_DOCUMENT.runtime, smoothScroll: true, mobileNav: true },
+    }
+    const js = emitJs(doc)
+    expect(js.indexOf('/* smoothScroll */')).toBeLessThan(js.indexOf('/* mobileNav */'))
   })
 
   it('produces deterministic output across repeated calls', () => {

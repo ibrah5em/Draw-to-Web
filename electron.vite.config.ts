@@ -4,9 +4,10 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   main: {
-    // nanoid v5 is pure ESM; Electron 28 (Node 18) can't `require()` it.
-    // Exclude it from externalization so it gets bundled into the CJS output.
-    plugins: [externalizeDepsPlugin({ exclude: ['nanoid'] })],
+    // nanoid v5 and chokidar v5 are pure ESM; Electron's CJS main process
+    // can't `require()` them. Exclude them from externalization so they get
+    // bundled into the CJS output instead.
+    plugins: [externalizeDepsPlugin({ exclude: ['nanoid', 'chokidar'] })],
   },
   preload: {
     plugins: [externalizeDepsPlugin()],

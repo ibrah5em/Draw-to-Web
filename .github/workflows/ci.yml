@@ -57,6 +57,12 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      # The axe-core gate on generated output (templates + SEO + export e2e).
+      # Kept as its own step so an a11y regression surfaces distinctly from a
+      # general unit-test break, matching the hard-gate stance in CLAUDE.md.
+      - name: Accessibility gate
+        run: npm run test:a11y
+
   build:
     name: Compile renderer + main
     runs-on: ubuntu-latest

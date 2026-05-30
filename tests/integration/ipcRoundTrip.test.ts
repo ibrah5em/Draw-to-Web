@@ -17,9 +17,7 @@ import { mkdtemp, readFile, rm } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import JSZip from 'jszip'
-import { SIMPLE_PAGE } from '../fixtures/legacyElements'
-import type { CanvasElement } from '../../src/store/elementStore'
-import type { SEOConfig } from '../../src/shared/types'
+import { buildSimpleDocument } from '../fixtures/documents'
 
 // ───────────── Electron mock (hoisted so vi.mock can see it) ─────────────
 
@@ -50,16 +48,12 @@ const { handlers, electronMock } = vi.hoisted(() => {
 vi.mock('electron', () => electronMock)
 
 import { registerIpcHandlers } from '../../src/main/ipc'
-import { legacyExportProject as exportProject } from '../../src/export'
+import { exportProject } from '../../src/export'
 
-const SEO: SEOConfig = {
+const DOC = buildSimpleDocument({
   title: 'Round Trip Test',
   description: 'Verifies the renderer→IPC→disk path end-to-end.',
-}
-
-// The legacy adapter accepts real CanvasElement[] from the v0.1.0 fixture;
-// the new pipeline converts to a Document under the hood.
-const ELEMENTS: CanvasElement[] = SIMPLE_PAGE
+})
 
 let tempDir: string
 
@@ -119,7 +113,7 @@ describe('IPC round-trip: exportProject → export:zip handler → disk', () => 
       },
     })
 
-    const result = await exportProject(ELEMENTS, SEO, { projectName: 'round-trip' })
+    const result = await exportProject(DOC, { projectName: 'round-trip' })
 
     expect(result.success).toBe(true)
     if (!result.success) throw new Error('export failed before disk check')
@@ -138,7 +132,7 @@ describe('IPC round-trip: exportProject → export:zip handler → disk', () => 
     })
     wireRendererToMain()
 
-    const result = await exportProject(ELEMENTS, SEO)
+    const result = await exportProject(DOC)
     expect(result.success).toBe(true)
 
     const zipBytes = await readFile(outPath)
@@ -165,7 +159,7 @@ describe('IPC round-trip: exportProject → export:zip handler → disk', () => 
     electronMock.dialog.showSaveDialog.mockResolvedValueOnce({ canceled: true })
     wireRendererToMain()
 
-    const result = await exportProject(ELEMENTS, SEO)
+    const result = await exportProject(DOC)
 
     expect(result.success).toBe(false)
     if (!result.success) {

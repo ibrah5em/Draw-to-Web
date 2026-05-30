@@ -3,8 +3,9 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { generate } from '@generator'
 import { injectSEO } from '@seo'
-import { canvasElementsToDocument } from '../../src/export/legacyAdapter'
-import { PAGE_WITH_NAV, SIMPLE_PAGE } from '../fixtures/legacyElements'
+import type { Document } from '../../src/document/types'
+import { buildSimpleDocument } from '../fixtures/documents'
+import { PORTFOLIO_DOCUMENT } from '../fixtures/portfolioDocument'
 
 /**
  * Minimum browser versions where each CSS feature shipped unprefixed and stable.
@@ -162,35 +163,29 @@ function runAudit(name: string, html: string, css: string) {
   return { unsupported, cssViolations, htmlViolations }
 }
 
-async function buildAndAudit(name: string, elements: typeof SIMPLE_PAGE) {
-  const seoConfig = {
-    title: `Draw-to-Web Cross-browser Test — ${name}`,
-    description: 'Generated output used for cross-browser validation.',
-    canonicalUrl: 'https://example.com/',
-  }
-  const doc = canvasElementsToDocument(elements, seoConfig)
+async function buildAndAudit(name: string, doc: Document) {
   const { html, css } = await generate(doc)
   const seoHtml = injectSEO(html, doc.seo)
   return { html: seoHtml, css, ...runAudit(name, seoHtml, css) }
 }
 
 describe('cross-browser validation', () => {
-  test('PAGE_WITH_NAV uses only baseline-2022 web features', async () => {
-    const r = await buildAndAudit('PAGE_WITH_NAV', PAGE_WITH_NAV)
+  test('portfolio document uses only baseline-2022 web features', async () => {
+    const r = await buildAndAudit('portfolio document', PORTFOLIO_DOCUMENT)
     expect(r.unsupported, `unsupported features: ${r.unsupported.join(', ')}`).toEqual([])
     expect(r.cssViolations.map((v) => v.reason)).toEqual([])
     expect(r.htmlViolations.map((v) => v.reason)).toEqual([])
   })
 
-  test('SIMPLE_PAGE uses only baseline-2022 web features', async () => {
-    const r = await buildAndAudit('SIMPLE_PAGE', SIMPLE_PAGE)
+  test('blank starter uses only baseline-2022 web features', async () => {
+    const r = await buildAndAudit('blank starter', buildSimpleDocument())
     expect(r.unsupported, `unsupported features: ${r.unsupported.join(', ')}`).toEqual([])
     expect(r.cssViolations.map((v) => v.reason)).toEqual([])
     expect(r.htmlViolations.map((v) => v.reason)).toEqual([])
   })
 
   test('writes a sample export to cross-browser-out/ for manual browser testing', async () => {
-    const r = await buildAndAudit('SIMPLE_PAGE (manual)', SIMPLE_PAGE)
+    const r = await buildAndAudit('blank starter (manual)', buildSimpleDocument())
     const outDir = resolve(__dirname, '../../cross-browser-out')
     mkdirSync(outDir, { recursive: true })
     writeFileSync(resolve(outDir, 'index.html'), r.html)

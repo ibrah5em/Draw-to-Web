@@ -2,20 +2,19 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { runAxeGate, formatViolation } from '@seo/axeGate'
 import { generateFullReport, injectSEO } from '@seo'
 import { generate } from '@generator'
-import { canvasElementsToDocument } from '../../src/export/legacyAdapter'
-import { SIMPLE_PAGE } from '../fixtures/legacyElements'
-import type { SEOConfig as LegacySEOConfig } from '../../src/shared/types'
+import { buildSimpleDocument } from '../fixtures/documents'
+import type { Document } from '../../src/document/types'
 
-const BASE_CONFIG: LegacySEOConfig = {
+const BASE_CONFIG = {
   title: 'Axe Gate Page',
   description: 'A test page used by the axe-core gate suite.',
-}
+} as const
 
 let SIMPLE_HTML: string
-let SIMPLE_DOC: ReturnType<typeof canvasElementsToDocument>
+let SIMPLE_DOC: Document
 
 beforeAll(async () => {
-  SIMPLE_DOC = canvasElementsToDocument(SIMPLE_PAGE, BASE_CONFIG)
+  SIMPLE_DOC = buildSimpleDocument(BASE_CONFIG)
   SIMPLE_HTML = (await generate(SIMPLE_DOC)).html
 })
 
@@ -125,11 +124,11 @@ describe('generateFullReport', () => {
   })
 
   it('flags over-long title with a warning', async () => {
-    const longConfig: LegacySEOConfig = {
+    const longConfig = {
       title: 'x'.repeat(80),
       description: 'ok',
     }
-    const longDoc = canvasElementsToDocument(SIMPLE_PAGE, longConfig)
+    const longDoc = buildSimpleDocument(longConfig)
     const html = injectSEO((await generate(longDoc)).html, longDoc.seo)
     const report = await generateFullReport(html, longDoc.seo)
     expect(report.guidance.some((g) => g.includes('truncated above 60'))).toBe(true)

@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import { generate } from '@generator'
 import { injectSEO, runAxeGate } from '@seo'
-import { canvasElementsToDocument } from '../../src/export/legacyAdapter'
-import { PAGE_WITH_NAV, SIMPLE_PAGE } from '../fixtures/legacyElements'
+import type { Document } from '../../src/document/types'
+import { buildSimpleDocument } from '../fixtures/documents'
+import { PORTFOLIO_DOCUMENT } from '../fixtures/portfolioDocument'
 
 interface CheckResult {
   name: string
@@ -103,14 +104,7 @@ function checkNoAbsolutePositioning(css: string): CheckResult {
   }
 }
 
-async function runFixture(name: string, elements: typeof SIMPLE_PAGE) {
-  const seoConfig = {
-    title: 'Draw-to-Web E2E Test',
-    description: 'End-to-end validation of the generator + SEO + axe pipeline.',
-    ogImage: 'https://example.com/og.png',
-    canonicalUrl: 'https://example.com/',
-  }
-  const doc = canvasElementsToDocument(elements, seoConfig)
+async function runFixture(name: string, doc: Document) {
   const { html, css } = await generate(doc)
   const seoHtml = injectSEO(html, doc.seo)
   const fullDoc = seoHtml.replace(
@@ -142,13 +136,19 @@ async function runFixture(name: string, elements: typeof SIMPLE_PAGE) {
 }
 
 describe('full export pipeline e2e', () => {
-  test('PAGE_WITH_NAV (most complex) passes all gates', async () => {
-    const results = await runFixture('PAGE_WITH_NAV', PAGE_WITH_NAV)
+  test('portfolio document (most complex) passes all gates', async () => {
+    const results = await runFixture('portfolio document', PORTFOLIO_DOCUMENT)
     for (const r of results) expect(r.passed, `${r.name}: ${r.detail}`).toBe(true)
   })
 
-  test('SIMPLE_PAGE passes all gates', async () => {
-    const results = await runFixture('SIMPLE_PAGE', SIMPLE_PAGE)
+  test('blank starter passes all gates', async () => {
+    const results = await runFixture(
+      'blank starter',
+      buildSimpleDocument({
+        title: 'Draw-to-Web E2E Test',
+        description: 'End-to-end validation of the generator + SEO + axe pipeline.',
+      })
+    )
     for (const r of results) expect(r.passed, `${r.name}: ${r.detail}`).toBe(true)
   })
 })

@@ -1,14 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import JSZip from 'jszip'
-import { SIMPLE_PAGE } from '../fixtures/legacyElements'
-import type { CanvasElement } from '../../src/store/elementStore'
-import type { SEOConfig } from '../../src/shared/types'
-import { legacyExportProject as exportProject, buildPreview } from '../../src/export'
+import { exportProject } from '../../src/export'
+import { buildSimpleDocument, buildDocumentWithBadButton } from '../fixtures/documents'
 
-const BASE_CONFIG: SEOConfig = {
+const BASE_SEO = {
   title: 'Test Page',
   description: 'A page used by the export pipeline tests.',
-}
+} as const
 
 interface MockIpcResult {
   success: boolean
@@ -45,13 +43,13 @@ describe('exportProject', () => {
   it('runs the full pipeline and writes a valid ZIP on success', async () => {
     const captured = setupElectronAPI({ success: true, filePath: '/tmp/project.zip' })
 
-    const result = await exportProject(SIMPLE_PAGE, BASE_CONFIG, { projectName: 'my-site' })
+    const result = await exportProject(buildSimpleDocument(BASE_SEO), { projectName: 'my-site' })
 
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.filePath).toBe('/tmp/project.zip')
       expect(result.report.accessibility.passed).toBe(true)
-      expect(result.report.seo.titleLength).toBe(BASE_CONFIG.title.length)
+      expect(result.report.seo.titleLength).toBe(BASE_SEO.title.length)
     }
 
     expect(captured.capturedFilename).toBe('my-site.zip')
@@ -65,23 +63,11 @@ describe('exportProject', () => {
     expect(html).toContain('<title>Test Page</title>')
   })
 
-  it('blocks export with stage="a11y-gate" when a11y violations are critical', async () => {
-    // Add a button with no text to the input — axe-core flags button-name (serious).
-    const elementsWithBadButton: CanvasElement[] = [
-      ...SIMPLE_PAGE,
-      {
-        id: 'empty-btn',
-        type: 'button',
-        x: 0,
-        y: 0,
-        width: 4,
-        height: 40,
-        props: {}, // no text
-      },
-    ]
+  it('blocks export with stage="a11y-gate" when a11y violations are serious', async () => {
+    // An empty <button> triggers axe-core's button-name (serious) rule.
     const captured = setupElectronAPI({ success: true })
 
-    const result = await exportProject(elementsWithBadButton, BASE_CONFIG)
+    const result = await exportProject(buildDocumentWithBadButton(BASE_SEO))
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -96,7 +82,7 @@ describe('exportProject', () => {
   it('returns stage="save" when the IPC handler reports failure', async () => {
     setupElectronAPI({ success: false, error: 'Disk full' })
 
-    const result = await exportProject(SIMPLE_PAGE, BASE_CONFIG)
+    const result = await exportProject(buildSimpleDocument(BASE_SEO))
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -109,7 +95,7 @@ describe('exportProject', () => {
   it('sanitizes the project name for the zip filename', async () => {
     const captured = setupElectronAPI({ success: true, filePath: '/tmp/x.zip' })
 
-    await exportProject(SIMPLE_PAGE, BASE_CONFIG, {
+    await exportProject(buildSimpleDocument(BASE_SEO), {
       projectName: '../../etc/passwd',
     })
 
@@ -121,26 +107,7 @@ describe('exportProject', () => {
   it('falls back to "project.zip" when the project name is only invalid chars', async () => {
     const captured = setupElectronAPI({ success: true, filePath: '/tmp/x.zip' })
 
-    await exportProject(SIMPLE_PAGE, BASE_CONFIG, { projectName: '///' })
+    await exportProject(buildSimpleDocument(BASE_SEO), { projectName: '///' })
     expect(captured.capturedFilename).toBe('project.zip')
-  })
-})
-
-describe('buildPreview', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('returns html+css for a valid element list', async () => {
-    const preview = await buildPreview(SIMPLE_PAGE)
-    expect(preview).not.toBeNull()
-    expect(preview?.html).toContain('<!doctype html>')
-    expect(preview?.css.length).toBeGreaterThan(0)
-  })
-
-  it('returns html+css even for an empty element list', async () => {
-    const preview = await buildPreview([])
-    expect(preview).not.toBeNull()
-    expect(preview?.html).toContain('<!doctype html>')
   })
 })

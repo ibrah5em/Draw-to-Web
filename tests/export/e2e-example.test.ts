@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import JSZip from 'jszip'
 import { createPortfolioTemplate } from '@templates/portfolio'
-import { exportProject, buildPreview, type ExportStage } from '@export/index'
+import { exportProject, type ExportStage } from '@export/index'
 import { validateDocument } from '@document/validation'
 
 /** Capture the bytes the save stage hands to the IPC layer. */
@@ -108,14 +108,14 @@ describe('export pipeline — end to end', () => {
   })
 
   it('dry-run preview returns html+css under 500ms', async () => {
-    // buildPreview takes the legacy element list; exercise generate() directly
-    // for the document-model path and time it as the dry-run budget proxy.
+    // The dry-run path (I-EXP-04) is the document-model preview: it skips
+    // the a11y gate + bundle + save and returns the formatted bytes.
     const t0 = performance.now()
-    const preview = await buildPreview([])
+    const preview = await exportProject(doc, { dryRun: true })
     const elapsedMs = performance.now() - t0
     console.log(`[e2e] preview: ${elapsedMs.toFixed(0)}ms (budget <500ms)`)
-    // empty element list yields a minimal doc; just assert it doesn't throw
-    expect(preview === null || typeof preview.html === 'string').toBe(true)
+    expect(typeof preview.html).toBe('string')
+    expect(typeof preview.css).toBe('string')
     expect(elapsedMs).toBeLessThan(500)
   })
 

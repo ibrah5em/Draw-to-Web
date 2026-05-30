@@ -17,7 +17,6 @@ export default defineConfig({
       '@seo': resolve(__dirname, 'src/seo'),
       '@export': resolve(__dirname, 'src/export'),
       '@templates': resolve(__dirname, 'src/templates'),
-      '@project': resolve(__dirname, 'src/project'),
       '@shared': resolve(__dirname, 'src/shared'),
     },
   },

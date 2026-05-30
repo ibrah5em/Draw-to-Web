@@ -32,7 +32,6 @@
     "src/seo/**/*",
     "src/export/**/*",
     "src/templates/**/*",
-    "src/shared/**/*",
-    "src/project/**/*"
+    "src/shared/**/*"
   ]
 }

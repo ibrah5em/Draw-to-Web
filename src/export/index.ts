@@ -20,10 +20,6 @@
  *   6. `sitemap-robots`  — `sitemap.xml` + `robots.txt`.
  *   7. `bundle`          — JSZip into one ArrayBuffer.
  *   8. `save`            — IPC → main process → `fs.writeFile`.
- *
- * The renderer-facing legacy helper `legacyExportProject(elements, seoConfig,
- * options)` is kept until the canvas migrates to `useDocumentStore`; it
- * adapts the v0.1.0 store shape and delegates to the new pipeline.
  */
 
 import JSZip from 'jszip'
@@ -35,13 +31,7 @@ import { validateDocument } from '../document/validation'
 import { minifyHtml, minifyCss, minifyJs } from './minify'
 import { selfHostFonts } from './selfHostFonts'
 import type { Document } from '../document/types'
-import type {
-  CanvasElement,
-  ExportResult,
-  FullExportReport,
-  SEOConfig as LegacySEOConfig,
-} from '../shared/types'
-import { canvasElementsToDocument } from './legacyAdapter'
+import type { ExportResult, FullExportReport } from '../shared/types'
 
 /**
  * Named stages of the export pipeline. Surfaced on errors and progress
@@ -502,52 +492,6 @@ export async function exportProject(
   }
 
   return { success: true, filePath: ipcResult.filePath ?? '', report }
-}
-
-/**
- * Legacy renderer-facing shim. The canvas still drives off
- * `useElementStore`; until it migrates to `useDocumentStore`, this
- * function converts the v0.1.0 element list + SEO config through
- * `canvasElementsToDocument` and delegates to `exportProject(doc, opts)`.
- *
- * Delete once the canvas migration lands.
- */
-export async function legacyExportProject(
-  elements: CanvasElement[],
-  seoConfig: LegacySEOConfig,
-  options: ExportOptions = {}
-): Promise<ExportProjectResult> {
-  let doc: Document
-  try {
-    doc = canvasElementsToDocument(elements, seoConfig)
-  } catch (err) {
-    return { success: false, stage: 'validate', error: toMessage(err) }
-  }
-  const projectName = options.projectName ?? seoConfig.title
-  return exportProject(doc, { ...options, projectName })
-}
-
-/**
- * Live-preview helper. Runs only the renderer-pure stages (no IPC, no
- * axe gate) so the preview iframe can refresh on every store change
- * without paying the ZIP + dialog cost. Returns `null` if the generator
- * throws — the preview panel shows nothing rather than a stale render.
- *
- * Takes the legacy element list so the existing renderer keeps working.
- * The adapter promotes it to a Document, then the generator emits HTML
- * + CSS strings.
- */
-export async function buildPreview(
-  elements: CanvasElement[]
-): Promise<{ html: string; css: string } | null> {
-  try {
-    const placeholderSeo: LegacySEOConfig = { title: 'Preview', description: '' }
-    const doc = canvasElementsToDocument(elements, placeholderSeo)
-    const { html, css } = await generate(doc)
-    return { html, css }
-  } catch {
-    return null
-  }
 }
 
 export type { ExportResult }

@@ -18,6 +18,7 @@
 }
 
 .page {
+  position: relative;
   flex: 1;
   max-width: 1280px;
   min-height: 100%;
@@ -26,6 +27,26 @@
   box-shadow: 0 0 0 1px var(--border);
   display: flex;
   flex-direction: column;
+}
+
+/* 12-column grid overlay (L-CAN-10 / L-TOP-06). Editor chrome only — never
+   emitted into generated output. Absolute positioning is allowed here
+   because it overlays the editor canvas, not the exported page. */
+.gridOverlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--sp-2);
+  padding: 0 var(--sp-4);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.gridColumn {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 /* The root element rendered inside the page must fill it so the dnd-kit

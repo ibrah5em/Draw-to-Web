@@ -24,12 +24,13 @@ import {
 } from 'react'
 
 import { isTokenRef, resolveToken } from '@document/tokens'
-import { useTokens, useTree } from '@store/documentStore'
+import { useDocumentSettings, useTokens, useTree } from '@store/documentStore'
 import { useSessionStore } from '@store/sessionStore'
 
 import { BREAKPOINT_WIDTH_PX } from '../topbar/BreakpointSwitcher'
 import type { StyleResolver } from './buildStyle'
-import { CanvasNode } from './CanvasNode'
+import { CanvasContextMenu } from './CanvasContextMenu'
+import { CanvasNodeBoundary } from './CanvasNode'
 import styles from './Canvas.module.css'
 import { inferSemantics } from './inferSemantics'
 import { MARQUEE_ACTIVATION_PX, rectFromPoints, rectsIntersect, type Rect } from './marqueeSelect'
@@ -47,6 +48,7 @@ interface MarqueeState {
 export function Canvas(): JSX.Element {
   const tree = useTree()
   const tokens = useTokens()
+  const settings = useDocumentSettings()
   const theme = useSessionStore((s) => s.theme)
   const activeBreakpoint = useSessionStore((s) => s.activeBreakpoint)
   const setSelectedIds = useSessionStore((s) => s.setSelectedIds)
@@ -165,16 +167,25 @@ export function Canvas(): JSX.Element {
       onPointerUp={finishMarquee}
       onPointerCancel={finishMarquee}
     >
-      <div
-        className={styles.page}
-        data-theme={theme}
-        data-breakpoint={activeBreakpoint}
-        style={pageStyle}
-      >
-        <StyleResolverProvider value={resolve}>
-          <CanvasNode node={annotated} />
-        </StyleResolverProvider>
-      </div>
+      <CanvasContextMenu>
+        <div
+          className={styles.page}
+          data-theme={theme}
+          data-breakpoint={activeBreakpoint}
+          style={pageStyle}
+        >
+          <StyleResolverProvider value={resolve}>
+            <CanvasNodeBoundary node={annotated} />
+          </StyleResolverProvider>
+          {settings.gridVisible ? (
+            <div className={styles.gridOverlay} aria-hidden data-testid="grid-overlay">
+              {Array.from({ length: 12 }, (_, i) => (
+                <span key={i} className={styles.gridColumn} />
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </CanvasContextMenu>
       {marqueeStyle && <div className={styles.marquee} style={marqueeStyle} aria-hidden />}
     </div>
   )

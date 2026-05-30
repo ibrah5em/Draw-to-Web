@@ -58,16 +58,44 @@
   gap: 1px;
 }
 
+.issueRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-1);
+}
+
 .issue {
   display: flex;
   align-items: flex-start;
   gap: var(--sp-2);
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: var(--sp-1) var(--sp-2);
   border-radius: 3px;
   font-size: var(--text-sm);
   color: var(--text-primary);
   text-align: left;
+}
+
+.fixBtn {
+  flex-shrink: 0;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.fixBtn:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
 }
 
 .issueButton {

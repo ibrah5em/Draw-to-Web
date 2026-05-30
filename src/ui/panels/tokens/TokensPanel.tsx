@@ -12,11 +12,11 @@
  */
 
 import * as Tabs from '@radix-ui/react-tabs'
-import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
-import type { JSX } from 'react'
+import { ChevronDown, ChevronUp, Download, Plus, Upload } from 'lucide-react'
+import { useRef, type JSX } from 'react'
 
 import type { ColorTokenValue, TokenCategory, TokenDefinition } from '@document/types'
-import { useTokens } from '@store/documentStore'
+import { useDocumentMeta, useTokens } from '@store/documentStore'
 import { useSessionStore } from '@store/sessionStore'
 import { addToken } from '@store/tokenOps'
 
@@ -24,6 +24,7 @@ import { ThemeToggle } from '../../topbar/ThemeToggle'
 import { findSurfaceColor } from './contrast'
 import { ColorTokenRow, ScalarTokenRow } from './TokenRow'
 import { colorDefault, nextTokenId, scalarDefault } from './tokenDefaults'
+import { downloadTokens, importTokensFromFile } from './tokenIO'
 import styles from './TokensPanel.module.css'
 
 type ScalarCategory = Exclude<TokenCategory, 'color'>
@@ -132,6 +133,20 @@ export function TokensPanel({
   showCollapse = true,
 }: TokensPanelProps): JSX.Element {
   const tokens = useTokens()
+  const meta = useDocumentMeta()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const onImportFile = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = event.target.files?.[0]
+    event.target.value = '' // allow re-importing the same file
+    if (!file) return
+    void importTokensFromFile(file).catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err)
+      if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+        window.alert(`Token import failed: ${message}`)
+      }
+    })
+  }
 
   return (
     <Tabs.Root defaultValue="colors" className={styles.panel}>
@@ -144,6 +159,30 @@ export function TokensPanel({
           ))}
         </Tabs.List>
         <div className={styles.headerRight}>
+          <button
+            className={styles.ioBtn}
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="Import tokens from JSON"
+            title="Import tokens (JSON)"
+          >
+            <Upload size={14} />
+          </button>
+          <button
+            className={styles.ioBtn}
+            onClick={() => downloadTokens(tokens, meta.name)}
+            aria-label="Export tokens to JSON"
+            title="Export tokens (JSON)"
+          >
+            <Download size={14} />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            onChange={onImportFile}
+            hidden
+            aria-hidden
+          />
           <ThemeToggle />
           {showCollapse ? (
             <button

@@ -17,11 +17,13 @@ import { PropertiesPanel } from './panels/properties/PropertiesPanel'
 import { InsertDndProvider } from './sidebar/InsertDnd'
 import { InsertSidebar } from './sidebar/InsertSidebar'
 import { BreakpointSwitcher } from './topbar/BreakpointSwitcher'
+import { CanvasViewToggles } from './topbar/CanvasViewToggles'
 import { ExportButton } from './topbar/ExportButton'
 import { MenuBar } from './topbar/MenuBar'
 import { SaveIndicator } from './topbar/SaveIndicator'
 import { ThemeToggle } from './topbar/ThemeToggle'
 import { ViewToggles, type ViewToggle } from './topbar/ViewToggles'
+import { ConflictResolver } from './dialogs/ConflictResolver'
 import { DocumentSettings } from './dialogs/DocumentSettings'
 import { useEditorShortcuts } from './shortcuts/useEditorShortcuts'
 import styles from './App.module.css'
@@ -204,6 +206,7 @@ export function App(): JSX.Element {
         <div className={styles.titlebarActions}>
           <SaveIndicator />
           <BreakpointSwitcher />
+          <CanvasViewToggles />
           <ViewToggles toggles={panelToggles} />
           <ThemeToggle />
           <ExportButton />
@@ -326,6 +329,7 @@ export function App(): JSX.Element {
       />
 
       <DocumentSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <ConflictResolver />
 
       <footer className={styles.statusbar} />
       {/* expose welcome opener for future MenuBar wiring */}

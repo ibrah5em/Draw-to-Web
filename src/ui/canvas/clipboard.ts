@@ -198,3 +198,19 @@ export function moveZOrder(delta: 1 | -1): boolean {
   dispatch({ kind: 'reorder', id: found.node.id, toIndex: target })
   return true
 }
+
+/**
+ * Move the first selected element to the front (`end` = last sibling, painted
+ * last / on top) or back (`start` = first sibling) of its parent. Drives the
+ * context-menu "Bring to front" / "Send to back" actions (L-CAN-08). No-op at
+ * the relevant end or on the root.
+ */
+export function moveToEdge(edge: 'front' | 'back'): boolean {
+  const found = firstSelectedLocation()
+  if (!found || found.parent === null) return false
+  const last = found.parent.children.length - 1
+  const target = edge === 'front' ? last : 0
+  if (target === found.index) return false
+  dispatch({ kind: 'reorder', id: found.node.id, toIndex: target })
+  return true
+}

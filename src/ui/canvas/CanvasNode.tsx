@@ -17,6 +17,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { ErrorBoundary } from 'react-error-boundary'
 import {
   createElement,
   useEffect,
@@ -35,8 +36,10 @@ import type { ElementNode, TextNode } from '@document/types'
 import { dispatch } from '@store/dispatch'
 import { useSessionStore } from '@store/sessionStore'
 
+import { useViewPrefs } from '../state/viewPrefs'
 import { containerDropId } from '../sidebar/insertDrop'
 import { nodeStyle } from './buildStyle'
+import { NodeErrorFallback } from './NodeErrorFallback'
 import { useStyleResolver } from './resolverContext'
 
 /** Intrinsic tag used for a container, derived from its semantic role. */
@@ -82,6 +85,27 @@ function useNodeSortable(id: string): SortableHandle {
 }
 
 /**
+ * Per-element error boundary wrapper (L-CAN-09).
+ *
+ * Wraps a single {@link CanvasNode} so that if its render throws, only this
+ * node is replaced by {@link NodeErrorFallback} — siblings and the rest of
+ * the canvas keep rendering. `resetKeys` is the node reference: because every
+ * edit flows through immer, a fix to this node produces a new reference and
+ * auto-resets the boundary, so a corrected element re-renders without a
+ * manual retry.
+ *
+ * Used at the canvas root (see `Canvas.tsx`) and for every child inside a
+ * container, so the isolation holds at any depth.
+ */
+export function CanvasNodeBoundary({ node }: { node: ElementNode }): JSX.Element {
+  return (
+    <ErrorBoundary FallbackComponent={NodeErrorFallback} resetKeys={[node]}>
+      <CanvasNode node={node} />
+    </ErrorBoundary>
+  )
+}
+
+/**
  * Render a single document element and (for containers) its descendants.
  *
  * @param node - The element to render.
@@ -93,9 +117,14 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
   const toggleSelected = useSessionStore((s) => s.toggleSelected)
   const activeBreakpoint = useSessionStore((s) => s.activeBreakpoint)
   const activeState = useSessionStore((s) => s.activeState)
+  const hoverPreview = useViewPrefs((s) => s.hoverPreview)
   const sortable = useNodeSortable(node.id)
 
-  const base = nodeStyle(node, resolve, activeBreakpoint, activeState)
+  // Hover-preview (L-TOP-03) forces every node into its `:hover` render state
+  // without mutating the document; otherwise we honour the session's active
+  // pseudo-state (L-PRP-05).
+  const effectiveState = hoverPreview ? 'hover' : activeState
+  const base = nodeStyle(node, resolve, activeBreakpoint, effectiveState)
   const styleWithSelection = selected ? { ...base, ...SELECTED_OUTLINE } : base
   const style: CSSProperties = { ...styleWithSelection, ...sortable.style }
 
@@ -266,7 +295,7 @@ function ContainerNodeView({
     },
     <SortableContext items={childIds} strategy={verticalListSortingStrategy}>
       {node.children.map((child) => (
-        <CanvasNode key={child.id} node={child} />
+        <CanvasNodeBoundary key={child.id} node={child} />
       ))}
     </SortableContext>
   )

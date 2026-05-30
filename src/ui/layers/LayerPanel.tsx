@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 
 import type { ElementNode, ElementType } from '@document/types'
+import { dispatch } from '@store/dispatch'
 import { useTree } from '@store/documentStore'
 import { useSessionStore } from '@store/sessionStore'
 
@@ -102,7 +103,31 @@ function LayerRow({ node, style }: NodeRendererProps<ElementNode>): JSX.Element 
       )}
 
       <Icon size={14} className={styles.typeIcon} />
-      <span className={styles.name}>{layerLabel(el)}</span>
+      {node.isEditing ? (
+        <input
+          className={styles.renameInput}
+          autoFocus
+          defaultValue={layerLabel(el)}
+          onClick={(event) => event.stopPropagation()}
+          onBlur={(event) => node.submit(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') node.submit(event.currentTarget.value)
+            if (event.key === 'Escape') node.reset()
+          }}
+          aria-label="Rename layer"
+          spellCheck={false}
+        />
+      ) : (
+        <span
+          className={styles.name}
+          onDoubleClick={(event) => {
+            event.stopPropagation()
+            node.edit()
+          }}
+        >
+          {layerLabel(el)}
+        </span>
+      )}
 
       <button
         className={styles.action}
@@ -173,6 +198,20 @@ export function LayerPanel(): JSX.Element {
     setSelectedIds(ids)
   }
 
+  // Rename in place (L-LYR-03). Persists to `element.name` through the C3
+  // dispatcher so it is one undoable history entry; an empty/whitespace name
+  // is treated as "clear the custom name" and reverts the row to the type
+  // label on next render.
+  const handleRename = ({ id, name }: { id: string; name: string }): void => {
+    const trimmed = name.trim()
+    dispatch({
+      kind: 'updateNode',
+      id,
+      path: ['name'],
+      value: trimmed === '' ? undefined : trimmed,
+    })
+  }
+
   return (
     <div className={styles.panel}>
       <div className={styles.header}>Layers</div>
@@ -190,6 +229,7 @@ export function LayerPanel(): JSX.Element {
             disableMultiSelection
             selection={selectedIds[0]}
             onSelect={handleSelect}
+            onRename={handleRename}
           >
             {LayerRow}
           </Tree>

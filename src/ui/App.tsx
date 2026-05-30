@@ -12,14 +12,18 @@ import { useDeleteSelection, useLivePreviewShortcut } from './canvas/useDeleteSe
 import { openLivePreview } from './preview/livePreview'
 import { Welcome, type WelcomeTemplate } from './dialogs/Welcome'
 import { LayerPanel } from './layers/LayerPanel'
+import { BottomDock } from './panels/BottomDock'
 import { PropertiesPanel } from './panels/properties/PropertiesPanel'
-import { TokensPanel } from './panels/tokens/TokensPanel'
 import { InsertDndProvider } from './sidebar/InsertDnd'
 import { InsertSidebar } from './sidebar/InsertSidebar'
 import { BreakpointSwitcher } from './topbar/BreakpointSwitcher'
+import { ExportButton } from './topbar/ExportButton'
 import { MenuBar } from './topbar/MenuBar'
+import { SaveIndicator } from './topbar/SaveIndicator'
 import { ThemeToggle } from './topbar/ThemeToggle'
 import { ViewToggles, type ViewToggle } from './topbar/ViewToggles'
+import { DocumentSettings } from './dialogs/DocumentSettings'
+import { useEditorShortcuts } from './shortcuts/useEditorShortcuts'
 import styles from './App.module.css'
 
 /** localStorage keys for each persisted panel group. */
@@ -96,9 +100,12 @@ export function App(): JSX.Element {
   const [welcomeOpen, setWelcomeOpen] = useState(
     () => useSessionStore.getState().currentFilePath === null
   )
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const openSettings = (): void => setSettingsOpen(true)
 
   useDeleteSelection()
   useLivePreviewShortcut(() => void openLivePreview())
+  useEditorShortcuts()
 
   const closeWelcome = (): void => setWelcomeOpen(false)
   const openWelcome = (): void => setWelcomeOpen(true)
@@ -193,11 +200,13 @@ export function App(): JSX.Element {
   return (
     <div className={styles.app}>
       <header className={styles.titlebar}>
-        <MenuBar panels={panelToggles} />
+        <MenuBar panels={panelToggles} onOpenSettings={openSettings} />
         <div className={styles.titlebarActions}>
+          <SaveIndicator />
           <BreakpointSwitcher />
           <ViewToggles toggles={panelToggles} />
           <ThemeToggle />
+          <ExportButton />
         </div>
       </header>
 
@@ -297,8 +306,8 @@ export function App(): JSX.Element {
             collapsedSize="34px"
             onResize={() => setTokensCollapsed(tokensRef.current?.isCollapsed() ?? false)}
           >
-            <section className={styles.tokens} aria-label="Tokens">
-              <TokensPanel
+            <section className={styles.tokens} aria-label="Tokens and Problems">
+              <BottomDock
                 collapsed={tokensCollapsed}
                 onToggleCollapse={() => togglePanel(tokensRef)}
               />
@@ -315,6 +324,8 @@ export function App(): JSX.Element {
         onTemplate={openTemplate}
         onRecent={(path) => void openRecent(path)}
       />
+
+      <DocumentSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       <footer className={styles.statusbar} />
       {/* expose welcome opener for future MenuBar wiring */}

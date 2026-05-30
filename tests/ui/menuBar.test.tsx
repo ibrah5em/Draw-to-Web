@@ -59,10 +59,10 @@ function menuItem(text: string, role = 'menuitem'): HTMLElement {
 }
 
 describe('MenuBar', () => {
-  it('renders File / Edit / View triggers', () => {
+  it('renders File / Edit / View / Help triggers', () => {
     render()
     const labels = [...container.querySelectorAll('button')].map((b) => b.textContent)
-    expect(labels).toEqual(['File', 'Edit', 'View'])
+    expect(labels).toEqual(['File', 'Edit', 'View', 'Help'])
   })
 
   it('File → New resets to a blank document', () => {

@@ -6,18 +6,33 @@
  * the outcome to the user. The heavy lifting all lives in `src/export/` —
  * this is just a thin glue function for the menu / topbar to call.
  *
- * A future Export Options dialog (L-DLG-03) will replace the default
- * options bag with user-driven values.
+ * The Export Options dialog (L-DLG-03) collects the user-driven option bag
+ * and passes it here; callers that just want a one-shot export (the File
+ * menu) omit it and get the pipeline defaults.
  */
 
-import { exportProject } from '@export/index'
+import { exportProject, type ExportOptions } from '@export/index'
 import { useDocumentStore } from '@store/documentStore'
 
-/** Run the export pipeline and return a user-presentable message. */
-export async function runExport(): Promise<{ ok: boolean; message: string }> {
+/** Options accepted by {@link runExport}; a subset of the pipeline's bag. */
+export type RunExportOptions = Omit<ExportOptions, 'dryRun' | 'fetchFonts'>
+
+/**
+ * Run the export pipeline and return a user-presentable message.
+ *
+ * @param options - Optional pipeline tuning (minify / inlineJS / theme /
+ *   onProgress …). The project name defaults to the document name when the
+ *   caller does not override it.
+ */
+export async function runExport(
+  options: RunExportOptions = {}
+): Promise<{ ok: boolean; message: string }> {
   const doc = useDocumentStore.getState().document
   try {
-    const result = await exportProject(doc, { projectName: doc.meta.name })
+    const result = await exportProject(doc, {
+      projectName: doc.meta.name,
+      ...options,
+    })
     if (result.success) {
       return {
         ok: true,

@@ -9,7 +9,7 @@
 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { Check } from 'lucide-react'
-import type { JSX } from 'react'
+import { useState, type JSX } from 'react'
 
 import { useDocumentStore } from '@store/documentStore'
 import { redo, undo } from '@store/dispatch'
@@ -20,6 +20,7 @@ import { useSessionStore } from '@store/sessionStore'
 import { deleteSelected } from '../canvas/useDeleteSelection'
 import { runExport } from '../export/runExport'
 import { openLivePreview } from '../preview/livePreview'
+import { ShortcutsHelp } from '../shortcuts/ShortcutsHelp'
 
 import type { ViewToggle } from './ViewToggles'
 import styles from './MenuBar.module.css'
@@ -63,10 +64,18 @@ function Menu({ label, children }: { label: string; children: JSX.Element }): JS
   )
 }
 
-/** The File / Edit / View menu bar. */
-export function MenuBar({ panels }: { panels: ReadonlyArray<ViewToggle> }): JSX.Element {
+/** The File / Edit / View / Help menu bar. */
+export function MenuBar({
+  panels,
+  onOpenSettings,
+}: {
+  panels: ReadonlyArray<ViewToggle>
+  /** Open the Document Settings dialog (L-DLG-02), owned by the shell. */
+  onOpenSettings?: () => void
+}): JSX.Element {
   const theme = useSessionStore((s) => s.theme)
   const toggleTheme = useSessionStore((s) => s.toggleTheme)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   return (
     <nav className={styles.bar} aria-label="Main menu">
@@ -75,6 +84,8 @@ export function MenuBar({ panels }: { panels: ReadonlyArray<ViewToggle> }): JSX.
           <MenuItem label="New" shortcut="Ctrl+N" onSelect={newDocument} />
           <MenuItem label="Open…" shortcut="Ctrl+O" onSelect={() => void openProject()} />
           <MenuItem label="Save" shortcut="Ctrl+S" onSelect={() => void saveProject()} />
+          <DropdownMenu.Separator className={styles.separator} />
+          <MenuItem label="Document settings…" onSelect={() => onOpenSettings?.()} />
           <DropdownMenu.Separator className={styles.separator} />
           <MenuItem
             label="Export…"
@@ -139,6 +150,14 @@ export function MenuBar({ panels }: { panels: ReadonlyArray<ViewToggle> }): JSX.
           </DropdownMenu.CheckboxItem>
         </>
       </Menu>
+
+      <Menu label="Help">
+        <>
+          <MenuItem label="Keyboard shortcuts…" onSelect={() => setShortcutsOpen(true)} />
+        </>
+      </Menu>
+
+      <ShortcutsHelp open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </nav>
   )
 }

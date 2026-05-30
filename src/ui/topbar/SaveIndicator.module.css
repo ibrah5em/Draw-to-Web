@@ -1,0 +1,46 @@
+.indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  height: 24px;
+  padding: 0 var(--sp-2);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  max-width: 220px;
+}
+
+.indicator:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border);
+}
+
+.indicator:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.dot {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.check {
+  flex-shrink: 0;
+  color: var(--success);
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.star {
+  color: var(--text-secondary);
+}

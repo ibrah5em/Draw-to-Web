@@ -31,6 +31,12 @@ type ScalarCategory = Exclude<TokenCategory, 'color'>
 interface TokensPanelProps {
   readonly collapsed: boolean
   readonly onToggleCollapse: () => void
+  /**
+   * Render the panel's own collapse chevron. Defaults to `true` for
+   * standalone use; the bottom dock (which owns a shared collapse control
+   * across the Tokens / Problems tabs) passes `false` to avoid a duplicate.
+   */
+  readonly showCollapse?: boolean
 }
 
 const TAB_DEFS = [
@@ -120,7 +126,11 @@ function ColorList({
 }
 
 /** The Tokens panel: tab bar (always visible) over a collapsible body. */
-export function TokensPanel({ collapsed, onToggleCollapse }: TokensPanelProps): JSX.Element {
+export function TokensPanel({
+  collapsed,
+  onToggleCollapse,
+  showCollapse = true,
+}: TokensPanelProps): JSX.Element {
   const tokens = useTokens()
 
   return (
@@ -135,14 +145,16 @@ export function TokensPanel({ collapsed, onToggleCollapse }: TokensPanelProps): 
         </Tabs.List>
         <div className={styles.headerRight}>
           <ThemeToggle />
-          <button
-            className={styles.collapseBtn}
-            onClick={onToggleCollapse}
-            aria-label={collapsed ? 'Expand tokens panel' : 'Collapse tokens panel'}
-            title={collapsed ? 'Expand' : 'Collapse'}
-          >
-            {collapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
+          {showCollapse ? (
+            <button
+              className={styles.collapseBtn}
+              onClick={onToggleCollapse}
+              aria-label={collapsed ? 'Expand tokens panel' : 'Collapse tokens panel'}
+              title={collapsed ? 'Expand' : 'Collapse'}
+            >
+              {collapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+          ) : null}
         </div>
       </div>
 

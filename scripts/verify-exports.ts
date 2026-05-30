@@ -16,13 +16,7 @@
  */
 
 import { createServer, type Server } from 'node:http'
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { extname, join } from 'node:path'
 
@@ -315,9 +309,7 @@ async function main(): Promise<void> {
     process.stdout.write(`  ${r.ok ? '[PASS]' : '[FAIL]'} ${r.label} -- ${r.detail}\n`)
     if (!r.ok) failed++
   }
-  process.stdout.write(
-    `\n[verify-exports] ${results.length - failed}/${results.length} passed\n`
-  )
+  process.stdout.write(`\n[verify-exports] ${results.length - failed}/${results.length} passed\n`)
   process.exit(failed === 0 ? 0 : 1)
 }
 

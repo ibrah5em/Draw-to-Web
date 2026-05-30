@@ -15,12 +15,13 @@
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState, type JSX } from 'react'
 
+import { AssetsPanel } from './assets/AssetsPanel'
 import { TokensPanel } from './tokens/TokensPanel'
 import { ValidationConsole } from './validation/ValidationConsole'
 import { useValidationReport } from './validation/useValidationReport'
 import styles from './BottomDock.module.css'
 
-type DockTab = 'tokens' | 'problems'
+type DockTab = 'tokens' | 'problems' | 'assets'
 
 interface BottomDockProps {
   readonly collapsed: boolean
@@ -61,6 +62,15 @@ export function BottomDock({ collapsed, onToggleCollapse }: BottomDockProps): JS
             </span>
           ) : null}
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'assets'}
+          className={tab === 'assets' ? styles.tabActive : styles.tab}
+          onClick={() => setTab('assets')}
+        >
+          Assets
+        </button>
 
         <button
           type="button"
@@ -89,6 +99,9 @@ export function BottomDock({ collapsed, onToggleCollapse }: BottomDockProps): JS
         </div>
         <div className={tab === 'problems' ? styles.pane : styles.paneHidden}>
           <ValidationConsole />
+        </div>
+        <div className={tab === 'assets' ? styles.pane : styles.paneHidden}>
+          <AssetsPanel />
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import {
   copySelection,
   duplicateSelection,
   groupSelection,
+  moveToEdge,
   moveZOrder,
   pasteClipboard,
   selectAllSiblings,
@@ -114,6 +115,19 @@ describe('clipboard helpers (L-DLG-05)', () => {
     useSessionStore.getState().setSelectedIds([groupId])
     expect(ungroupSelection()).toBe(true)
     expect(rootChildIds()).toHaveLength(2)
+  })
+
+  it('moveToEdge sends to back and brings to front (L-CAN-08)', () => {
+    const ids = seedChildren(3)
+    // Bring the middle element to the front (last sibling).
+    useSessionStore.getState().setSelectedIds([ids[1]!])
+    expect(moveToEdge('front')).toBe(true)
+    expect(rootChildIds()).toEqual([ids[0], ids[2], ids[1]])
+    // Send it to the back (first sibling).
+    expect(moveToEdge('back')).toBe(true)
+    expect(rootChildIds()).toEqual([ids[1], ids[0], ids[2]])
+    // Already at back → no-op.
+    expect(moveToEdge('back')).toBe(false)
   })
 
   it('copy/paste with nothing selected does not change the tree', () => {

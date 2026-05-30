@@ -12,12 +12,14 @@
  * dock owns sizing + collapse, this component only renders the list.
  */
 
-import { AlertCircle, AlertTriangle, Info } from 'lucide-react'
+import { AlertCircle, AlertTriangle, Info, Wand2 } from 'lucide-react'
 import type { JSX } from 'react'
 
 import type { ValidationIssue } from '@document/validation'
+import { dispatch } from '@store/dispatch'
 import { useSessionStore } from '@store/sessionStore'
 
+import { quickFixFor } from './quickFix'
 import { useValidationReport } from './useValidationReport'
 import styles from './ValidationConsole.module.css'
 
@@ -56,7 +58,7 @@ function IssueRow({
   issue: ValidationIssue
 }): JSX.Element {
   const jumpable = issue.nodeId !== undefined
-  const className = `${styles.issue} ${styles[severity]} ${jumpable ? styles.jumpable : ''}`
+  const fixOp = quickFixFor(issue)
   const body = (
     <>
       <span className={styles.issueIcon}>{ICON[severity]}</span>
@@ -66,19 +68,31 @@ function IssueRow({
       </span>
     </>
   )
-  if (!jumpable) {
-    return <li className={className}>{body}</li>
-  }
+  const rowClass = `${styles.issue} ${styles[severity]}`
   return (
-    <li>
-      <button
-        type="button"
-        className={`${className} ${styles.issueButton}`}
-        onClick={() => jumpToElement(issue.nodeId as string)}
-        title="Select this element on the canvas"
-      >
-        {body}
-      </button>
+    <li className={styles.issueRow}>
+      {jumpable ? (
+        <button
+          type="button"
+          className={`${rowClass} ${styles.jumpable} ${styles.issueButton}`}
+          onClick={() => jumpToElement(issue.nodeId as string)}
+          title="Select this element on the canvas"
+        >
+          {body}
+        </button>
+      ) : (
+        <span className={rowClass}>{body}</span>
+      )}
+      {fixOp !== null ? (
+        <button
+          type="button"
+          className={styles.fixBtn}
+          onClick={() => dispatch(fixOp)}
+          title="Apply the suggested fix"
+        >
+          <Wand2 size={12} /> Fix
+        </button>
+      ) : null}
     </li>
   )
 }

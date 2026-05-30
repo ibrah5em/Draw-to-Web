@@ -1,0 +1,48 @@
+.fallback {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  max-width: 100%;
+  margin: var(--sp-1);
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--danger);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+  font-family: var(--font);
+  font-size: var(--text-xs);
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.text {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.detail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.retry {
+  flex-shrink: 0;
+  padding: 0 var(--sp-2);
+  border: 1px solid var(--danger);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--danger);
+  font-family: var(--font);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.retry:hover {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+}

@@ -10,6 +10,13 @@
  * Visibility / lock are editor-only affordances held in local state here.
  * Propagating them to the canvas / generator needs a shared session field
  * (C5, Yousef's lane) and is intentionally deferred.
+ *
+ * Virtualization (Y-PRF-03): `react-arborist` renders rows through
+ * `react-window`'s `FixedSizeList`, so only the visible window of rows is
+ * mounted. The two preconditions are wired below — a bounded `height` from
+ * `useElementSize` and a fixed `rowHeight` — which is what keeps a 500-node
+ * tree scrolling at 60 fps; `overscanCount` mounts a few rows beyond the
+ * viewport so fast scrolls don't flash blank rows.
  */
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type JSX } from 'react'
@@ -224,6 +231,7 @@ export function LayerPanel(): JSX.Element {
             width={size.width}
             height={size.height}
             rowHeight={26}
+            overscanCount={8}
             indent={14}
             disableDrag
             disableMultiSelection

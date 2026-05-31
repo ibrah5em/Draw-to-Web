@@ -20,6 +20,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { ErrorBoundary } from 'react-error-boundary'
 import {
   createElement,
+  memo,
   useEffect,
   useRef,
   useState,
@@ -85,32 +86,19 @@ function useNodeSortable(id: string): SortableHandle {
 }
 
 /**
- * Per-element error boundary wrapper (L-CAN-09).
- *
- * Wraps a single {@link CanvasNode} so that if its render throws, only this
- * node is replaced by {@link NodeErrorFallback} — siblings and the rest of
- * the canvas keep rendering. `resetKeys` is the node reference: because every
- * edit flows through immer, a fix to this node produces a new reference and
- * auto-resets the boundary, so a corrected element re-renders without a
- * manual retry.
- *
- * Used at the canvas root (see `Canvas.tsx`) and for every child inside a
- * container, so the isolation holds at any depth.
- */
-export function CanvasNodeBoundary({ node }: { node: ElementNode }): JSX.Element {
-  return (
-    <ErrorBoundary FallbackComponent={NodeErrorFallback} resetKeys={[node]}>
-      <CanvasNode node={node} />
-    </ErrorBoundary>
-  )
-}
-
-/**
  * Render a single document element and (for containers) its descendants.
+ *
+ * Wrapped in {@link memo} (Y-PRF-01): the only prop is `node`, and every
+ * document mutation flows through immer, so untouched subtrees keep their
+ * `ElementNode` reference. When a parent re-renders (e.g. a sibling changed),
+ * memo's default shallow prop compare sees the unchanged `node` reference and
+ * skips this subtree — the lever that holds the 100-element drag at 60 fps.
+ * Selection / breakpoint / state changes still re-render through the
+ * `useSessionStore` subscriptions below, which memo does not block.
  *
  * @param node - The element to render.
  */
-export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
+export const CanvasNode = memo(function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
   const resolve = useStyleResolver()
   const selected = useSessionStore((s) => s.selectedIds.includes(node.id))
   const setSelectedIds = useSessionStore((s) => s.setSelectedIds)
@@ -258,7 +246,35 @@ export function CanvasNode({ node }: { node: ElementNode }): JSX.Element {
         />
       )
   }
-}
+})
+
+/**
+ * Per-element error boundary wrapper (L-CAN-09).
+ *
+ * Wraps a single {@link CanvasNode} so that if its render throws, only this
+ * node is replaced by {@link NodeErrorFallback} — siblings and the rest of
+ * the canvas keep rendering. `resetKeys` is the node reference: because every
+ * edit flows through immer, a fix to this node produces a new reference and
+ * auto-resets the boundary, so a corrected element re-renders without a
+ * manual retry.
+ *
+ * Also wrapped in {@link memo} (Y-PRF-01) so it is the memoised unit the
+ * parent container maps over: an unchanged child `node` reference short-
+ * circuits both the boundary and its `CanvasNode` subtree in one shallow
+ * compare. Used at the canvas root (see `Canvas.tsx`) and for every child
+ * inside a container, so the isolation holds at any depth.
+ */
+export const CanvasNodeBoundary = memo(function CanvasNodeBoundary({
+  node,
+}: {
+  node: ElementNode
+}): JSX.Element {
+  return (
+    <ErrorBoundary FallbackComponent={NodeErrorFallback} resetKeys={[node]}>
+      <CanvasNode node={node} />
+    </ErrorBoundary>
+  )
+})
 
 interface ContainerNodeViewProps {
   readonly Tag: ContainerTag

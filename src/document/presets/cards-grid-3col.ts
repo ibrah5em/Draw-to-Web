@@ -28,6 +28,14 @@ const defaultCards: ReadonlyArray<PresetArgs> = [
   { iconName: 'palette', title: 'Themeable', body: 'Tokens drive light + dark out of the box.' },
 ]
 
+/**
+ * Builds the `cards-grid-3col` preset subtree (see file header for composition).
+ *
+ * @param args - Per-preset argument bag; `cards` is an optional array of
+ *   `card-basic` args.
+ * @param ctx - Preset context supplying `generateId`.
+ * @returns The root {@link ElementNode} of the preset subtree.
+ */
 export const cardsGrid3Col: PresetFactory = (args, ctx: PresetContext): ElementNode => {
   const cardArgs = asArgsArray(args['cards'], defaultCards)
   return {

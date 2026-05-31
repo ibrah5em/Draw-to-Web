@@ -17,6 +17,13 @@ function str(args: PresetArgs, key: string, fallback: string): string {
   return typeof v === 'string' ? v : fallback
 }
 
+/**
+ * Builds the `hero-centered` preset subtree (see file header for composition).
+ *
+ * @param args - Per-preset argument bag (all optional).
+ * @param ctx - Preset context supplying `generateId`.
+ * @returns The root {@link ElementNode} of the preset subtree.
+ */
 export const heroCentered: PresetFactory = (args, ctx: PresetContext): ElementNode => ({
   type: 'container',
   id: ctx.generateId(),

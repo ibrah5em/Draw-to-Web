@@ -38,6 +38,14 @@ const defaultLinks: ReadonlyArray<NavLink> = [
   { label: 'About', href: '#about' },
 ]
 
+/**
+ * Builds the `nav-fixed` preset subtree (see file header for composition).
+ *
+ * @param args - Per-preset argument bag; `links` is an optional array of
+ *   `{ label, href }`.
+ * @param ctx - Preset context supplying `generateId`.
+ * @returns The root {@link ElementNode} of the preset subtree.
+ */
 export const navFixed: PresetFactory = (args, ctx: PresetContext): ElementNode => {
   const links = asLinks(args['links'], defaultLinks)
   return {

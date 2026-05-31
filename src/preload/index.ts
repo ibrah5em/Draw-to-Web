@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   openProject: () => ipcRenderer.invoke('project:open'),
 
+  openProjectByPath: (filePath: string) => ipcRenderer.invoke('project:open-path', filePath),
+
   getAppVersion: () => APP_VERSION,
 
   onMenuAction: (callback: (action: string) => void) => {

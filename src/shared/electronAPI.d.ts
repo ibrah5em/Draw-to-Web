@@ -45,6 +45,19 @@ interface ElectronAPI {
     json?: string
     error?: string
   }>
+  /**
+   * Opens a `.dtw` project by absolute path without a dialog — backs the
+   * Recent-files list (I-ELE-07). Runs the same validation as `openProject`
+   * (sanitize → `.dtw` extension → existence → 10 MB cap) and refreshes the
+   * MRU entry on success. A stale path (file moved / deleted) resolves to
+   * `{ success: false }` and is pruned from the recent list.
+   */
+  openProjectByPath: (filePath: string) => Promise<{
+    success: boolean
+    filePath?: string
+    json?: string
+    error?: string
+  }>
   /** Returns the application version string (synchronous, stamped at preload startup). */
   getAppVersion: () => string
   /** Subscribes to menu actions sent from the main process. Returns an unsubscribe function. */

@@ -414,6 +414,100 @@ describe('recent files IPC', () => {
   })
 })
 
+// ───────────── recent-files auto-population + open-by-path (I-ELE-07) ─────────────
+
+describe('recent files auto-population on save / open', () => {
+  beforeEach(() => {
+    electronMock.app.getPath.mockImplementation((name: string) =>
+      name === 'userData' ? tempDir : '/tmp'
+    )
+  })
+
+  it('project:save pushes the saved path onto the recent list', async () => {
+    const filePath = join(tempDir, 'saved.dtw')
+    electronMock.dialog.showSaveDialog.mockResolvedValueOnce({ canceled: false, filePath })
+
+    await invoke('project:save', JSON.stringify({ version: 1 }), 'saved')
+
+    const list = await invoke<readonly { path: string }[]>('recent:list')
+    expect(list.map((e) => e.path)).toEqual([filePath])
+  })
+
+  it('project:open pushes the opened path onto the recent list', async () => {
+    const filePath = join(tempDir, 'opened.dtw')
+    await writeFile(filePath, '{}', 'utf8')
+    electronMock.dialog.showOpenDialog.mockResolvedValueOnce({
+      canceled: false,
+      filePaths: [filePath],
+    })
+
+    await invoke('project:open')
+
+    const list = await invoke<readonly { path: string }[]>('recent:list')
+    expect(list.map((e) => e.path)).toEqual([filePath])
+  })
+
+  it('a canceled save leaves the recent list untouched', async () => {
+    electronMock.dialog.showSaveDialog.mockResolvedValueOnce({ canceled: true })
+    await invoke('project:save', '{}', 'x')
+    const list = await invoke<readonly unknown[]>('recent:list')
+    expect(list).toEqual([])
+  })
+})
+
+describe('project:open-path IPC handler', () => {
+  beforeEach(() => {
+    electronMock.app.getPath.mockImplementation((name: string) =>
+      name === 'userData' ? tempDir : '/tmp'
+    )
+  })
+
+  it('reads a .dtw file by absolute path and bumps it in recents', async () => {
+    const filePath = join(tempDir, 'byPath.dtw')
+    const json = JSON.stringify({ version: 1, elements: [] })
+    await writeFile(filePath, json, 'utf8')
+
+    const result = await invoke<{ success: boolean; json?: string; filePath?: string }>(
+      'project:open-path',
+      filePath
+    )
+    expect(result.success).toBe(true)
+    expect(result.json).toBe(json)
+    expect(result.filePath).toBe(filePath)
+
+    const list = await invoke<readonly { path: string }[]>('recent:list')
+    expect(list.map((e) => e.path)).toEqual([filePath])
+  })
+
+  it('rejects a non-string path without throwing', async () => {
+    const result = await invoke<{ success: boolean; error?: string }>('project:open-path', 42)
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Invalid path')
+  })
+
+  it('rejects files without the .dtw extension', async () => {
+    const filePath = join(tempDir, 'note.txt')
+    await writeFile(filePath, '{}', 'utf8')
+    const result = await invoke<{ success: boolean; error?: string }>('project:open-path', filePath)
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('.dtw')
+  })
+
+  it('prunes a stale entry and fails when the file no longer exists', async () => {
+    const ghost = join(tempDir, 'ghost.dtw')
+    // Seed it into recents, then open by path while it is absent on disk.
+    await invoke('recent:add', ghost)
+    expect(await invoke<readonly unknown[]>('recent:list')).toHaveLength(1)
+
+    const result = await invoke<{ success: boolean; error?: string }>('project:open-path', ghost)
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('no longer exists')
+
+    const list = await invoke<readonly unknown[]>('recent:list')
+    expect(list).toEqual([])
+  })
+})
+
 // ───────────── watcher:start / watcher:stop (I-ELE-06) ─────────────
 
 describe('watcher IPC handlers', () => {

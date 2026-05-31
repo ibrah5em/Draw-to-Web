@@ -150,6 +150,53 @@ async function saveRecentFiles(files: readonly RecentFile[]): Promise<void> {
   await writeFile(recentFilesPath(), payload, 'utf8')
 }
 
+/**
+ * Upserts a project path into the MRU index: deduped by path, moved to the
+ * front, timestamp refreshed, capped at {@link RECENT_FILES_MAX}. Returns the
+ * updated list. Persisting is best-effort — a write failure still yields the
+ * in-memory list so callers reflect the action this session. Invoked by the
+ * `recent:add` handler and automatically on every successful open / save.
+ */
+async function pushRecentFile(filePath: string): Promise<RecentFile[]> {
+  const safe = sanitizePath(filePath)
+  if (!safe) return loadRecentFiles()
+
+  const existing = await loadRecentFiles()
+  const filtered = existing.filter((entry) => entry.path !== safe)
+  const next: RecentFile[] = [
+    { path: safe, name: basename(safe), lastOpened: new Date().toISOString() },
+    ...filtered,
+  ].slice(0, RECENT_FILES_MAX)
+
+  try {
+    await saveRecentFiles(next)
+  } catch {
+    // Persisting recents is best-effort; we still return the in-memory
+    // list so the UI reflects the user's action this session.
+  }
+  return next
+}
+
+/**
+ * Drops a path from the MRU index — used to prune entries that point at a
+ * file which has since been moved or deleted. Best-effort persist; returns
+ * the updated list. A no-op (returns the existing list) when the path is
+ * absent or unsanitizable.
+ */
+async function removeRecentFile(filePath: string): Promise<RecentFile[]> {
+  const safe = sanitizePath(filePath)
+  const existing = await loadRecentFiles()
+  if (!safe) return existing
+  const next = existing.filter((entry) => entry.path !== safe)
+  if (next.length === existing.length) return existing
+  try {
+    await saveRecentFiles(next)
+  } catch {
+    // Best-effort — a stale entry surviving one more session is harmless.
+  }
+  return next
+}
+
 /** Registers all IPC handlers. Call once on app ready. */
 export function registerIpcHandlers(): void {
   ipcMain.handle('export:zip', async (_event, zipBuffer: unknown, filename: unknown) => {
@@ -208,6 +255,7 @@ export function registerIpcHandlers(): void {
       const safe = sanitizePath(filePath)
       if (!safe) return { success: false, error: 'Invalid save path' }
       await writeFile(safe, json, 'utf8')
+      await pushRecentFile(safe)
       return { success: true, filePath: safe }
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
@@ -230,6 +278,34 @@ export function registerIpcHandlers(): void {
       if (Buffer.byteLength(data, 'utf8') > MAX_PROJECT_BYTES) {
         return { success: false, error: 'Project file exceeds size limit' }
       }
+      await pushRecentFile(safe)
+      return { success: true, filePath: safe, json: data }
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+    }
+  })
+
+  // Open a project by absolute path (no dialog) — backs the Recent-files
+  // list (I-ELE-07). Runs the same validation envelope as `project:open`
+  // (path sanitize → `.dtw` extension → existence → size cap) and refreshes
+  // the MRU entry on success so reopening bumps it to the front.
+  ipcMain.handle('project:open-path', async (_event, filePath: unknown) => {
+    if (typeof filePath !== 'string') return { success: false, error: 'Invalid path' }
+    const safe = sanitizePath(filePath)
+    if (!safe) return { success: false, error: 'Invalid open path' }
+    if (extname(safe).slice(1).toLowerCase() !== PROJECT_EXT) {
+      return { success: false, error: `Only .${PROJECT_EXT} files are supported` }
+    }
+    if (!existsSync(safe)) {
+      await removeRecentFile(safe)
+      return { success: false, error: 'File no longer exists' }
+    }
+    try {
+      const data = await readFile(safe, 'utf8')
+      if (Buffer.byteLength(data, 'utf8') > MAX_PROJECT_BYTES) {
+        return { success: false, error: 'Project file exceeds size limit' }
+      }
+      await pushRecentFile(safe)
       return { success: true, filePath: safe, json: data }
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
@@ -329,23 +405,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('recent:add', async (_event, filePath: unknown) => {
     if (typeof filePath !== 'string') return []
-    const safe = sanitizePath(filePath)
-    if (!safe) return loadRecentFiles()
-
-    const existing = await loadRecentFiles()
-    const filtered = existing.filter((entry) => entry.path !== safe)
-    const next: RecentFile[] = [
-      { path: safe, name: basename(safe), lastOpened: new Date().toISOString() },
-      ...filtered,
-    ].slice(0, RECENT_FILES_MAX)
-
-    try {
-      await saveRecentFiles(next)
-    } catch {
-      // Persisting recents is best-effort; we still return the in-memory
-      // list so the UI reflects the user's action this session.
-    }
-    return next
+    return pushRecentFile(filePath)
   })
 
   // Reads the on-disk WebP/SVG variants the sharp pipeline (I-ELE-05)

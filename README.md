@@ -19,7 +19,7 @@ runtime behaviour is independently toggleable; all flags off → JS-free output.
 - **jszip** — export bundling
 - **axe-core** — accessibility hard gate (blocks export on critical/serious)
 - **Vite + electron-vite + electron-builder** — dev + build + packaging
-- **Vitest** — testing (~740 tests across document, generator, runtime, seo, export, templates, store, ui)
+- **Vitest** — testing (~820 tests across document, generator, runtime, seo, export, templates, store, ui)
 
 ## Requirements
 
@@ -108,7 +108,8 @@ with structured progress events:
 
 Each stage failure surfaces `{ success: false, stage, error, report? }`. Pass
 `{ dryRun: true }` to short-circuit after `inject-seo` and get
-`{ html, css, js }` strings (used by the code-preview dialog).
+`{ html, css, js, validation }` without writing to disk (used by the
+code-preview dialog).
 
 ## Project files (`.dtw`)
 
@@ -116,6 +117,15 @@ Each stage failure surfaces `{ success: false, stage, error, report? }`. Pass
 file. `File → Open Project…` (Ctrl+O) validates the payload (Zod) before
 hydrating the store. Schema lives in `src/document/schemas.ts`; persistence
 helpers in `src/store/persistence.ts`.
+
+Two safety nets run on top of plain save/open:
+
+- **Crash recovery** — edits are autosaved to a sidecar; on next launch the app
+  detects an unclean shutdown and offers to restore the unsaved work
+  (`src/store/autosave.ts`, `src/store/crashRecovery.ts`).
+- **External-change reload** — a `chokidar` watcher in the main process fires
+  `onFileChanged` when the open `.dtw` is edited on disk; the renderer prompts to
+  reload rather than silently diverging (`src/store/fileReload.ts`).
 
 ## CI
 
@@ -132,13 +142,13 @@ in one shot to a GitHub Release with auto-generated notes from merged PRs.
 To cut a release:
 
 ```bash
-git tag v0.2.0 -m "release notes"
-git push origin v0.2.0
+git tag v0.3.0 -m "release notes"
+git push origin v0.3.0
 ```
 
 ### Installing the unsigned builds
 
-v0.2.0 installers are **not code-signed**. The app still runs everywhere, but
+Release installers are **not code-signed**. The app still runs everywhere, but
 each OS shows a one-time warning that needs a manual bypass:
 
 - **Windows (NSIS)** — Windows SmartScreen shows a blue "Windows protected

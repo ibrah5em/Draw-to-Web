@@ -68,6 +68,14 @@ const defaultColumns: ReadonlyArray<FooterColumn> = [
   },
 ]
 
+/**
+ * Builds the `footer-columns` preset subtree (see file header for composition).
+ *
+ * @param args - Per-preset argument bag; `columns` is an optional array of
+ *   `{ title, links: { label, href }[] }`.
+ * @param ctx - Preset context supplying `generateId`.
+ * @returns The root {@link ElementNode} of the preset subtree.
+ */
 export const footerColumns: PresetFactory = (args, ctx: PresetContext): ElementNode => {
   const columns = asColumns(args['columns'], defaultColumns)
   return {

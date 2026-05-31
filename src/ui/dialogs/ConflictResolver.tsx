@@ -4,23 +4,23 @@
  * Subscribes to the `onFileChanged` IPC (C4 + I-ELE-06) — fired when the open
  * `.dtw` is modified outside the editor — and prompts the author to reconcile:
  *
- *   - **Reload from disk** — re-opens the project, replacing the in-memory
- *     document. This clears the undo/redo timeline (the loaded document is a
- *     fresh baseline), which is why it requires the explicit ack this dialog
- *     provides rather than reloading silently.
- *   - **Keep my changes** — dismisses; the in-memory document wins and stays
- *     dirty, so the next save overwrites the external edit.
+ *   - **Reload from disk** — re-reads the changed file by its known path and
+ *     replaces the in-memory document. This clears the undo/redo timeline
+ *     (the loaded document is a fresh baseline), which is why it requires the
+ *     explicit ack this dialog provides rather than reloading silently.
+ *   - **Keep my changes** — dismisses; the in-memory document wins and is
+ *     marked dirty, so the next save overwrites the external edit.
  *
- * `openProject` re-prompts for the file because a load-by-path IPC isn't part
- * of the current preload surface; selecting the same file completes the
- * reload. (A `loadFromPath` IPC would let this reload silently — a follow-up
- * for the electron lane.)
+ * The verdict is carried out by the Y-PER-05 store controller
+ * (`acceptFileReload` / `declineFileReload`). Reload goes straight through
+ * `openProjectByPath` (no second dialog) now that the load-by-path IPC is in
+ * the preload surface (I-ELE-07).
  */
 
 import * as Dialog from '@radix-ui/react-dialog'
 import { useEffect, useState, type JSX } from 'react'
 
-import { openProject } from '@store/persistence'
+import { acceptFileReload, declineFileReload } from '@store/fileReload'
 
 import styles from './ConflictResolver.module.css'
 
@@ -45,11 +45,17 @@ export function ConflictResolver(): JSX.Element {
   const [conflictPath, clear] = useFileConflict()
 
   const reload = (): void => {
-    void openProject().finally(clear)
+    if (conflictPath === null) return
+    void acceptFileReload(conflictPath).finally(clear)
+  }
+
+  const keep = (): void => {
+    declineFileReload()
+    clear()
   }
 
   return (
-    <Dialog.Root open={conflictPath !== null} onOpenChange={(next) => !next && clear()}>
+    <Dialog.Root open={conflictPath !== null} onOpenChange={(next) => !next && keep()}>
       <Dialog.Portal>
         <Dialog.Overlay className={styles.overlay} />
         <Dialog.Content className={styles.content} aria-describedby={undefined}>
@@ -61,7 +67,7 @@ export function ConflictResolver(): JSX.Element {
           </Dialog.Description>
           <p className={styles.warning}>Reloading discards your undo history.</p>
           <footer className={styles.footer}>
-            <button type="button" className={styles.keepBtn} onClick={clear}>
+            <button type="button" className={styles.keepBtn} onClick={keep}>
               Keep my changes
             </button>
             <button type="button" className={styles.reloadBtn} onClick={reload}>

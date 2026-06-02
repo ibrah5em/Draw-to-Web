@@ -21,6 +21,7 @@ import { ErrorBoundary } from 'react-error-boundary'
 import {
   createElement,
   memo,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -138,6 +139,7 @@ export const CanvasNode = memo(function CanvasNode({ node }: { node: ElementNode
           Tag={Tag}
           node={node}
           baseStyle={styleWithSelection}
+          sortable={sortable}
           commonProps={common}
         />
       )
@@ -280,6 +282,7 @@ interface ContainerNodeViewProps {
   readonly Tag: ContainerTag
   readonly node: Extract<ElementNode, { type: 'container' }>
   readonly baseStyle: CSSProperties
+  readonly sortable: SortableHandle
   readonly commonProps: { 'data-dtw-id': string; onClick: (event: MouseEvent) => void }
 }
 
@@ -288,24 +291,41 @@ interface ContainerNodeViewProps {
  * (L-CAN-12). Highlights itself while the cursor hovers during an Insert
  * drag so authors see where the drop will land. Hosts a SortableContext
  * over its children so sibling reorder (L-CAN-13) works inside the canvas.
+ *
+ * Also wires its own `useSortable` handle so the container is draggable like
+ * any other node (L-CAN-13): the sortable ref is composed with the droppable
+ * ref onto the same element, the transform style is applied, and the drag
+ * listeners are spread. Without this the container was an unmeasured sortable
+ * item — un-draggable, and skewing neighbour shift math.
  */
 function ContainerNodeView({
   Tag,
   node,
   baseStyle,
+  sortable,
   commonProps,
 }: ContainerNodeViewProps): JSX.Element {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: containerDropId(node.id),
     data: { accepts: 'insert', containerId: node.id },
   })
-  const style: CSSProperties = isOver ? { ...baseStyle, ...DROP_OVER_OUTLINE } : baseStyle
+  const setRef = useCallback(
+    (el: HTMLElement | null): void => {
+      setDropRef(el)
+      if (typeof sortable.ref === 'function') sortable.ref(el)
+    },
+    [setDropRef, sortable.ref]
+  )
+  const merged: CSSProperties = { ...baseStyle, ...sortable.style }
+  const style: CSSProperties = isOver ? { ...merged, ...DROP_OVER_OUTLINE } : merged
   const childIds = node.children.map((child) => child.id)
   return createElement(
     Tag,
     {
-      ref: setNodeRef,
+      ref: setRef,
       style,
+      ...sortable.attributes,
+      ...sortable.listeners,
       ...commonProps,
       'data-drop-over': isOver || undefined,
     },
@@ -352,12 +372,18 @@ function TextNodeView({ node, style, sortable, commonProps }: TextNodeViewProps)
     selection?.addRange(range)
   }, [editing])
 
-  const setRef = (el: HTMLElement | null): void => {
-    elementRef.current = el
-    // Defer to dnd-kit only while not editing — keeps drag wiring off the
-    // node so the activator pointerdown doesn't steal text selection.
-    if (!editing && typeof sortable.ref === 'function') sortable.ref(el)
-  }
+  // Stable across renders so React doesn't detach/reattach the node every
+  // render; identity changes only when `editing` toggles, which is exactly
+  // when we want to attach / detach the dnd-kit sortable ref.
+  const setRef = useCallback(
+    (el: HTMLElement | null): void => {
+      elementRef.current = el
+      // Defer to dnd-kit only while not editing — keeps drag wiring off the
+      // node so the activator pointerdown doesn't steal text selection.
+      if (!editing && typeof sortable.ref === 'function') sortable.ref(el)
+    },
+    [editing, sortable.ref]
+  )
 
   const onDoubleClick = (event: MouseEvent): void => {
     event.preventDefault()

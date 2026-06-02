@@ -1,14 +1,39 @@
 import { describe, expect, it } from 'vitest'
 
+import type { ContainerNode } from '@document/types'
 import {
   buildInsertOp,
   containerDropId,
   createPrimitive,
   parseContainerDropId,
+  resolveChildDropTarget,
 } from '@ui/sidebar/insertDrop'
 
 let counter = 0
 const stableId = (): string => `el_${++counter}`
+
+/** root → [ text a, grid → [ text c1, text c2 ] ] */
+function sampleTree(): ContainerNode {
+  return {
+    id: 'root',
+    type: 'container',
+    style: { base: {} },
+    layout: { base: { mode: 'flex' } },
+    children: [
+      { id: 'a', type: 'text', tag: 'p', content: 'a', style: { base: {} } },
+      {
+        id: 'grid',
+        type: 'container',
+        style: { base: {} },
+        layout: { base: { mode: 'flex' } },
+        children: [
+          { id: 'c1', type: 'text', tag: 'p', content: 'c1', style: { base: {} } },
+          { id: 'c2', type: 'text', tag: 'p', content: 'c2', style: { base: {} } },
+        ],
+      },
+    ],
+  }
+}
 
 describe('buildInsertOp (L-CAN-12)', () => {
   it('round-trips containerDropId', () => {
@@ -52,6 +77,39 @@ describe('buildInsertOp (L-CAN-12)', () => {
     expect(
       buildInsertOp('insert:preset:not-a-real-preset', containerDropId('p'), stableId)
     ).toBeNull()
+  })
+})
+
+describe('buildInsertOp — explicit index (M3)', () => {
+  it('threads the drop index into the insertElement op', () => {
+    counter = 0
+    const op = buildInsertOp('insert:element:text', containerDropId('grid'), stableId, 1)
+    expect(op?.kind).toBe('insertElement')
+    if (op?.kind !== 'insertElement') throw new Error('expected insertElement')
+    expect(op.parentId).toBe('grid')
+    expect(op.index).toBe(1)
+  })
+
+  it('threads the drop index into the insertPreset op', () => {
+    const op = buildInsertOp('insert:preset:card-basic', containerDropId('grid'), stableId, 2)
+    expect(op).toMatchObject({ kind: 'insertPreset', parentId: 'grid', index: 2 })
+  })
+})
+
+describe('resolveChildDropTarget (M3)', () => {
+  it('resolves a bare child id to its parent container and the slot after it', () => {
+    expect(resolveChildDropTarget('c1', sampleTree())).toEqual({ parentId: 'grid', index: 1 })
+    expect(resolveChildDropTarget('c2', sampleTree())).toEqual({ parentId: 'grid', index: 2 })
+    expect(resolveChildDropTarget('grid', sampleTree())).toEqual({ parentId: 'root', index: 2 })
+  })
+
+  it('returns null for container drop ids, drag ids, the root, and missing ids', () => {
+    const tree = sampleTree()
+    expect(resolveChildDropTarget(containerDropId('grid'), tree)).toBeNull()
+    expect(resolveChildDropTarget('insert:element:text', tree)).toBeNull()
+    expect(resolveChildDropTarget('root', tree)).toBeNull()
+    expect(resolveChildDropTarget('nope', tree)).toBeNull()
+    expect(resolveChildDropTarget(null, tree)).toBeNull()
   })
 })
 

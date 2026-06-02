@@ -153,3 +153,47 @@ describe('Properties — layout controls route through the active breakpoint (M4
     expect(n.layout.mobile).toBeUndefined()
   })
 })
+
+describe('Properties — active-state indicator (L-PRP-05)', () => {
+  it('shows no state banner in the Default state', () => {
+    selectAndRender('footer-text')
+    expect(container.querySelector('[role="status"]')).toBeNull()
+  })
+
+  it('shows a banner naming the active state with its override count', () => {
+    hydratePatched('footer-text', (n) => ({
+      ...n,
+      states: { hover: { padding: { top: '4px' } } },
+    }))
+    useSessionStore.setState({ activeState: 'hover' })
+    selectAndRender('footer-text')
+    const banner = container.querySelector('[role="status"]')
+    expect(banner?.textContent).toContain('Hover state')
+    expect(banner?.textContent).toContain('1 override')
+  })
+
+  it('shows the state banner (not the breakpoint banner) when both are active', () => {
+    useSessionStore.setState({ activeBreakpoint: 'mobile', activeState: 'hover' })
+    selectAndRender('footer-text')
+    const banners = container.querySelectorAll('[role="status"]')
+    expect(banners.length).toBe(1)
+    expect(banners[0]?.textContent).toContain('Hover state')
+  })
+
+  it('pills a field overridden in the active state', () => {
+    hydratePatched('footer-text', (n) => ({
+      ...n,
+      states: { hover: { padding: { top: '4px' } } },
+    }))
+    useSessionStore.setState({ activeState: 'hover' })
+    selectAndRender('footer-text')
+    const badge = container.querySelector('[title="Override for Hover state"]')
+    expect(badge?.textContent).toBe('H')
+  })
+
+  it('does not pill a field with no override in the active state', () => {
+    useSessionStore.setState({ activeState: 'hover' })
+    selectAndRender('footer-text')
+    expect(container.querySelector('[title="Override for Hover state"]')).toBeNull()
+  })
+})

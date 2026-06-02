@@ -23,7 +23,7 @@
 
 import * as Switch from '@radix-ui/react-switch'
 import * as Tabs from '@radix-ui/react-tabs'
-import { Image as ImageIcon, Smartphone, UploadCloud } from 'lucide-react'
+import { Image as ImageIcon, MousePointerClick, Smartphone, UploadCloud } from 'lucide-react'
 import { useCallback, useId, useState, type ChangeEvent, type DragEvent, type JSX } from 'react'
 
 import { dispatch } from '@store/dispatch'
@@ -90,6 +90,18 @@ const BREAKPOINT_LABEL: Readonly<Record<BreakpointKey, string>> = {
   tablet: 'Tablet',
   mobile: 'Mobile',
   small: 'Small',
+}
+
+/** Friendly name + short pill text for each non-default pseudo-state. */
+const STATE_LABEL: Readonly<Record<StateKey, string>> = {
+  hover: 'Hover',
+  'focus-visible': 'Focus',
+  active: 'Active',
+}
+const STATE_PILL: Readonly<Record<StateKey, string>> = {
+  hover: 'H',
+  'focus-visible': 'F',
+  active: 'A',
 }
 
 /**
@@ -176,9 +188,47 @@ function StateTabs(): JSX.Element {
   )
 }
 
+/** Walk `path` into a style-block-like object; `undefined` if any segment is missing. */
+function pickAtPath(target: unknown, path: readonly string[]): unknown {
+  let current = target
+  for (const key of path) {
+    if (current === undefined || current === null) return undefined
+    current = (current as Record<string, unknown>)[key]
+  }
+  return current
+}
+
+/**
+ * Banner shown while a non-default pseudo-state is active (L-PRP-05). Tells
+ * the author every edit is routing to `element.states[state]` and counts the
+ * overrides already there — the state analogue of {@link BreakpointBanner}.
+ */
+function StateBanner({ node }: { node: ElementNode }): JSX.Element | null {
+  const state = useSessionStore((s) => s.activeState)
+  if (state === 'default') return null
+  const block = node.states?.[state]
+  const overrideCount = block ? Object.keys(block).length : 0
+  return (
+    <div className={styles.bpBanner} role="status">
+      <span className={styles.bpBannerIcon} aria-hidden>
+        <MousePointerClick size={12} />
+      </span>
+      <span>
+        Editing {STATE_LABEL[state]} state —
+        {overrideCount > 0
+          ? ` ${overrideCount} override${overrideCount === 1 ? '' : 's'}`
+          : ' no overrides yet'}
+      </span>
+    </div>
+  )
+}
+
 function BreakpointBanner({ node }: { node: ElementNode }): JSX.Element | null {
   const breakpoint = useSessionStore((s) => s.activeBreakpoint)
-  if (breakpoint === 'base') return null
+  const state = useSessionStore((s) => s.activeState)
+  // A state slot wins over the breakpoint slot for writes, so when a state is
+  // active the StateBanner stands in and this one steps aside.
+  if (breakpoint === 'base' || state !== 'default') return null
   const responsive = node.style[breakpoint]
   const overrideCount = responsive ? Object.keys(responsive).length : 0
   return (
@@ -197,8 +247,10 @@ function BreakpointBanner({ node }: { node: ElementNode }): JSX.Element | null {
 }
 
 /**
- * Per-field badge for L-PRP-09. Renders a small "BP" pill when the active
- * breakpoint has an override at the given style path.
+ * Per-field badge for the active write slot (L-PRP-05 / L-PRP-09). When a
+ * pseudo-state is active it pills the state (H/F/A) if this field is overridden
+ * in `states[state]`; otherwise it pills the active breakpoint (TB/MB/SM) if the
+ * field is overridden there. The precedence mirrors the write router.
  */
 function OverrideBadge({
   node,
@@ -208,13 +260,17 @@ function OverrideBadge({
   path: readonly string[]
 }): JSX.Element | null {
   const breakpoint = useSessionStore((s) => s.activeBreakpoint)
-  if (breakpoint === 'base') return null
-  let current: unknown = node.style[breakpoint]
-  for (const key of path) {
-    if (current === undefined || current === null) return null
-    current = (current as Record<string, unknown>)[key]
+  const state = useSessionStore((s) => s.activeState)
+  if (state !== 'default') {
+    if (pickAtPath(node.states?.[state], path) === undefined) return null
+    return (
+      <span className={styles.bpOverride} title={`Override for ${STATE_LABEL[state]} state`}>
+        {STATE_PILL[state]}
+      </span>
+    )
   }
-  if (current === undefined) return null
+  if (breakpoint === 'base') return null
+  if (pickAtPath(node.style[breakpoint], path) === undefined) return null
   return (
     <span className={styles.bpOverride} title={`Override for ${BREAKPOINT_LABEL[breakpoint]}`}>
       {breakpoint === 'tablet' ? 'TB' : breakpoint === 'mobile' ? 'MB' : 'SM'}
@@ -826,6 +882,7 @@ export function PropertiesPanel(): JSX.Element {
         <span className={styles.elementType}>{node.type}</span>
       </header>
       <StateTabs />
+      <StateBanner node={node} />
       <BreakpointBanner node={node} />
       {node.type === 'container' ? <LayoutSection node={node} /> : null}
       <SizeSection node={node} />

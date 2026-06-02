@@ -24,6 +24,10 @@ function link(id: string, href: string): ElementNode {
   return { id, type: 'link', href, content: 'x', style: { base: {} } }
 }
 
+function text(id: string, tag: 'p' | 'h1' | 'h2', content: string): ElementNode {
+  return { id, type: 'text', tag, content, style: { base: {} } }
+}
+
 function findById(node: ElementNode, id: string): ElementNode | undefined {
   if (node.id === id) return node
   if (node.type !== 'container') return undefined
@@ -52,16 +56,25 @@ describe('inferSemantics (C10 adapter)', () => {
     expect(roleOf(inferSemantics(tree), 'root')).toBe('main')
   })
 
-  it('infers header for the first and footer for the last top-level region', () => {
+  it('infers header for a nav-bearing first region and footer for the trailing region', () => {
     const tree = container('root', [
-      container('first', []),
-      container('middle', []),
-      container('last', []),
+      container('top', [container('navbar', [link('l1', '#a'), link('l2', '#b')])]),
+      container('about', [text('about-h', 'h2', 'About')]),
+      container('foot', [text('fp', 'p', '© 2026')]),
     ])
     const out = inferSemantics(tree)
-    expect(roleOf(out, 'first')).toBe('header')
-    expect(roleOf(out, 'middle')).toBe('section')
-    expect(roleOf(out, 'last')).toBe('footer')
+    expect(roleOf(out, 'top')).toBe('header') // first region wrapping a nav
+    expect(roleOf(out, 'navbar')).toBe('nav') // the nav group itself
+    expect(roleOf(out, 'about')).toBe('section')
+    expect(roleOf(out, 'foot')).toBe('footer') // trailing region, content, no heading
+  })
+
+  it('does not tag a hero-first section as header when there is no nav signal (m3)', () => {
+    const tree = container('root', [
+      container('hero', [text('hero-h', 'h1', 'Hi')]),
+      container('foot', [text('fp', 'p', '©')]),
+    ])
+    expect(roleOf(inferSemantics(tree), 'hero')).toBe('section')
   })
 
   it('infers nav for a container grouping two or more links', () => {
@@ -70,6 +83,17 @@ describe('inferSemantics (C10 adapter)', () => {
       container('body', []),
     ])
     expect(roleOf(inferSemantics(tree), 'menu')).toBe('nav')
+  })
+
+  it('infers nav for only the first qualifying group, not every link list (m3)', () => {
+    const tree = container('root', [
+      container('primary', [link('a', '#1'), link('b', '#2')]),
+      container('mid', []),
+      container('social', [link('c', '#3'), link('d', '#4')]),
+    ])
+    const out = inferSemantics(tree)
+    expect(roleOf(out, 'primary')).toBe('nav')
+    expect(roleOf(out, 'social')).not.toBe('nav')
   })
 
   it('is idempotent', () => {

@@ -30,31 +30,74 @@ function isContainer(node: ElementNode): node is ContainerNode {
   return node.type === 'container'
 }
 
+/** A text node rendered as a heading (`h1`–`h6`). */
+function isHeading(node: ElementNode): boolean {
+  return node.type === 'text' && /^h[1-6]$/.test(node.tag)
+}
+
 /** A container reads as navigation when it groups two or more links. */
 function isNavLike(node: ContainerNode): boolean {
   return node.children.filter((child) => child.type === 'link').length >= 2
 }
 
+/** True when a direct child container is (or is explicitly) navigation. */
+function containsNav(node: ContainerNode): boolean {
+  return node.children.some(
+    (child) => child.type === 'container' && (child.semanticRole === 'nav' || isNavLike(child))
+  )
+}
+
+/** True when a direct child is a heading — the signal of page content, not a footer. */
+function hasHeading(node: ContainerNode): boolean {
+  return node.children.some(isHeading)
+}
+
+/** Mutable walk state: the single inferred-`nav` slot, claimed in document order. */
+interface InferState {
+  navClaimed: boolean
+}
+
 /**
  * Infer a landmark role for a container that has none. Returns `undefined`
  * for generic nested containers so the generator keeps its `<div>` default.
+ *
+ * Roles are gated on content signals rather than raw position so a hero-first
+ * section isn't mislabelled `<header>` and a content section isn't mislabelled
+ * `<footer>`. Navigation is inferred for only the first qualifying group in
+ * document order — the generator emits the tag verbatim and adds no
+ * disambiguating `aria-label`, so multiple inferred `<nav>` landmarks would be
+ * an accessibility defect.
  */
-function inferRole(node: ContainerNode, ctx: InferContext): SemanticRole | undefined {
+function inferRole(
+  node: ContainerNode,
+  ctx: InferContext,
+  state: InferState
+): SemanticRole | undefined {
   if (ctx.depth === 0) return 'main'
-  if (isNavLike(node)) return 'nav'
+  if (!state.navClaimed && isNavLike(node)) {
+    state.navClaimed = true
+    return 'nav'
+  }
   if (ctx.depth === 1 && ctx.siblingCount > 1) {
-    if (ctx.index === 0) return 'header'
-    if (ctx.index === ctx.siblingCount - 1) return 'footer'
+    // A banner wraps navigation; a footer is the trailing region that has
+    // content but no heading. Anything else at this level is a section.
+    if (ctx.index === 0 && containsNav(node)) return 'header'
+    if (ctx.index === ctx.siblingCount - 1 && node.children.length > 0 && !hasHeading(node)) {
+      return 'footer'
+    }
     return 'section'
   }
   return undefined
 }
 
-function annotate(node: ElementNode, ctx: InferContext): ElementNode {
+function annotate(node: ElementNode, ctx: InferContext, state: InferState): ElementNode {
   if (!isContainer(node)) return node
-  const semanticRole = node.semanticRole ?? inferRole(node, ctx)
+  // An explicit nav role also claims the single inferred-nav slot, so a later
+  // nav-like group isn't auto-tagged as a second <nav>.
+  if (node.semanticRole === 'nav') state.navClaimed = true
+  const semanticRole = node.semanticRole ?? inferRole(node, ctx, state)
   const children = node.children.map((child, index) =>
-    annotate(child, { depth: ctx.depth + 1, index, siblingCount: node.children.length })
+    annotate(child, { depth: ctx.depth + 1, index, siblingCount: node.children.length }, state)
   )
   // Structural sharing (Y-PRF-01): when neither the role nor any child
   // reference changed, return the original node so the annotated tree keeps
@@ -74,5 +117,5 @@ function annotate(node: ElementNode, ctx: InferContext): ElementNode {
  *   roles are left untouched.
  */
 export function inferSemantics(tree: ElementNode): ElementNode {
-  return annotate(tree, { depth: 0, index: 0, siblingCount: 1 })
+  return annotate(tree, { depth: 0, index: 0, siblingCount: 1 }, { navClaimed: false })
 }

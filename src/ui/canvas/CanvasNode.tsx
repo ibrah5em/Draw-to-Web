@@ -314,6 +314,9 @@ function ContainerNodeView({
       setDropRef(el)
       if (typeof sortable.ref === 'function') sortable.ref(el)
     },
+    // `sortable` is a fresh object each render; `sortable.ref` (dnd-kit's stable
+    // setNodeRef) is the identity we actually depend on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [setDropRef, sortable.ref]
   )
   const merged: CSSProperties = { ...baseStyle, ...sortable.style }
@@ -382,6 +385,9 @@ function TextNodeView({ node, style, sortable, commonProps }: TextNodeViewProps)
       // node so the activator pointerdown doesn't steal text selection.
       if (!editing && typeof sortable.ref === 'function') sortable.ref(el)
     },
+    // `sortable.ref` is dnd-kit's stable setNodeRef; the surrounding `sortable`
+    // object is recreated each render and intentionally not a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [editing, sortable.ref]
   )
 

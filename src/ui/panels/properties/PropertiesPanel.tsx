@@ -29,7 +29,12 @@ import { useCallback, useId, useState, type ChangeEvent, type DragEvent, type JS
 import { dispatch } from '@store/dispatch'
 import { useElementById } from '@store/selectors'
 import { useSessionStore } from '@store/sessionStore'
-import { resolveStyleProperty, writeActiveStyle } from '@store/styleRouting'
+import {
+  resolveLayoutProperty,
+  resolveStyleProperty,
+  writeActiveLayout,
+  writeActiveStyle,
+} from '@store/styleRouting'
 import type {
   Alignment,
   AnimationSpec,
@@ -102,9 +107,9 @@ const ANIMATION_PRESETS = [
   'shimmer',
 ] as const
 
-/** Write a layout property to `layout.base` (base breakpoint, M2). */
+/** Write a layout property at the active breakpoint slot (Y-STR-07). */
 function writeLayout(id: string, key: string, value: unknown): void {
-  dispatch({ kind: 'updateNode', id, path: ['layout', 'base', key], value })
+  writeActiveLayout(id, key, value)
 }
 
 /**
@@ -219,7 +224,7 @@ function OverrideBadge({
 
 function LayoutSection({ node }: { node: ContainerNode }): JSX.Element {
   const { breakpoint, state } = useActiveSlot()
-  const layout = node.layout.base
+  const readLayout = (key: string): unknown => resolveLayoutProperty(node, key, breakpoint)
   const readStyle = (path: readonly string[]): unknown =>
     resolveStyleProperty(node, path, breakpoint, state)
   const rawWidth = readStyle(['width'])
@@ -243,7 +248,7 @@ function LayoutSection({ node }: { node: ContainerNode }): JSX.Element {
       <Field label="Direction">
         <Segmented
           ariaLabel="Direction"
-          value={layout.direction === 'column' ? 'column' : 'row'}
+          value={readLayout('direction') === 'column' ? 'column' : 'row'}
           options={DIRECTION_OPTIONS}
           onChange={(next) => writeLayout(node.id, 'direction', next)}
         />
@@ -251,7 +256,7 @@ function LayoutSection({ node }: { node: ContainerNode }): JSX.Element {
 
       <Field label="Gap">
         <BindableInput
-          value={layout.gap}
+          value={readLayout('gap') as Bindable<string> | undefined}
           category="spacing"
           placeholder="0"
           onChange={(next) => writeLayout(node.id, 'gap', next)}
@@ -260,12 +265,12 @@ function LayoutSection({ node }: { node: ContainerNode }): JSX.Element {
 
       <AlignmentSelect
         label="Main axis"
-        value={layout.justify}
+        value={readLayout('justify') as Alignment | undefined}
         onChange={(next) => writeLayout(node.id, 'justify', next)}
       />
       <AlignmentSelect
         label="Cross axis"
-        value={layout.align}
+        value={readLayout('align') as Alignment | undefined}
         onChange={(next) => writeLayout(node.id, 'align', next)}
       />
 

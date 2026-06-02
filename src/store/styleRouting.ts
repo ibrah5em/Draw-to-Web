@@ -26,7 +26,15 @@
  */
 
 import type { PropertyPath } from '@document/operations'
-import type { BreakpointKey, ElementId, ElementNode, StateKey, StyleBlock } from '@document/types'
+import type {
+  BreakpointKey,
+  ContainerNode,
+  ElementId,
+  ElementNode,
+  LayoutConfig,
+  StateKey,
+  StyleBlock,
+} from '@document/types'
 
 import { dispatch } from './dispatch'
 import { type ActiveState, useSessionStore } from './sessionStore'
@@ -64,6 +72,25 @@ export function writeActiveStyle(elementId: ElementId, path: PropertyPath, value
     id: elementId,
     breakpoint: activeBreakpoint,
     path,
+    value,
+  })
+}
+
+/**
+ * Dispatch a container-layout write at the active breakpoint slot.
+ *
+ * Layout lives on `node.layout` (separate from `node.style`), and the
+ * `StatesMap` carries no layout — so layout writes route purely by
+ * `activeBreakpoint`, never by `activeState`. `base` is the desktop default;
+ * narrower breakpoints get their `layout[bp]` slot created on demand and leave
+ * `base` untouched, mirroring `writeActiveStyle`'s breakpoint behaviour.
+ */
+export function writeActiveLayout(elementId: ElementId, key: string, value: unknown): void {
+  const { activeBreakpoint } = useSessionStore.getState()
+  dispatch({
+    kind: 'updateNode',
+    id: elementId,
+    path: ['layout', activeBreakpoint, key],
     value,
   })
 }
@@ -129,4 +156,25 @@ export function resolveStyleProperty(
   }
 
   return pickAtPath(element.style.base, path)
+}
+
+/**
+ * Resolve a container-layout property at `breakpoint`, falling back to `base`.
+ *
+ * The read-side mirror of {@link writeActiveLayout}. Layout has no state
+ * dimension, so the lookup is breakpoint → base only. Returns the raw author
+ * value (possibly a `TokenRef`).
+ */
+export function resolveLayoutProperty(
+  element: ContainerNode,
+  key: string,
+  breakpoint: BreakpointKey
+): unknown {
+  const pick = (config: LayoutConfig | undefined): unknown =>
+    config === undefined ? undefined : (config as unknown as Record<string, unknown>)[key]
+  if (breakpoint !== 'base') {
+    const v = pick(element.layout[breakpoint])
+    if (v !== undefined) return v
+  }
+  return pick(element.layout.base)
 }

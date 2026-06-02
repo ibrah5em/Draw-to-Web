@@ -121,3 +121,35 @@ describe('Properties — reads resolve from the active breakpoint slot (C1)', ()
     expect(firstInput('Width').value).toBe('100%') // inherited from base
   })
 })
+
+describe('Properties — layout controls route through the active breakpoint (M4)', () => {
+  function clickButton(text: string): void {
+    const btn = [...container.querySelectorAll('button')].find((b) => b.textContent === text)
+    if (!btn) throw new Error(`no button "${text}"`)
+    act(() => btn.click())
+  }
+
+  it('changing direction in Mobile writes layout.mobile, leaving base untouched', () => {
+    useSessionStore.setState({ activeBreakpoint: 'mobile' })
+    selectAndRender('header') // header.layout.base.direction = 'row'
+
+    clickButton('Column')
+
+    const n = node('header')
+    if (n.type !== 'container') throw new Error('not a container')
+    expect(n.layout.mobile?.direction).toBe('column')
+    expect(n.layout.base.direction).toBe('row') // desktop default preserved
+  })
+
+  it('changing direction at Desktop still writes layout.base', () => {
+    useSessionStore.setState({ activeBreakpoint: 'base' })
+    selectAndRender('header')
+
+    clickButton('Column')
+
+    const n = node('header')
+    if (n.type !== 'container') throw new Error('not a container')
+    expect(n.layout.base.direction).toBe('column')
+    expect(n.layout.mobile).toBeUndefined()
+  })
+})

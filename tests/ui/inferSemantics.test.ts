@@ -78,6 +78,39 @@ describe('inferSemantics (C10 adapter)', () => {
     expect(twice).toEqual(once)
   })
 
+  it('re-annotating an annotated tree returns the identical reference (Y-PRF-01 sharing)', () => {
+    const once = inferSemantics(PORTFOLIO_DOCUMENT.tree)
+    // Nothing left to infer → no node is rebuilt → same reference throughout.
+    expect(inferSemantics(once)).toBe(once)
+  })
+
+  it('preserves untouched sibling subtree references when one branch changes', () => {
+    const out1 = inferSemantics(
+      container('root', [
+        container('left', [
+          { id: 'lt', type: 'text', tag: 'p', content: 'hi', style: { base: {} } },
+        ]),
+        container('right', [
+          { id: 'rt', type: 'text', tag: 'p', content: 'yo', style: { base: {} } },
+        ]),
+      ])
+    ) as ContainerNode
+    const left1 = out1.children[0] as ContainerNode
+    const right1 = out1.children[1]
+
+    // Mimic an immer edit: new root array, left replaced by an edited copy,
+    // the right child kept by reference.
+    const editedLeft: ContainerNode = {
+      ...left1,
+      children: [{ ...(left1.children[0] as ElementNode), content: 'edited' }],
+    }
+    const editedTree: ContainerNode = { ...out1, children: [editedLeft, right1] }
+
+    const out2 = inferSemantics(editedTree) as ContainerNode
+    expect(out2.children[1]).toBe(right1) // untouched sibling: same reference
+    expect(out2.children[0]).not.toBe(left1) // edited branch: rebuilt
+  })
+
   it('resolves identical roles for a copy-pasted subtree (new ids, same structure)', () => {
     const hero = container(
       'hero',

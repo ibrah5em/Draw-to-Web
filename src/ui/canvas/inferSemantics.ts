@@ -56,6 +56,13 @@ function annotate(node: ElementNode, ctx: InferContext): ElementNode {
   const children = node.children.map((child, index) =>
     annotate(child, { depth: ctx.depth + 1, index, siblingCount: node.children.length })
   )
+  // Structural sharing (Y-PRF-01): when neither the role nor any child
+  // reference changed, return the original node so the annotated tree keeps
+  // immer's identity and memoised CanvasNodes skip the untouched subtree.
+  const childrenUnchanged =
+    children.length === node.children.length &&
+    children.every((child, i) => child === node.children[i])
+  if (semanticRole === node.semanticRole && childrenUnchanged) return node
   return { ...node, semanticRole, children }
 }
 

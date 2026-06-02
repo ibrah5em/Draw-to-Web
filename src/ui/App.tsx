@@ -110,7 +110,6 @@ export function App(): JSX.Element {
   useEditorShortcuts()
 
   const closeWelcome = (): void => setWelcomeOpen(false)
-  const openWelcome = (): void => setWelcomeOpen(true)
 
   const newBlank = (): void => {
     useDocumentStore.getState().hydrate(createBlankTemplate())
@@ -332,8 +331,6 @@ export function App(): JSX.Element {
       <ConflictResolver />
 
       <footer className={styles.statusbar} />
-      {/* expose welcome opener for future MenuBar wiring */}
-      <span hidden data-testid="welcome-opener" onClick={openWelcome} />
     </div>
   )
 }

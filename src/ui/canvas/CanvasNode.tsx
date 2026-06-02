@@ -107,19 +107,33 @@ export const CanvasNode = memo(function CanvasNode({ node }: { node: ElementNode
   const activeBreakpoint = useSessionStore((s) => s.activeBreakpoint)
   const activeState = useSessionStore((s) => s.activeState)
   const hoverPreview = useViewPrefs((s) => s.hoverPreview)
-  const sortable = useNodeSortable(node.id)
+  const isHidden = useViewPrefs((s) => s.hiddenIds.has(node.id))
+  const isLocked = useViewPrefs((s) => s.lockedIds.has(node.id))
+  const rawSortable = useNodeSortable(node.id)
+  // Locked elements keep their ref (so layout stays measured) but shed their
+  // drag listeners / attributes so they can't be dragged on the canvas.
+  const sortable: SortableHandle = isLocked
+    ? { ...rawSortable, listeners: {}, attributes: {} }
+    : rawSortable
 
   // Hover-preview (L-TOP-03) forces every node into its `:hover` render state
   // without mutating the document; otherwise we honour the session's active
   // pseudo-state (L-PRP-05).
   const effectiveState = hoverPreview ? 'hover' : activeState
   const base = nodeStyle(node, resolve, activeBreakpoint, effectiveState)
-  const styleWithSelection = selected ? { ...base, ...SELECTED_OUTLINE } : base
+  // Hidden (Layers eye toggle) removes the element from the canvas without
+  // touching the document; the subtree disappears with its container.
+  const visibilityStyle: CSSProperties = isHidden ? { ...base, display: 'none' } : base
+  const styleWithSelection = selected
+    ? { ...visibilityStyle, ...SELECTED_OUTLINE }
+    : visibilityStyle
   const style: CSSProperties = { ...styleWithSelection, ...sortable.style }
 
   const onClick = (event: MouseEvent): void => {
     event.preventDefault()
     event.stopPropagation()
+    // Locked elements ignore canvas selection — unlock from the Layers tree.
+    if (isLocked) return
     // Shift / Ctrl / Cmd toggle the element in/out of the current selection
     // (L-CAN-06). Plain click replaces it. The store's `toggleSelected`
     // preserves selection order which the Layers tree relies on.
@@ -146,7 +160,15 @@ export const CanvasNode = memo(function CanvasNode({ node }: { node: ElementNode
     }
 
     case 'text': {
-      return <TextNodeView node={node} style={style} sortable={sortable} commonProps={common} />
+      return (
+        <TextNodeView
+          node={node}
+          style={style}
+          sortable={sortable}
+          commonProps={common}
+          locked={isLocked}
+        />
+      )
     }
 
     case 'image': {
@@ -345,6 +367,7 @@ interface TextNodeViewProps {
   readonly style: CSSProperties
   readonly sortable: SortableHandle
   readonly commonProps: { 'data-dtw-id': string; onClick: (event: MouseEvent) => void }
+  readonly locked: boolean
 }
 
 /**
@@ -355,7 +378,13 @@ interface TextNodeViewProps {
  * node round-trips whitespace and special characters verbatim. Escape
  * cancels without dispatch.
  */
-function TextNodeView({ node, style, sortable, commonProps }: TextNodeViewProps): JSX.Element {
+function TextNodeView({
+  node,
+  style,
+  sortable,
+  commonProps,
+  locked,
+}: TextNodeViewProps): JSX.Element {
   const [editing, setEditing] = useState(false)
   const elementRef = useRef<HTMLElement | null>(null)
 
@@ -394,6 +423,8 @@ function TextNodeView({ node, style, sortable, commonProps }: TextNodeViewProps)
   const onDoubleClick = (event: MouseEvent): void => {
     event.preventDefault()
     event.stopPropagation()
+    // Locked elements can't be edited inline — unlock from the Layers tree.
+    if (locked) return
     setEditing(true)
   }
 

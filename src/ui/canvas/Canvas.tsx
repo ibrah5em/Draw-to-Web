@@ -33,7 +33,13 @@ import { CanvasContextMenu } from './CanvasContextMenu'
 import { CanvasNodeBoundary } from './CanvasNode'
 import styles from './Canvas.module.css'
 import { inferSemantics } from './inferSemantics'
-import { MARQUEE_ACTIVATION_PX, rectFromPoints, rectsIntersect, type Rect } from './marqueeSelect'
+import {
+  MARQUEE_ACTIVATION_PX,
+  rectFromPoints,
+  rectsIntersect,
+  topmostMatches,
+  type Rect,
+} from './marqueeSelect'
 import { StyleResolverProvider } from './resolverContext'
 
 interface MarqueeState {
@@ -78,16 +84,17 @@ export function Canvas(): JSX.Element {
       width: rect.width,
       height: rect.height,
     }
-    const matches: string[] = []
+    const matched: HTMLElement[] = []
     const elements = viewport.querySelectorAll<HTMLElement>('[data-dtw-id]')
     for (const el of elements) {
-      const id = el.dataset.dtwId
-      if (!id) continue
+      if (!el.dataset.dtwId) continue
       const box = el.getBoundingClientRect()
       const elRect: Rect = { x: box.left, y: box.top, width: box.width, height: box.height }
-      if (rectsIntersect(absolute, elRect)) matches.push(id)
+      if (rectsIntersect(absolute, elRect)) matched.push(el)
     }
-    return matches
+    // Keep only the topmost element per stack so ancestors / the root aren't
+    // swept into the selection alongside the leaves they contain.
+    return topmostMatches(matched)
   }, [])
 
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>): void => {
@@ -130,8 +137,14 @@ export function Canvas(): JSX.Element {
     const drag = marqueeRef.current
     marqueeRef.current = null
     setMarqueeRect(null)
-    if (!drag || drag.rect === null) {
-      if (!drag?.additive) clearSelection()
+    // No armed marquee means the pointer went down on a rendered node, not on
+    // empty canvas — leave the selection to that node's click handler. Clearing
+    // here would wipe a Shift/Ctrl-click accumulation before it lands.
+    if (!drag) return
+    if (drag.rect === null) {
+      // Pressed-and-released on empty canvas without dragging: a click on the
+      // void deselects, unless it was an additive (Shift/Ctrl) press.
+      if (!drag.additive) clearSelection()
       return
     }
     const hits = collectIntersecting(drag.rect)

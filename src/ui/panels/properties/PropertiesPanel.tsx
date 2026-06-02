@@ -29,10 +29,11 @@ import { useCallback, useId, useState, type ChangeEvent, type DragEvent, type JS
 import { dispatch } from '@store/dispatch'
 import { useElementById } from '@store/selectors'
 import { useSessionStore } from '@store/sessionStore'
-import { writeActiveStyle } from '@store/styleRouting'
+import { resolveStyleProperty, writeActiveStyle } from '@store/styleRouting'
 import type {
   Alignment,
   AnimationSpec,
+  BackgroundLayer,
   Bindable,
   BreakpointKey,
   ContainerNode,
@@ -40,6 +41,7 @@ import type {
   FlexDirection,
   ImageNode,
   StateKey,
+  Typography,
 } from '@document/types'
 
 import { BREAKPOINT_WIDTH_PX } from '../../topbar/BreakpointSwitcher'
@@ -103,6 +105,17 @@ const ANIMATION_PRESETS = [
 /** Write a layout property to `layout.base` (base breakpoint, M2). */
 function writeLayout(id: string, key: string, value: unknown): void {
   dispatch({ kind: 'updateNode', id, path: ['layout', 'base', key], value })
+}
+
+/**
+ * The active routing slot — the breakpoint + pseudo-state that property
+ * reads resolve against. Mirrors `writeActiveStyle`'s write target so the
+ * controls display the same slot they write to (no revert on edit).
+ */
+function useActiveSlot(): { breakpoint: BreakpointKey; state: ActiveState } {
+  const breakpoint = useSessionStore((s) => s.activeBreakpoint)
+  const state = useSessionStore((s) => s.activeState)
+  return { breakpoint, state }
 }
 
 function AlignmentSelect({
@@ -205,9 +218,12 @@ function OverrideBadge({
 }
 
 function LayoutSection({ node }: { node: ContainerNode }): JSX.Element {
+  const { breakpoint, state } = useActiveSlot()
   const layout = node.layout.base
-  const base = node.style.base
-  const width = typeof base.width === 'string' ? base.width : undefined
+  const readStyle = (path: readonly string[]): unknown =>
+    resolveStyleProperty(node, path, breakpoint, state)
+  const rawWidth = readStyle(['width'])
+  const width = typeof rawWidth === 'string' ? rawWidth : undefined
   const mode = widthMode(width)
 
   const setWidth = (value: string): void => writeActiveStyle(node.id, ['width'], value)
@@ -258,7 +274,7 @@ function LayoutSection({ node }: { node: ContainerNode }): JSX.Element {
           {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
             <BindableInput
               key={side}
-              value={base.padding?.[side]}
+              value={readStyle(['padding', side]) as Bindable<string> | undefined}
               category="spacing"
               placeholder={side[0]?.toUpperCase()}
               onChange={(next) => setPadding(side, next)}
@@ -315,7 +331,21 @@ const FONT_STYLE_OPTIONS = [
 ] as const
 
 function TypographySection({ node }: { node: ElementNode }): JSX.Element {
-  const t = node.style.base.typography ?? {}
+  const { breakpoint, state } = useActiveSlot()
+  const read = <K extends keyof Typography>(key: K): Typography[K] | undefined =>
+    resolveStyleProperty(node, ['typography', key], breakpoint, state) as Typography[K] | undefined
+  const t: Partial<Typography> = {
+    fontFamily: read('fontFamily'),
+    fontSize: read('fontSize'),
+    fontWeight: read('fontWeight'),
+    lineHeight: read('lineHeight'),
+    letterSpacing: read('letterSpacing'),
+    textAlign: read('textAlign'),
+    textDecoration: read('textDecoration'),
+    textTransform: read('textTransform'),
+    fontStyle: read('fontStyle'),
+    color: read('color'),
+  }
   const write = (key: string, value: unknown): void =>
     writeActiveStyle(node.id, ['typography', key], value)
 
@@ -433,7 +463,10 @@ function TypographySection({ node }: { node: ElementNode }): JSX.Element {
 }
 
 function FillSection({ node }: { node: ElementNode }): JSX.Element {
-  const bg = node.style.base.background
+  const { breakpoint, state } = useActiveSlot()
+  const bg = resolveStyleProperty(node, ['background'], breakpoint, state) as
+    | ReadonlyArray<BackgroundLayer>
+    | undefined
   const bgColor = bg && bg[0]?.kind === 'solid' ? bg[0].color : undefined
   return (
     <section className={styles.section}>
@@ -451,7 +484,8 @@ function FillSection({ node }: { node: ElementNode }): JSX.Element {
 }
 
 function SizeSection({ node }: { node: ElementNode }): JSX.Element {
-  const base = node.style.base
+  const { breakpoint, state } = useActiveSlot()
+  const read = (key: string): unknown => resolveStyleProperty(node, [key], breakpoint, state)
   const dimToString = (value: unknown): string => (typeof value === 'string' ? value : '')
   const setDim =
     (key: 'width' | 'height' | 'minWidth' | 'maxWidth') =>
@@ -464,7 +498,7 @@ function SizeSection({ node }: { node: ElementNode }): JSX.Element {
       <Field label="Width" badge={<OverrideBadge node={node} path={['width']} />}>
         <input
           className={styles.textInput}
-          value={dimToString(base.width)}
+          value={dimToString(read('width'))}
           onChange={(event) => setDim('width')(event.target.value)}
           placeholder="auto"
           aria-label="Width"
@@ -474,7 +508,7 @@ function SizeSection({ node }: { node: ElementNode }): JSX.Element {
       <Field label="Height" badge={<OverrideBadge node={node} path={['height']} />}>
         <input
           className={styles.textInput}
-          value={dimToString(base.height)}
+          value={dimToString(read('height'))}
           onChange={(event) => setDim('height')(event.target.value)}
           placeholder="auto"
           aria-label="Height"
@@ -484,7 +518,7 @@ function SizeSection({ node }: { node: ElementNode }): JSX.Element {
       <Field label="Max width">
         <input
           className={styles.textInput}
-          value={dimToString(base.maxWidth)}
+          value={dimToString(read('maxWidth'))}
           onChange={(event) => setDim('maxWidth')(event.target.value)}
           placeholder="none"
           aria-label="Max width"
@@ -496,7 +530,9 @@ function SizeSection({ node }: { node: ElementNode }): JSX.Element {
 }
 
 function SpacingSection({ node }: { node: ElementNode }): JSX.Element {
-  const base = node.style.base
+  const { breakpoint, state } = useActiveSlot()
+  const read = (kind: 'padding' | 'margin', side: string): Bindable<string> | undefined =>
+    resolveStyleProperty(node, [kind, side], breakpoint, state) as Bindable<string> | undefined
   const setBox = (kind: 'padding' | 'margin', side: string, value: Bindable<string>): void =>
     writeActiveStyle(node.id, [kind, side], value)
   return (
@@ -507,7 +543,7 @@ function SpacingSection({ node }: { node: ElementNode }): JSX.Element {
           {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
             <BindableInput
               key={`p-${side}`}
-              value={base.padding?.[side]}
+              value={read('padding', side)}
               category="spacing"
               placeholder={side[0]?.toUpperCase()}
               onChange={(next) => setBox('padding', side, next)}
@@ -520,7 +556,7 @@ function SpacingSection({ node }: { node: ElementNode }): JSX.Element {
           {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
             <BindableInput
               key={`m-${side}`}
-              value={base.margin?.[side]}
+              value={read('margin', side)}
               category="spacing"
               placeholder={side[0]?.toUpperCase()}
               onChange={(next) => setBox('margin', side, next)}

@@ -41,9 +41,11 @@
     "chokidar": "^5.0.0",
     "chroma-js": "^3.2.0",
     "clsx": "^2.1.1",
+    "html-minifier-terser": "^7.2.0",
     "immer": "^11.1.8",
     "jsdom": "^25.0.1",
     "jszip": "^3.10.1",
+    "lightningcss": "^1.32.0",
     "lucide-react": "^1.16.0",
     "nanoid": "^5.1.11",
     "radash": "^12.1.1",
@@ -56,6 +58,7 @@
     "react-resizable-panels": "^4.11.1",
     "sharp": "^0.34.5",
     "tailwind-merge": "^3.6.0",
+    "terser": "^5.48.0",
     "zod": "^4.4.3",
     "zustand": "^4.5.0"
   },
@@ -78,13 +81,10 @@
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "html-minifier-terser": "^7.2.0",
     "husky": "^9.1.7",
     "lighthouse": "^13.3.0",
-    "lightningcss": "^1.32.0",
     "prettier": "^3.2.4",
     "puppeteer": "^25.1.0",
-    "terser": "^5.48.0",
     "typescript": "~5.3.3",
     "vitest": "^1.2.2"
   }

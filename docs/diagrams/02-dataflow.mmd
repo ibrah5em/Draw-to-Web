@@ -1,0 +1,15 @@
+%% Draw-to-Web — unidirectional data flow: canvas action -> state -> re-render
+flowchart TD
+  A["User action on canvas<br/>(click, drag, inline edit, property change)"] --> B["UI event handler<br/>builds an Operation object"]
+  B --> C["dispatch(op)<br/>src/store/dispatch.ts"]
+  C --> D["produceWithPatches(doc, draft =&gt; applyOperation(draft, op))<br/>src/document/operations.ts (immer)"]
+  D --> E{"patches<br/>produced?"}
+  E -- "no" --> X["dropped<br/>(no-op write)"]
+  E -- "yes" --> F["historyStore.record<br/>{ patches, inversePatches, label }"]
+  F --> G["documentStore.commit(nextDoc)<br/>isDirty = true"]
+  G --> H["Focused selectors notify subscribers<br/>useTree / useElementById / useTokens"]
+  H --> I["CanvasNode re-renders<br/>React.memo skips untouched subtrees"]
+  I --> J["buildStyle.nodeStyle -> CSSProperties<br/>resolveToken paints token-bound values"]
+  J --> K["Updated pixels on the canvas"]
+
+  G -. "subscribe" .-> LP["Live Preview bridge<br/>(debounced 300 ms) regenerates output"]

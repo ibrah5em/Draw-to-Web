@@ -36,10 +36,12 @@ import {
 
 import type { ElementNode, TextNode } from '@document/types'
 import { dispatch } from '@store/dispatch'
+import { useDocumentStore } from '@store/documentStore'
 import { useSessionStore } from '@store/sessionStore'
 
 import { useViewPrefs } from '../state/viewPrefs'
 import { containerDropId } from '../sidebar/insertDrop'
+import { assetPreviewSrc } from './assetSrc'
 import { nodeStyle } from './buildStyle'
 import { NodeErrorFallback } from './NodeErrorFallback'
 import { useStyleResolver } from './resolverContext'
@@ -109,6 +111,11 @@ export const CanvasNode = memo(function CanvasNode({ node }: { node: ElementNode
   const hoverPreview = useViewPrefs((s) => s.hoverPreview)
   const isHidden = useViewPrefs((s) => s.hiddenIds.has(node.id))
   const isLocked = useViewPrefs((s) => s.lockedIds.has(node.id))
+  // Uploaded images live in `document.assets`; subscribe to this node's entry
+  // so the canvas can preview it through the `dtw-asset://` scheme.
+  const assetEntry = useDocumentStore((s) =>
+    node.type === 'image' && node.assetId ? s.document.assets[node.assetId] : undefined
+  )
   const rawSortable = useNodeSortable(node.id)
   // Locked elements keep their ref (so layout stays measured) but shed their
   // drag listeners / attributes so they can't be dragged on the canvas.
@@ -172,7 +179,7 @@ export const CanvasNode = memo(function CanvasNode({ node }: { node: ElementNode
     }
 
     case 'image': {
-      const src = node.externalUrl ?? (node.assetId ? `asset:${node.assetId}` : undefined)
+      const src = node.externalUrl ?? assetPreviewSrc(assetEntry)
       return (
         <img
           ref={sortable.ref as Ref<HTMLImageElement>}

@@ -1,8 +1,19 @@
-import { app, BrowserWindow, shell, Menu, session } from 'electron'
+import { app, BrowserWindow, shell, Menu, session, protocol } from 'electron'
+import { readFile } from 'fs/promises'
 import { join } from 'path'
+import { IMAGE_ASSETS_DIRNAME } from './imagePipeline'
 import { registerIpcHandlers } from './ipc'
 
 const isDev = !app.isPackaged
+
+/** Custom scheme that serves uploaded image variants to the editor renderer. */
+const ASSET_SCHEME = 'dtw-asset'
+
+// Privileged registration must run before `app.whenReady()` so the renderer
+// can load `dtw-asset://` URLs inside <img> tags (treated as standard + secure).
+protocol.registerSchemesAsPrivileged([
+  { scheme: ASSET_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true } },
+])
 
 /**
  * Strict Content-Security-Policy for the main renderer window (I-ELE-08).
@@ -24,7 +35,7 @@ function attachCspHeaders(): void {
     `default-src 'self'`,
     `script-src ${scriptSrc}`,
     `style-src 'self' 'unsafe-inline'`,
-    `img-src 'self' data: blob:`,
+    `img-src 'self' data: blob: ${ASSET_SCHEME}:`,
     `font-src 'self'`,
     `connect-src ${connectSrc}`,
     `object-src 'none'`,
@@ -40,6 +51,45 @@ function attachCspHeaders(): void {
         'Content-Security-Policy': [policy],
       },
     })
+  })
+}
+
+/** MIME type for a served asset filename. */
+function assetMimeType(name: string): string {
+  if (name.endsWith('.svg')) return 'image/svg+xml'
+  if (name.endsWith('.webp')) return 'image/webp'
+  if (name.endsWith('.png')) return 'image/png'
+  if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg'
+  return 'application/octet-stream'
+}
+
+/**
+ * Serve processed image variants to the renderer over the {@link ASSET_SCHEME}
+ * scheme so uploaded images preview on the canvas.
+ *
+ * Files live under `<userData>/<IMAGE_ASSETS_DIRNAME>/`; the editor requests
+ * them as `dtw-asset://local/<filename>`. Only a bare filename inside that
+ * folder is served — any path separators or `..` are rejected, so the scheme
+ * cannot read arbitrary files on disk.
+ */
+function registerAssetProtocol(): void {
+  const root = join(app.getPath('userData'), IMAGE_ASSETS_DIRNAME)
+  protocol.handle(ASSET_SCHEME, async (request) => {
+    let name: string
+    try {
+      name = decodeURIComponent(new URL(request.url).pathname).replace(/^\/+/, '')
+    } catch {
+      return new Response('Bad request', { status: 400 })
+    }
+    if (name === '' || name.includes('/') || name.includes('\\') || name.includes('..')) {
+      return new Response('Forbidden', { status: 403 })
+    }
+    try {
+      const data = await readFile(join(root, name))
+      return new Response(data, { headers: { 'Content-Type': assetMimeType(name) } })
+    } catch {
+      return new Response('Not found', { status: 404 })
+    }
   })
 }
 
@@ -91,6 +141,7 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   attachCspHeaders()
+  registerAssetProtocol()
   registerIpcHandlers()
   createWindow()
 

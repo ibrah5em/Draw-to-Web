@@ -213,8 +213,10 @@ place — `React.memo` on `CanvasNode` (`Y-PRF-01`), stable selectors
 but the measured FPS / millisecond figures are marked _pending instrumented
 run_ in the baseline. **This is the one open performance risk** (Section 16,
 R-class): the budgets are expected to pass on the strength of the memoization
-work, but they are not yet empirically signed off. The instrumented run should
-fold into `X-09` (demo rehearsal) on the demo machine, not just a dev box.
+work, but they are **not empirically signed off, and `v0.3.0` shipped with this
+waived** (`DECISIONS.md` D-02). The instrumented run still owes — it should fold
+into `X-09` (demo rehearsal) on the demo machine, not a dev box — and is the top
+post-release item.
 
 ## 8. Build & CI
 
@@ -232,20 +234,31 @@ fold into `X-09` (demo rehearsal) on the demo machine, not just a dev box.
 - **Pre-push** — a husky hook (auto-installed via `prepare`) runs
   `lint && typecheck && test`; never bypassed with `--no-verify`.
 
-**Code signing (`I-BLD-05`) is deferred indefinitely** — no Authenticode cert
-and no Apple Developer ID. Unsigned builds run everywhere with a one-time
-manual bypass (documented in the README). Adding signing later is a config
+**Code signing (`I-BLD-05`) is cut from scope — permanently.** No Authenticode
+cert and no Apple Developer ID, and the team has decided not to acquire them, so
+it is dropped from the M5 / `v0.3.0` gate (the build gate is `I-BLD-01..04`).
+Builds ship unsigned for good; users run them with a one-time manual bypass
+(documented in the README). Should that ever change, adding signing is a config
 block + a `signtool` / `notarytool` step; no architectural work, the matrix
 already runs natively per OS.
 
-## 9. Demo readiness _(STUB — blocked on `X-09`)_
+## 9. Demo readiness
 
-> `X-09` is the sacred final integration day: the full demo run end-to-end
-> three times, bug-squash only, no new commits. It has **not** been held.
->
-> **TODO:** record the rehearsal outcome (pass/fail per run, any bugs found and
-> squashed, the demo machine vs. dev machine note from risk R13) before tagging
-> `v0.3.0`.
+**`v0.3.0` shipped without the `X-09` rehearsal — a conscious, documented
+waiver** (`DECISIONS.md` D-02, 2026-06-03). The sacred final integration day
+(full demo end-to-end 3×, bug-squash only) was **not held**. The code is green —
+lint, both typechecks, 871/871 tests, compile, determinism, contracts, and the
+data-layer + export performance budgets all pass — so the build ships on the
+strength of the automated suite. What was waived is the _manual_ validation: a
+presenter running the **packaged build** end-to-end on **demo hardware** (risk
+R13) and the render-layer perf sign-off (§7).
+
+**Accepted risk:** a packaged-build or demo-hardware bug, or a render-layer
+budget miss, could surface in front of an audience with no rehearsal having
+caught it. Mitigation owed before any live demo: run the turnkey rehearsal in
+`docs/0.2.0v/x-09-rehearsal.md` (3× clean) and capture the six render-layer
+numbers per §7. Until then `X-09` and `Y-PRF-04`'s render rows remain **open**,
+tracked as the top post-`v0.3.0` item.
 
 ## 10. Testing strategy
 
@@ -290,11 +303,11 @@ Yousef) and C10 (`inferSemantics`, LuF8y).
 
 - **Render-layer perf numbers** — `docs/0.2.0v/perf-baseline.md` (`Y-PRF-04`)
   has landed and the data-layer + export budgets pass; the drag / theme /
-  breakpoint / cold-start figures are still _pending an instrumented profiler
-  run_ (see Section 7). Should be captured during `X-09`.
-- **Demo rehearsal (`X-09`)** — not held; blocks Section 9.
-- **Code signing (`I-BLD-05`)** — deferred indefinitely (no certs).
-- **Documentation** — `CLAUDE.md` per-milestone refresh still owed.
+  breakpoint / cold-start figures were **NOT measured at `v0.3.0` ship**
+  (waived, `DECISIONS.md` D-02). Top post-release item — capture during `X-09`.
+- **Demo rehearsal (`X-09`)** — not held; `v0.3.0` shipped un-rehearsed (waived,
+  `DECISIONS.md` D-02). Run the `x-09-rehearsal.md` run-sheet before any live demo.
+- **Code signing (`I-BLD-05`)** — closed: cut from scope permanently (no certs, won't acquire); dropped from the release gate.
 
 ## 13. Summary
 

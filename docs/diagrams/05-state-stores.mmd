@@ -1,0 +1,27 @@
+%% Draw-to-Web — state management (Zustand stores + operation dispatch)
+flowchart LR
+  subgraph UI["UI components (src/ui)"]
+    R["read via focused selectors"]
+    W["write via dispatch(op)"]
+  end
+
+  subgraph Flow["Mutation path"]
+    DISP["dispatch(op)<br/>src/store/dispatch.ts"]
+    OPS["applyOperation(draft, op)<br/>src/document/operations.ts (immer)"]
+  end
+
+  subgraph Stores["Zustand stores"]
+    DOC["documentStore<br/>document + isDirty<br/>(single source of truth)"]
+    HIST["historyStore<br/>past / future patch stacks<br/>cap 200, coalesce 500 ms"]
+    SESS["sessionStore<br/>selection, activeBreakpoint,<br/>activeState, theme (never serialized)"]
+    VIEW["viewPrefs<br/>hoverPreview, hiddenIds, lockedIds"]
+  end
+
+  W --> DISP
+  DISP --> OPS
+  OPS -->|"commit(nextDoc)"| DOC
+  DISP -->|"record(entry)"| HIST
+  R --> DOC
+  R --> SESS
+  R --> VIEW
+  HIST -.->|"undo/redo apply patches"| DOC

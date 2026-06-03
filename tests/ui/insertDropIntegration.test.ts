@@ -5,7 +5,7 @@ import type { ContainerNode, Document, ElementNode } from '@document/types'
 import { dispatch } from '@store/dispatch'
 import { useDocumentStore } from '@store/documentStore'
 import { useHistoryStore } from '@store/historyStore'
-import { buildInsertOp, containerDropId } from '@ui/sidebar/insertDrop'
+import { buildInsertOp, containerDropId, resolveChildDropTarget } from '@ui/sidebar/insertDrop'
 
 import { PORTFOLIO_DOCUMENT } from '../fixtures/portfolioDocument'
 
@@ -71,5 +71,36 @@ describe('Insert drop end-to-end (L-CAN-12)', () => {
     const inserted = after.children[after.children.length - 1]
     expect(inserted.type).toBe('text')
     expect(inserted.id).toBe('new-text-id')
+  })
+
+  it('dropping over an existing child lands in that child’s container, right after it (M3)', () => {
+    // Reproduces the populated-container case: dnd-kit reports `over` as a
+    // child sortable, not the container drop target. The resolver maps it back
+    // to the parent container + the slot just after the hovered child.
+    const { gridId } = hydrateWithGrid()
+    const grid = findContainer(useDocumentStore.getState().document.tree, gridId)
+    if (!grid || grid.children.length === 0) throw new Error('grid has no children to hover')
+    const firstChildId = grid.children[0].id
+
+    // Direct insert against the child id fails (it is not a container drop id)…
+    expect(buildInsertOp('insert:element:text', firstChildId, () => 'x')).toBeNull()
+
+    // …so the drag handler resolves the child to its parent + index and retries.
+    const target = resolveChildDropTarget(firstChildId, useDocumentStore.getState().document.tree)
+    expect(target).toEqual({ parentId: gridId, index: 1 })
+    const op = buildInsertOp(
+      'insert:element:text',
+      containerDropId(target!.parentId),
+      () => 'dropped-id',
+      target!.index
+    )
+    expect(op).not.toBeNull()
+    if (!op) return
+    dispatch(op)
+
+    const after = findContainer(useDocumentStore.getState().document.tree, gridId)
+    if (!after) throw new Error('grid disappeared after drop')
+    expect(after.children[1]?.id).toBe('dropped-id')
+    expect(after.children[1]?.type).toBe('text')
   })
 })

@@ -21,6 +21,7 @@ import { ErrorBoundary } from 'react-error-boundary'
 import {
   createElement,
   memo,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -106,19 +107,33 @@ export const CanvasNode = memo(function CanvasNode({ node }: { node: ElementNode
   const activeBreakpoint = useSessionStore((s) => s.activeBreakpoint)
   const activeState = useSessionStore((s) => s.activeState)
   const hoverPreview = useViewPrefs((s) => s.hoverPreview)
-  const sortable = useNodeSortable(node.id)
+  const isHidden = useViewPrefs((s) => s.hiddenIds.has(node.id))
+  const isLocked = useViewPrefs((s) => s.lockedIds.has(node.id))
+  const rawSortable = useNodeSortable(node.id)
+  // Locked elements keep their ref (so layout stays measured) but shed their
+  // drag listeners / attributes so they can't be dragged on the canvas.
+  const sortable: SortableHandle = isLocked
+    ? { ...rawSortable, listeners: {}, attributes: {} }
+    : rawSortable
 
   // Hover-preview (L-TOP-03) forces every node into its `:hover` render state
   // without mutating the document; otherwise we honour the session's active
   // pseudo-state (L-PRP-05).
   const effectiveState = hoverPreview ? 'hover' : activeState
   const base = nodeStyle(node, resolve, activeBreakpoint, effectiveState)
-  const styleWithSelection = selected ? { ...base, ...SELECTED_OUTLINE } : base
+  // Hidden (Layers eye toggle) removes the element from the canvas without
+  // touching the document; the subtree disappears with its container.
+  const visibilityStyle: CSSProperties = isHidden ? { ...base, display: 'none' } : base
+  const styleWithSelection = selected
+    ? { ...visibilityStyle, ...SELECTED_OUTLINE }
+    : visibilityStyle
   const style: CSSProperties = { ...styleWithSelection, ...sortable.style }
 
   const onClick = (event: MouseEvent): void => {
     event.preventDefault()
     event.stopPropagation()
+    // Locked elements ignore canvas selection — unlock from the Layers tree.
+    if (isLocked) return
     // Shift / Ctrl / Cmd toggle the element in/out of the current selection
     // (L-CAN-06). Plain click replaces it. The store's `toggleSelected`
     // preserves selection order which the Layers tree relies on.
@@ -138,13 +153,22 @@ export const CanvasNode = memo(function CanvasNode({ node }: { node: ElementNode
           Tag={Tag}
           node={node}
           baseStyle={styleWithSelection}
+          sortable={sortable}
           commonProps={common}
         />
       )
     }
 
     case 'text': {
-      return <TextNodeView node={node} style={style} sortable={sortable} commonProps={common} />
+      return (
+        <TextNodeView
+          node={node}
+          style={style}
+          sortable={sortable}
+          commonProps={common}
+          locked={isLocked}
+        />
+      )
     }
 
     case 'image': {
@@ -280,6 +304,7 @@ interface ContainerNodeViewProps {
   readonly Tag: ContainerTag
   readonly node: Extract<ElementNode, { type: 'container' }>
   readonly baseStyle: CSSProperties
+  readonly sortable: SortableHandle
   readonly commonProps: { 'data-dtw-id': string; onClick: (event: MouseEvent) => void }
 }
 
@@ -288,24 +313,44 @@ interface ContainerNodeViewProps {
  * (L-CAN-12). Highlights itself while the cursor hovers during an Insert
  * drag so authors see where the drop will land. Hosts a SortableContext
  * over its children so sibling reorder (L-CAN-13) works inside the canvas.
+ *
+ * Also wires its own `useSortable` handle so the container is draggable like
+ * any other node (L-CAN-13): the sortable ref is composed with the droppable
+ * ref onto the same element, the transform style is applied, and the drag
+ * listeners are spread. Without this the container was an unmeasured sortable
+ * item — un-draggable, and skewing neighbour shift math.
  */
 function ContainerNodeView({
   Tag,
   node,
   baseStyle,
+  sortable,
   commonProps,
 }: ContainerNodeViewProps): JSX.Element {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: containerDropId(node.id),
     data: { accepts: 'insert', containerId: node.id },
   })
-  const style: CSSProperties = isOver ? { ...baseStyle, ...DROP_OVER_OUTLINE } : baseStyle
+  const setRef = useCallback(
+    (el: HTMLElement | null): void => {
+      setDropRef(el)
+      if (typeof sortable.ref === 'function') sortable.ref(el)
+    },
+    // `sortable` is a fresh object each render; `sortable.ref` (dnd-kit's stable
+    // setNodeRef) is the identity we actually depend on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [setDropRef, sortable.ref]
+  )
+  const merged: CSSProperties = { ...baseStyle, ...sortable.style }
+  const style: CSSProperties = isOver ? { ...merged, ...DROP_OVER_OUTLINE } : merged
   const childIds = node.children.map((child) => child.id)
   return createElement(
     Tag,
     {
-      ref: setNodeRef,
+      ref: setRef,
       style,
+      ...sortable.attributes,
+      ...sortable.listeners,
       ...commonProps,
       'data-drop-over': isOver || undefined,
     },
@@ -322,6 +367,7 @@ interface TextNodeViewProps {
   readonly style: CSSProperties
   readonly sortable: SortableHandle
   readonly commonProps: { 'data-dtw-id': string; onClick: (event: MouseEvent) => void }
+  readonly locked: boolean
 }
 
 /**
@@ -332,7 +378,13 @@ interface TextNodeViewProps {
  * node round-trips whitespace and special characters verbatim. Escape
  * cancels without dispatch.
  */
-function TextNodeView({ node, style, sortable, commonProps }: TextNodeViewProps): JSX.Element {
+function TextNodeView({
+  node,
+  style,
+  sortable,
+  commonProps,
+  locked,
+}: TextNodeViewProps): JSX.Element {
   const [editing, setEditing] = useState(false)
   const elementRef = useRef<HTMLElement | null>(null)
 
@@ -352,16 +404,27 @@ function TextNodeView({ node, style, sortable, commonProps }: TextNodeViewProps)
     selection?.addRange(range)
   }, [editing])
 
-  const setRef = (el: HTMLElement | null): void => {
-    elementRef.current = el
-    // Defer to dnd-kit only while not editing — keeps drag wiring off the
-    // node so the activator pointerdown doesn't steal text selection.
-    if (!editing && typeof sortable.ref === 'function') sortable.ref(el)
-  }
+  // Stable across renders so React doesn't detach/reattach the node every
+  // render; identity changes only when `editing` toggles, which is exactly
+  // when we want to attach / detach the dnd-kit sortable ref.
+  const setRef = useCallback(
+    (el: HTMLElement | null): void => {
+      elementRef.current = el
+      // Defer to dnd-kit only while not editing — keeps drag wiring off the
+      // node so the activator pointerdown doesn't steal text selection.
+      if (!editing && typeof sortable.ref === 'function') sortable.ref(el)
+    },
+    // `sortable.ref` is dnd-kit's stable setNodeRef; the surrounding `sortable`
+    // object is recreated each render and intentionally not a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [editing, sortable.ref]
+  )
 
   const onDoubleClick = (event: MouseEvent): void => {
     event.preventDefault()
     event.stopPropagation()
+    // Locked elements can't be edited inline — unlock from the Layers tree.
+    if (locked) return
     setEditing(true)
   }
 

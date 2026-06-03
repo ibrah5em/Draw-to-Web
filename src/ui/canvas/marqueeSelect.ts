@@ -31,3 +31,24 @@ export function rectsIntersect(a: Rect, b: Rect): boolean {
 
 /** Minimum pointer travel (px) before the marquee actually begins drawing. */
 export const MARQUEE_ACTIVATION_PX = 4
+
+/**
+ * From the set of elements whose box intersected the marquee, keep only the
+ * topmost element in each stack: drop any matched element that contains
+ * another matched element (its ancestor containers and the page root).
+ * Returns the surviving elements' `data-dtw-id`s in the input order.
+ *
+ * A rubber-band over a region intersects the leaves *and* every container
+ * that wraps them; without this filter the selection would include those
+ * ancestors and `main`, so a group move would double-apply.
+ */
+export function topmostMatches(matched: readonly Element[]): string[] {
+  const ids: string[] = []
+  for (const el of matched) {
+    const hasMatchedDescendant = matched.some((other) => other !== el && el.contains(other))
+    if (hasMatchedDescendant) continue
+    const id = el.getAttribute('data-dtw-id')
+    if (id) ids.push(id)
+  }
+  return ids
+}

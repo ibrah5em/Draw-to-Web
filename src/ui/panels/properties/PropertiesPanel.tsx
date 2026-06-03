@@ -23,16 +23,22 @@
 
 import * as Switch from '@radix-ui/react-switch'
 import * as Tabs from '@radix-ui/react-tabs'
-import { Image as ImageIcon, Smartphone, UploadCloud } from 'lucide-react'
+import { Image as ImageIcon, MousePointerClick, Smartphone, UploadCloud } from 'lucide-react'
 import { useCallback, useId, useState, type ChangeEvent, type DragEvent, type JSX } from 'react'
 
 import { dispatch } from '@store/dispatch'
 import { useElementById } from '@store/selectors'
 import { useSessionStore } from '@store/sessionStore'
-import { writeActiveStyle } from '@store/styleRouting'
+import {
+  resolveLayoutProperty,
+  resolveStyleProperty,
+  writeActiveLayout,
+  writeActiveStyle,
+} from '@store/styleRouting'
 import type {
   Alignment,
   AnimationSpec,
+  BackgroundLayer,
   Bindable,
   BreakpointKey,
   ContainerNode,
@@ -40,6 +46,7 @@ import type {
   FlexDirection,
   ImageNode,
   StateKey,
+  Typography,
 } from '@document/types'
 
 import { BREAKPOINT_WIDTH_PX } from '../../topbar/BreakpointSwitcher'
@@ -85,6 +92,18 @@ const BREAKPOINT_LABEL: Readonly<Record<BreakpointKey, string>> = {
   small: 'Small',
 }
 
+/** Friendly name + short pill text for each non-default pseudo-state. */
+const STATE_LABEL: Readonly<Record<StateKey, string>> = {
+  hover: 'Hover',
+  'focus-visible': 'Focus',
+  active: 'Active',
+}
+const STATE_PILL: Readonly<Record<StateKey, string>> = {
+  hover: 'H',
+  'focus-visible': 'F',
+  active: 'A',
+}
+
 /**
  * Keyframe presets exposed in the Animation picker. The names match the
  * generator's keyframe library (I-GEN-11).
@@ -100,9 +119,20 @@ const ANIMATION_PRESETS = [
   'shimmer',
 ] as const
 
-/** Write a layout property to `layout.base` (base breakpoint, M2). */
+/** Write a layout property at the active breakpoint slot (Y-STR-07). */
 function writeLayout(id: string, key: string, value: unknown): void {
-  dispatch({ kind: 'updateNode', id, path: ['layout', 'base', key], value })
+  writeActiveLayout(id, key, value)
+}
+
+/**
+ * The active routing slot — the breakpoint + pseudo-state that property
+ * reads resolve against. Mirrors `writeActiveStyle`'s write target so the
+ * controls display the same slot they write to (no revert on edit).
+ */
+function useActiveSlot(): { breakpoint: BreakpointKey; state: ActiveState } {
+  const breakpoint = useSessionStore((s) => s.activeBreakpoint)
+  const state = useSessionStore((s) => s.activeState)
+  return { breakpoint, state }
 }
 
 function AlignmentSelect({
@@ -158,9 +188,47 @@ function StateTabs(): JSX.Element {
   )
 }
 
+/** Walk `path` into a style-block-like object; `undefined` if any segment is missing. */
+function pickAtPath(target: unknown, path: readonly string[]): unknown {
+  let current = target
+  for (const key of path) {
+    if (current === undefined || current === null) return undefined
+    current = (current as Record<string, unknown>)[key]
+  }
+  return current
+}
+
+/**
+ * Banner shown while a non-default pseudo-state is active (L-PRP-05). Tells
+ * the author every edit is routing to `element.states[state]` and counts the
+ * overrides already there — the state analogue of {@link BreakpointBanner}.
+ */
+function StateBanner({ node }: { node: ElementNode }): JSX.Element | null {
+  const state = useSessionStore((s) => s.activeState)
+  if (state === 'default') return null
+  const block = node.states?.[state]
+  const overrideCount = block ? Object.keys(block).length : 0
+  return (
+    <div className={styles.bpBanner} role="status">
+      <span className={styles.bpBannerIcon} aria-hidden>
+        <MousePointerClick size={12} />
+      </span>
+      <span>
+        Editing {STATE_LABEL[state]} state —
+        {overrideCount > 0
+          ? ` ${overrideCount} override${overrideCount === 1 ? '' : 's'}`
+          : ' no overrides yet'}
+      </span>
+    </div>
+  )
+}
+
 function BreakpointBanner({ node }: { node: ElementNode }): JSX.Element | null {
   const breakpoint = useSessionStore((s) => s.activeBreakpoint)
-  if (breakpoint === 'base') return null
+  const state = useSessionStore((s) => s.activeState)
+  // A state slot wins over the breakpoint slot for writes, so when a state is
+  // active the StateBanner stands in and this one steps aside.
+  if (breakpoint === 'base' || state !== 'default') return null
   const responsive = node.style[breakpoint]
   const overrideCount = responsive ? Object.keys(responsive).length : 0
   return (
@@ -179,8 +247,10 @@ function BreakpointBanner({ node }: { node: ElementNode }): JSX.Element | null {
 }
 
 /**
- * Per-field badge for L-PRP-09. Renders a small "BP" pill when the active
- * breakpoint has an override at the given style path.
+ * Per-field badge for the active write slot (L-PRP-05 / L-PRP-09). When a
+ * pseudo-state is active it pills the state (H/F/A) if this field is overridden
+ * in `states[state]`; otherwise it pills the active breakpoint (TB/MB/SM) if the
+ * field is overridden there. The precedence mirrors the write router.
  */
 function OverrideBadge({
   node,
@@ -190,13 +260,17 @@ function OverrideBadge({
   path: readonly string[]
 }): JSX.Element | null {
   const breakpoint = useSessionStore((s) => s.activeBreakpoint)
-  if (breakpoint === 'base') return null
-  let current: unknown = node.style[breakpoint]
-  for (const key of path) {
-    if (current === undefined || current === null) return null
-    current = (current as Record<string, unknown>)[key]
+  const state = useSessionStore((s) => s.activeState)
+  if (state !== 'default') {
+    if (pickAtPath(node.states?.[state], path) === undefined) return null
+    return (
+      <span className={styles.bpOverride} title={`Override for ${STATE_LABEL[state]} state`}>
+        {STATE_PILL[state]}
+      </span>
+    )
   }
-  if (current === undefined) return null
+  if (breakpoint === 'base') return null
+  if (pickAtPath(node.style[breakpoint], path) === undefined) return null
   return (
     <span className={styles.bpOverride} title={`Override for ${BREAKPOINT_LABEL[breakpoint]}`}>
       {breakpoint === 'tablet' ? 'TB' : breakpoint === 'mobile' ? 'MB' : 'SM'}
@@ -205,9 +279,12 @@ function OverrideBadge({
 }
 
 function LayoutSection({ node }: { node: ContainerNode }): JSX.Element {
-  const layout = node.layout.base
-  const base = node.style.base
-  const width = typeof base.width === 'string' ? base.width : undefined
+  const { breakpoint, state } = useActiveSlot()
+  const readLayout = (key: string): unknown => resolveLayoutProperty(node, key, breakpoint)
+  const readStyle = (path: readonly string[]): unknown =>
+    resolveStyleProperty(node, path, breakpoint, state)
+  const rawWidth = readStyle(['width'])
+  const width = typeof rawWidth === 'string' ? rawWidth : undefined
   const mode = widthMode(width)
 
   const setWidth = (value: string): void => writeActiveStyle(node.id, ['width'], value)
@@ -227,7 +304,7 @@ function LayoutSection({ node }: { node: ContainerNode }): JSX.Element {
       <Field label="Direction">
         <Segmented
           ariaLabel="Direction"
-          value={layout.direction === 'column' ? 'column' : 'row'}
+          value={readLayout('direction') === 'column' ? 'column' : 'row'}
           options={DIRECTION_OPTIONS}
           onChange={(next) => writeLayout(node.id, 'direction', next)}
         />
@@ -235,7 +312,7 @@ function LayoutSection({ node }: { node: ContainerNode }): JSX.Element {
 
       <Field label="Gap">
         <BindableInput
-          value={layout.gap}
+          value={readLayout('gap') as Bindable<string> | undefined}
           category="spacing"
           placeholder="0"
           onChange={(next) => writeLayout(node.id, 'gap', next)}
@@ -244,12 +321,12 @@ function LayoutSection({ node }: { node: ContainerNode }): JSX.Element {
 
       <AlignmentSelect
         label="Main axis"
-        value={layout.justify}
+        value={readLayout('justify') as Alignment | undefined}
         onChange={(next) => writeLayout(node.id, 'justify', next)}
       />
       <AlignmentSelect
         label="Cross axis"
-        value={layout.align}
+        value={readLayout('align') as Alignment | undefined}
         onChange={(next) => writeLayout(node.id, 'align', next)}
       />
 
@@ -258,7 +335,7 @@ function LayoutSection({ node }: { node: ContainerNode }): JSX.Element {
           {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
             <BindableInput
               key={side}
-              value={base.padding?.[side]}
+              value={readStyle(['padding', side]) as Bindable<string> | undefined}
               category="spacing"
               placeholder={side[0]?.toUpperCase()}
               onChange={(next) => setPadding(side, next)}
@@ -315,7 +392,21 @@ const FONT_STYLE_OPTIONS = [
 ] as const
 
 function TypographySection({ node }: { node: ElementNode }): JSX.Element {
-  const t = node.style.base.typography ?? {}
+  const { breakpoint, state } = useActiveSlot()
+  const read = <K extends keyof Typography>(key: K): Typography[K] | undefined =>
+    resolveStyleProperty(node, ['typography', key], breakpoint, state) as Typography[K] | undefined
+  const t: Partial<Typography> = {
+    fontFamily: read('fontFamily'),
+    fontSize: read('fontSize'),
+    fontWeight: read('fontWeight'),
+    lineHeight: read('lineHeight'),
+    letterSpacing: read('letterSpacing'),
+    textAlign: read('textAlign'),
+    textDecoration: read('textDecoration'),
+    textTransform: read('textTransform'),
+    fontStyle: read('fontStyle'),
+    color: read('color'),
+  }
   const write = (key: string, value: unknown): void =>
     writeActiveStyle(node.id, ['typography', key], value)
 
@@ -433,7 +524,10 @@ function TypographySection({ node }: { node: ElementNode }): JSX.Element {
 }
 
 function FillSection({ node }: { node: ElementNode }): JSX.Element {
-  const bg = node.style.base.background
+  const { breakpoint, state } = useActiveSlot()
+  const bg = resolveStyleProperty(node, ['background'], breakpoint, state) as
+    | ReadonlyArray<BackgroundLayer>
+    | undefined
   const bgColor = bg && bg[0]?.kind === 'solid' ? bg[0].color : undefined
   return (
     <section className={styles.section}>
@@ -451,7 +545,8 @@ function FillSection({ node }: { node: ElementNode }): JSX.Element {
 }
 
 function SizeSection({ node }: { node: ElementNode }): JSX.Element {
-  const base = node.style.base
+  const { breakpoint, state } = useActiveSlot()
+  const read = (key: string): unknown => resolveStyleProperty(node, [key], breakpoint, state)
   const dimToString = (value: unknown): string => (typeof value === 'string' ? value : '')
   const setDim =
     (key: 'width' | 'height' | 'minWidth' | 'maxWidth') =>
@@ -464,7 +559,7 @@ function SizeSection({ node }: { node: ElementNode }): JSX.Element {
       <Field label="Width" badge={<OverrideBadge node={node} path={['width']} />}>
         <input
           className={styles.textInput}
-          value={dimToString(base.width)}
+          value={dimToString(read('width'))}
           onChange={(event) => setDim('width')(event.target.value)}
           placeholder="auto"
           aria-label="Width"
@@ -474,7 +569,7 @@ function SizeSection({ node }: { node: ElementNode }): JSX.Element {
       <Field label="Height" badge={<OverrideBadge node={node} path={['height']} />}>
         <input
           className={styles.textInput}
-          value={dimToString(base.height)}
+          value={dimToString(read('height'))}
           onChange={(event) => setDim('height')(event.target.value)}
           placeholder="auto"
           aria-label="Height"
@@ -484,7 +579,7 @@ function SizeSection({ node }: { node: ElementNode }): JSX.Element {
       <Field label="Max width">
         <input
           className={styles.textInput}
-          value={dimToString(base.maxWidth)}
+          value={dimToString(read('maxWidth'))}
           onChange={(event) => setDim('maxWidth')(event.target.value)}
           placeholder="none"
           aria-label="Max width"
@@ -496,7 +591,9 @@ function SizeSection({ node }: { node: ElementNode }): JSX.Element {
 }
 
 function SpacingSection({ node }: { node: ElementNode }): JSX.Element {
-  const base = node.style.base
+  const { breakpoint, state } = useActiveSlot()
+  const read = (kind: 'padding' | 'margin', side: string): Bindable<string> | undefined =>
+    resolveStyleProperty(node, [kind, side], breakpoint, state) as Bindable<string> | undefined
   const setBox = (kind: 'padding' | 'margin', side: string, value: Bindable<string>): void =>
     writeActiveStyle(node.id, [kind, side], value)
   return (
@@ -507,7 +604,7 @@ function SpacingSection({ node }: { node: ElementNode }): JSX.Element {
           {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
             <BindableInput
               key={`p-${side}`}
-              value={base.padding?.[side]}
+              value={read('padding', side)}
               category="spacing"
               placeholder={side[0]?.toUpperCase()}
               onChange={(next) => setBox('padding', side, next)}
@@ -520,7 +617,7 @@ function SpacingSection({ node }: { node: ElementNode }): JSX.Element {
           {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
             <BindableInput
               key={`m-${side}`}
-              value={base.margin?.[side]}
+              value={read('margin', side)}
               category="spacing"
               placeholder={side[0]?.toUpperCase()}
               onChange={(next) => setBox('margin', side, next)}
@@ -785,6 +882,7 @@ export function PropertiesPanel(): JSX.Element {
         <span className={styles.elementType}>{node.type}</span>
       </header>
       <StateTabs />
+      <StateBanner node={node} />
       <BreakpointBanner node={node} />
       {node.type === 'container' ? <LayoutSection node={node} /> : null}
       <SizeSection node={node} />

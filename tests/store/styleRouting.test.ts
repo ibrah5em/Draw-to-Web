@@ -5,7 +5,12 @@ import { createBlankDocument, useDocumentStore } from '../../src/store/documentS
 import { useHistoryStore } from '../../src/store/historyStore'
 import { findElementById } from '../../src/store/selectors'
 import { useSessionStore } from '../../src/store/sessionStore'
-import { resolveStyleProperty, writeActiveStyle } from '../../src/store/styleRouting'
+import {
+  resolveLayoutProperty,
+  resolveStyleProperty,
+  writeActiveLayout,
+  writeActiveStyle,
+} from '../../src/store/styleRouting'
 
 const ROOT_ID = 'root-id-'
 const TARGET_ID = 'target--'
@@ -43,6 +48,12 @@ const reset = (): void => {
 const target = () => {
   const node = findElementById(useDocumentStore.getState().document.tree, TARGET_ID)
   if (node === null || node.type !== 'text') throw new Error('target missing')
+  return node
+}
+
+const rootNode = () => {
+  const node = findElementById(useDocumentStore.getState().document.tree, ROOT_ID)
+  if (node === null || node.type !== 'container') throw new Error('root missing')
   return node
 }
 
@@ -169,5 +180,53 @@ describe('resolveStyleProperty — Y-STR-07 inheritance DoD', () => {
     const node = target()
     expect(resolveStyleProperty(node, ['transform'], 'mobile')).toBeUndefined()
     expect(resolveStyleProperty(node, ['transform'], 'base', 'hover')).toBeUndefined()
+  })
+})
+
+describe('writeActiveLayout — breakpoint routing (M4)', () => {
+  beforeEach(reset)
+
+  it('writes layout.base at the base breakpoint', () => {
+    writeActiveLayout(ROOT_ID, 'direction', 'row')
+    expect(rootNode().layout.base.direction).toBe('row')
+    expect(rootNode().layout.mobile).toBeUndefined()
+  })
+
+  it('writes layout[bp] at a non-base breakpoint and leaves base untouched', () => {
+    const before = rootNode()
+    useSessionStore.getState().setActiveBreakpoint('mobile')
+
+    writeActiveLayout(ROOT_ID, 'gap', '8px')
+
+    const after = rootNode()
+    expect(after.layout.mobile?.gap).toBe('8px')
+    expect(after.layout.base).toEqual(before.layout.base)
+  })
+
+  it('ignores activeState — layout is non-stateful, so it still targets the breakpoint slot', () => {
+    useSessionStore.getState().setActiveState('hover')
+    writeActiveLayout(ROOT_ID, 'direction', 'row')
+
+    const after = rootNode()
+    expect(after.layout.base.direction).toBe('row')
+    expect(after.states).toBeUndefined()
+  })
+})
+
+describe('resolveLayoutProperty — inheritance (M4)', () => {
+  beforeEach(reset)
+
+  it('returns base when no breakpoint override exists', () => {
+    expect(resolveLayoutProperty(rootNode(), 'direction', 'base')).toBe('column')
+    expect(resolveLayoutProperty(rootNode(), 'direction', 'mobile')).toBe('column')
+  })
+
+  it('returns the breakpoint override when present, else falls back to base', () => {
+    useSessionStore.getState().setActiveBreakpoint('mobile')
+    writeActiveLayout(ROOT_ID, 'gap', '8px')
+
+    expect(resolveLayoutProperty(rootNode(), 'gap', 'mobile')).toBe('8px')
+    expect(resolveLayoutProperty(rootNode(), 'direction', 'mobile')).toBe('column')
+    expect(resolveLayoutProperty(rootNode(), 'gap', 'base')).toBeUndefined()
   })
 })

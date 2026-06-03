@@ -47,4 +47,19 @@ describe('deleteSelected()', () => {
     expect(deleteSelected()).toBe(0)
     expect(useHistoryStore.getState().past.length).toBe(before)
   })
+
+  it('does not throw when a container and its descendant are both selected (m1)', () => {
+    // header contains title — deleting header first removes title, so a second
+    // delete for title would throw without the descendant filter.
+    const before = useHistoryStore.getState().past.length
+    useSessionStore.getState().setSelectedIds(['header', 'title'])
+    let removed = 0
+    expect(() => {
+      removed = deleteSelected()
+    }).not.toThrow()
+    expect(removed).toBe(1) // only the ancestor is deleted
+    expect(useHistoryStore.getState().past.length).toBe(before + 1)
+    expect(findElementById(useDocumentStore.getState().document.tree, 'header')).toBeNull()
+    expect(findElementById(useDocumentStore.getState().document.tree, 'title')).toBeNull()
+  })
 })

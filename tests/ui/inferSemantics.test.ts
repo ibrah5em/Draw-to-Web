@@ -24,6 +24,10 @@ function link(id: string, href: string): ElementNode {
   return { id, type: 'link', href, content: 'x', style: { base: {} } }
 }
 
+function text(id: string, tag: 'p' | 'h1' | 'h2', content: string): ElementNode {
+  return { id, type: 'text', tag, content, style: { base: {} } }
+}
+
 function findById(node: ElementNode, id: string): ElementNode | undefined {
   if (node.id === id) return node
   if (node.type !== 'container') return undefined
@@ -52,16 +56,25 @@ describe('inferSemantics (C10 adapter)', () => {
     expect(roleOf(inferSemantics(tree), 'root')).toBe('main')
   })
 
-  it('infers header for the first and footer for the last top-level region', () => {
+  it('infers header for a nav-bearing first region and footer for the trailing region', () => {
     const tree = container('root', [
-      container('first', []),
-      container('middle', []),
-      container('last', []),
+      container('top', [container('navbar', [link('l1', '#a'), link('l2', '#b')])]),
+      container('about', [text('about-h', 'h2', 'About')]),
+      container('foot', [text('fp', 'p', '© 2026')]),
     ])
     const out = inferSemantics(tree)
-    expect(roleOf(out, 'first')).toBe('header')
-    expect(roleOf(out, 'middle')).toBe('section')
-    expect(roleOf(out, 'last')).toBe('footer')
+    expect(roleOf(out, 'top')).toBe('header') // first region wrapping a nav
+    expect(roleOf(out, 'navbar')).toBe('nav') // the nav group itself
+    expect(roleOf(out, 'about')).toBe('section')
+    expect(roleOf(out, 'foot')).toBe('footer') // trailing region, content, no heading
+  })
+
+  it('does not tag a hero-first section as header when there is no nav signal (m3)', () => {
+    const tree = container('root', [
+      container('hero', [text('hero-h', 'h1', 'Hi')]),
+      container('foot', [text('fp', 'p', '©')]),
+    ])
+    expect(roleOf(inferSemantics(tree), 'hero')).toBe('section')
   })
 
   it('infers nav for a container grouping two or more links', () => {
@@ -72,10 +85,54 @@ describe('inferSemantics (C10 adapter)', () => {
     expect(roleOf(inferSemantics(tree), 'menu')).toBe('nav')
   })
 
+  it('infers nav for only the first qualifying group, not every link list (m3)', () => {
+    const tree = container('root', [
+      container('primary', [link('a', '#1'), link('b', '#2')]),
+      container('mid', []),
+      container('social', [link('c', '#3'), link('d', '#4')]),
+    ])
+    const out = inferSemantics(tree)
+    expect(roleOf(out, 'primary')).toBe('nav')
+    expect(roleOf(out, 'social')).not.toBe('nav')
+  })
+
   it('is idempotent', () => {
     const once = inferSemantics(PORTFOLIO_DOCUMENT.tree)
     const twice = inferSemantics(once)
     expect(twice).toEqual(once)
+  })
+
+  it('re-annotating an annotated tree returns the identical reference (Y-PRF-01 sharing)', () => {
+    const once = inferSemantics(PORTFOLIO_DOCUMENT.tree)
+    // Nothing left to infer → no node is rebuilt → same reference throughout.
+    expect(inferSemantics(once)).toBe(once)
+  })
+
+  it('preserves untouched sibling subtree references when one branch changes', () => {
+    const out1 = inferSemantics(
+      container('root', [
+        container('left', [
+          { id: 'lt', type: 'text', tag: 'p', content: 'hi', style: { base: {} } },
+        ]),
+        container('right', [
+          { id: 'rt', type: 'text', tag: 'p', content: 'yo', style: { base: {} } },
+        ]),
+      ])
+    ) as ContainerNode
+    const left1 = out1.children[0] as ContainerNode
+    const right1 = out1.children[1]
+
+    // Mimic an immer edit: new root array, left replaced by an edited copy,
+    // the right child kept by reference.
+    const editedLeft: ContainerNode = {
+      ...left1,
+      children: [{ ...(left1.children[0] as ElementNode), content: 'edited' }],
+    }
+    const editedTree: ContainerNode = { ...out1, children: [editedLeft, right1] }
+
+    const out2 = inferSemantics(editedTree) as ContainerNode
+    expect(out2.children[1]).toBe(right1) // untouched sibling: same reference
+    expect(out2.children[0]).not.toBe(left1) // edited branch: rebuilt
   })
 
   it('resolves identical roles for a copy-pasted subtree (new ids, same structure)', () => {

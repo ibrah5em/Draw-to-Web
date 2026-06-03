@@ -7,9 +7,10 @@
  * controlled `selection` prop reflects canvas → tree, and `onSelect` writes
  * tree → canvas.
  *
- * Visibility / lock are editor-only affordances held in local state here.
- * Propagating them to the canvas / generator needs a shared session field
- * (C5, Yousef's lane) and is intentionally deferred.
+ * Visibility / lock are editor-only flags stored in the UI-lane `viewPrefs`
+ * store: the canvas reads them to skip painting hidden elements and to ignore
+ * interaction on locked ones. They are ephemeral (never serialized) and have
+ * no effect on the exported output.
  *
  * Virtualization (Y-PRF-03): `react-arborist` renders rows through
  * `react-window`'s `FixedSizeList`, so only the visible window of rows is
@@ -44,6 +45,7 @@ import { dispatch } from '@store/dispatch'
 import { useTree } from '@store/documentStore'
 import { useSessionStore } from '@store/sessionStore'
 
+import { useViewPrefs } from '../state/viewPrefs'
 import { layerLabel } from './layerMeta'
 import styles from './LayerPanel.module.css'
 
@@ -71,13 +73,6 @@ const LayerFlagsContext = createContext<LayerFlags>({
   toggleHidden: () => {},
   toggleLocked: () => {},
 })
-
-function toggleInSet(set: ReadonlySet<string>, id: string): Set<string> {
-  const next = new Set(set)
-  if (next.has(id)) next.delete(id)
-  else next.add(id)
-  return next
-}
 
 function sameIds(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((id, i) => id === b[i])
@@ -185,16 +180,13 @@ export function LayerPanel(): JSX.Element {
   const selectedIds = useSessionStore((s) => s.selectedIds)
   const setSelectedIds = useSessionStore((s) => s.setSelectedIds)
 
-  const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set())
-  const [locked, setLocked] = useState<ReadonlySet<string>>(() => new Set())
+  const hidden = useViewPrefs((s) => s.hiddenIds)
+  const locked = useViewPrefs((s) => s.lockedIds)
+  const toggleHidden = useViewPrefs((s) => s.toggleHidden)
+  const toggleLocked = useViewPrefs((s) => s.toggleLocked)
   const flags = useMemo<LayerFlags>(
-    () => ({
-      hidden,
-      locked,
-      toggleHidden: (id) => setHidden((set) => toggleInSet(set, id)),
-      toggleLocked: (id) => setLocked((set) => toggleInSet(set, id)),
-    }),
-    [hidden, locked]
+    () => ({ hidden, locked, toggleHidden, toggleLocked }),
+    [hidden, locked, toggleHidden, toggleLocked]
   )
 
   const [wrapRef, size] = useElementSize()

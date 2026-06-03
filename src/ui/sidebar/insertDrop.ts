@@ -29,6 +29,38 @@ export function parseContainerDropId(raw: string | number | null | undefined): E
   return raw.slice(DROP_PREFIX.length)
 }
 
+/** Find the container parent + child index of `id`, or `null` if not found. */
+function findParentAndIndex(
+  node: ElementNode,
+  id: ElementId
+): { parentId: ElementId; index: number } | null {
+  if (node.type !== 'container') return null
+  for (let i = 0; i < node.children.length; i += 1) {
+    const child = node.children[i]!
+    if (child.id === id) return { parentId: node.id, index: i + 1 }
+    const found = findParentAndIndex(child, id)
+    if (found) return found
+  }
+  return null
+}
+
+/**
+ * When an Insert drag ends over a *rendered child* rather than a container
+ * drop target, resolve the container to drop into and the index just after
+ * that child. dnd-kit reports `over` as the topmost droppable, which — because
+ * a container and its sortable children overlap — is often a sibling element,
+ * not the `drop:container:` target. Returns `null` when `overId` isn't a bare
+ * element id, or the element has no container parent (e.g. the root).
+ */
+export function resolveChildDropTarget(
+  overId: string | number | null | undefined,
+  tree: ElementNode
+): { parentId: ElementId; index: number } | null {
+  if (typeof overId !== 'string') return null
+  if (overId.startsWith(DROP_PREFIX) || overId.startsWith(DRAG_PREFIX)) return null
+  return findParentAndIndex(tree, overId)
+}
+
 interface ParsedDrag {
   readonly kind: 'preset' | 'element'
   readonly itemId: string
@@ -92,12 +124,15 @@ export function createPrimitive(type: ElementType, id: ElementId): ElementNode {
  * @param activeId  - dnd-kit `active.id` (the dragged sidebar card).
  * @param overId    - dnd-kit `over.id` (the container drop target, if any).
  * @param generateId - id factory used to mint a fresh `ElementId` for primitives.
+ * @param index     - optional position among the parent's children; appended
+ *   when omitted (used when resolving a drop over a child to a precise slot).
  * @returns The operation to dispatch, or `null` when the drop should be ignored.
  */
 export function buildInsertOp(
   activeId: string | number | null | undefined,
   overId: string | number | null | undefined,
-  generateId: () => ElementId
+  generateId: () => ElementId,
+  index?: number
 ): Operation | null {
   const parent = parseContainerDropId(overId)
   if (parent === null) return null
@@ -110,11 +145,12 @@ export function buildInsertOp(
       kind: 'insertPreset',
       parentId: parent,
       presetId: drag.itemId as PresetId,
+      index,
     }
     return op
   }
 
   const node = createPrimitive(drag.itemId as ElementType, generateId())
-  const op: InsertElementOp = { kind: 'insertElement', parentId: parent, node }
+  const op: InsertElementOp = { kind: 'insertElement', parentId: parent, node, index }
   return op
 }

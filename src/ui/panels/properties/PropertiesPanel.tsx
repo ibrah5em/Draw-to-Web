@@ -38,6 +38,7 @@ import {
 import type {
   Alignment,
   AnimationSpec,
+  AssetManifestEntry,
   BackgroundLayer,
   Bindable,
   BreakpointKey,
@@ -51,6 +52,7 @@ import type {
 
 import { BREAKPOINT_WIDTH_PX } from '../../topbar/BreakpointSwitcher'
 import { layerLabel } from '../../layers/layerMeta'
+import { commitDocumentPatch } from '../document-settings/applySettings'
 import { BindableInput, ColorControl, Field, Segmented } from './controls'
 import styles from './properties.module.css'
 
@@ -741,11 +743,14 @@ function ImageSection({ node }: { node: ImageNode }): JSX.Element {
   const writeUrl = (url: string): void => {
     dispatch({ kind: 'updateNode', id: node.id, path: ['externalUrl'], value: url || undefined })
   }
-  const writeAsset = (assetId: string, width: number, height: number): void => {
-    dispatch({ kind: 'updateNode', id: node.id, path: ['assetId'], value: assetId })
+  const writeAsset = (asset: AssetManifestEntry): void => {
+    // Register the processed image in the document so the canvas (and the
+    // Assets panel) have a real source to load; then point this node at it.
+    commitDocumentPatch((doc) => ({ ...doc, assets: { ...doc.assets, [asset.id]: asset } }))
+    dispatch({ kind: 'updateNode', id: node.id, path: ['assetId'], value: asset.id })
     dispatch({ kind: 'updateNode', id: node.id, path: ['externalUrl'], value: undefined })
-    writeActiveStyle(node.id, ['width'], `${width}px`)
-    writeActiveStyle(node.id, ['height'], `${height}px`)
+    writeActiveStyle(node.id, ['width'], `${asset.width}px`)
+    writeActiveStyle(node.id, ['height'], `${asset.height}px`)
   }
 
   const handleFiles = useCallback(
@@ -765,7 +770,7 @@ function ImageSection({ node }: { node: ImageNode }): JSX.Element {
           setUpload({ status: 'error', message: result.error })
           return
         }
-        writeAsset(result.asset.id, result.asset.width, result.asset.height)
+        writeAsset(result.asset)
         setUpload({ status: 'idle' })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown upload error.'

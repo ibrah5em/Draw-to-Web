@@ -144,4 +144,11 @@ describe('columnsFromTemplate — snap to a container’s own grid', () => {
     expect(columnsFromTemplate(undefined)).toBeNull()
     expect(columnsFromTemplate('')).toBeNull()
   })
+
+  it('returns null for an auto-fill / auto-fit repeat() instead of mis-counting tokens', () => {
+    // These have no fixed column count; the inner minmax() tokens must NOT be
+    // counted as columns (would otherwise read as 2–3 columns).
+    expect(columnsFromTemplate('repeat(auto-fill, minmax(200px, 1fr))')).toBeNull()
+    expect(columnsFromTemplate('repeat(auto-fit, minmax(0, 1fr))')).toBeNull()
+  })
 })

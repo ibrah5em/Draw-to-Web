@@ -17,7 +17,7 @@ import type {
   WrapInGroupOp,
 } from '../../src/document/operations'
 import type { ContainerNode, Document, ElementNode, TextNode } from '../../src/document/types'
-import { dispatch, redo, undo } from '../../src/store/dispatch'
+import { dispatch, dispatchBatch, redo, undo } from '../../src/store/dispatch'
 import { createBlankDocument, useDocumentStore } from '../../src/store/documentStore'
 import { useHistoryStore } from '../../src/store/historyStore'
 
@@ -386,6 +386,67 @@ describe('dispatch — round-trips for every Operation kind', () => {
     // Undo wipes the entire subtree in one shot.
     expect(undo()).toBe(true)
     expect(useDocumentStore.getState().document).toEqual(before)
+  })
+})
+
+describe('dispatchBatch — several ops as one history entry', () => {
+  beforeEach(() => resetStores())
+
+  const newLeaf = (id: string): ElementNode => ({
+    id,
+    type: 'text',
+    tag: 'span',
+    content: id,
+    style: { base: {} },
+  })
+
+  it('applies every op but records a single undo entry', () => {
+    const before = useDocumentStore.getState().document
+    dispatchBatch([
+      { kind: 'updateNode', id: BOX_ID, path: ['name'], value: 'Renamed' } satisfies UpdateNodeOp,
+      {
+        kind: 'insertElement',
+        parentId: BOX_ID,
+        node: newLeaf('batch-leaf-1'),
+      } satisfies InsertElementOp,
+    ])
+
+    const after = useDocumentStore.getState().document
+    const box = findInTree(after.tree, BOX_ID)
+    expect(box?.name).toBe('Renamed')
+    expect(childIdsOf(after.tree, BOX_ID)).toContain('batch-leaf-1')
+    // Both ops collapse into ONE history entry, so a single undo reverses all.
+    expect(useHistoryStore.getState().past).toHaveLength(1)
+
+    expect(undo()).toBe(true)
+    expect(useDocumentStore.getState().document).toEqual(before)
+    expect(redo()).toBe(true)
+    expect(useDocumentStore.getState().document).toEqual(after)
+  })
+
+  it('is atomic: a later failing op rolls back the whole batch', () => {
+    const before = useDocumentStore.getState().document
+    expect(() =>
+      dispatchBatch([
+        {
+          kind: 'insertElement',
+          parentId: BOX_ID,
+          node: newLeaf('batch-leaf-2'),
+        } satisfies InsertElementOp,
+        { kind: 'deleteElement', id: 'no-such-id' } satisfies DeleteElementOp,
+      ])
+    ).toThrow(/No element/)
+    // Nothing committed, nothing recorded — the first op is rolled back too.
+    expect(useDocumentStore.getState().document).toBe(before)
+    expect(useHistoryStore.getState().past).toHaveLength(0)
+    expect(useDocumentStore.getState().isDirty).toBe(false)
+  })
+
+  it('is a no-op for an empty op list', () => {
+    const before = useDocumentStore.getState().document
+    dispatchBatch([])
+    expect(useDocumentStore.getState().document).toBe(before)
+    expect(useHistoryStore.getState().past).toHaveLength(0)
   })
 })
 

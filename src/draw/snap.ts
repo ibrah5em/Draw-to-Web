@@ -166,6 +166,10 @@ export function columnsFromTemplate(template: string | undefined): number | null
     const n = Number.parseInt(repeat[1]!, 10)
     return Number.isFinite(n) && n > 0 ? n : null
   }
+  // A `repeat()` whose count we couldn't read (auto-fill / auto-fit / an
+  // expression) has no fixed column count — let the caller use its default
+  // rather than mis-counting the inner track tokens.
+  if (/repeat\s*\(/.test(template)) return null
   // Space-separated track list: count the non-empty tokens (ignoring the
   // bracketed line-name syntax `[name]`).
   const tokens = template

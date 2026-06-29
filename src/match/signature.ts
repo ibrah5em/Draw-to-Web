@@ -155,6 +155,10 @@ function parseGridColumns(template: string | undefined): number {
     const n = Number.parseInt(repeat[1], 10)
     return Number.isFinite(n) && n > 0 ? n : 1
   }
+  // An `auto-fill` / `auto-fit` (or otherwise non-numeric) `repeat()` has no
+  // fixed column count — treat it as a single track rather than mis-counting
+  // the inner `minmax(...)` tokens as columns.
+  if (/repeat\s*\(/.test(template)) return 1
   const tracks = template.trim().split(/\s+/).filter(Boolean)
   return tracks.length > 0 ? tracks.length : 1
 }

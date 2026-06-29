@@ -45,8 +45,9 @@ import {
   type NormalizedRect,
   type RectangleShape,
 } from '@draw'
+import type { Operation } from '@document/operations'
 import type { BreakpointKey, ContainerNode, ElementId, ElementNode } from '@document/types'
-import { dispatch } from '@store/dispatch'
+import { dispatch, dispatchBatch } from '@store/dispatch'
 import { useDocumentStore } from '@store/documentStore'
 import { useSessionStore } from '@store/sessionStore'
 
@@ -188,15 +189,24 @@ function buildDrawnNode(
   return withGridPlacement(node, placement, breakpoint)
 }
 
-/** Clamp a normalised rect into the unit box. */
+/** Coerce a non-finite number (NaN / ±Infinity) to `0`. */
+function finite(n: number): number {
+  return Number.isFinite(n) ? n : 0
+}
+
+/**
+ * Clamp a normalised rect into the unit box. Non-finite inputs (e.g. a
+ * divide-by-zero when a target container measures 0×0) collapse to `0` so a
+ * degenerate gesture can never produce a NaN grid placement.
+ */
 function clampNorm(rect: NormalizedRect): NormalizedRect {
-  const x = Math.min(Math.max(rect.x, 0), 1)
-  const y = Math.min(Math.max(rect.y, 0), 1)
+  const x = Math.min(Math.max(finite(rect.x), 0), 1)
+  const y = Math.min(Math.max(finite(rect.y), 0), 1)
   return {
     x,
     y,
-    width: Math.min(Math.max(rect.width, 0), 1 - x),
-    height: Math.min(Math.max(rect.height, 0), 1 - y),
+    width: Math.min(Math.max(finite(rect.width), 0), 1 - x),
+    height: Math.min(Math.max(finite(rect.height), 0), 1 - y),
   }
 }
 
@@ -319,10 +329,15 @@ export function DrawSurface(): JSX.Element {
     }
     const guess = interpretRectangle(shape)
 
+    // Drawing one element is one user action → one history entry. The optional
+    // grid-conversion of an empty target and the insert are batched so a single
+    // undo reverses the whole gesture (canvas rule: one action, one entry).
+    const ops: Operation[] = []
+
     // Smarter snapping: an empty flex target becomes a grid so the element
     // lands in columns. Skipped for populated containers (non-destructive).
     if (target.node.layout.base.mode !== 'grid' && target.node.children.length === 0) {
-      dispatch({
+      ops.push({
         kind: 'updateNode',
         id: target.id,
         path: ['layout', 'base'],
@@ -335,9 +350,13 @@ export function DrawSurface(): JSX.Element {
     }
 
     const id = nanoid(8)
+    // The pending grid-conversion only touches the parent's layout, never its
+    // heading count, so reading the current tree for the h1 check is correct.
     const tree = useDocumentStore.getState().document.tree
     const node = buildDrawnNode(guess.best, id, placement, activeBreakpoint, tree)
-    dispatch({ kind: 'insertElement', parentId: target.id, node, index: placement.insertionIndex })
+    ops.push({ kind: 'insertElement', parentId: target.id, node, index: placement.insertionIndex })
+    if (ops.length === 1) dispatch(ops[0]!)
+    else dispatchBatch(ops, 'Draw element')
 
     setPending({
       id,
@@ -378,8 +397,10 @@ export function DrawSurface(): JSX.Element {
         return
       }
 
-      // Cross-type: remove and re-insert at the same slot with the same placement.
-      dispatch({ kind: 'deleteElement', id: pending.id })
+      // Cross-type: remove and re-insert at the same slot with the same
+      // placement. Batched so the swap is a single undo entry, not two. The
+      // node being replaced is a freshly-drawn (empty) element, so deleting it
+      // can't change the page heading count read here.
       const newId = nanoid(8)
       const node = buildDrawnNode(
         next,
@@ -388,7 +409,13 @@ export function DrawSurface(): JSX.Element {
         pending.breakpoint,
         useDocumentStore.getState().document.tree
       )
-      dispatch({ kind: 'insertElement', parentId: pending.parentId, node, index: pending.index })
+      dispatchBatch(
+        [
+          { kind: 'deleteElement', id: pending.id },
+          { kind: 'insertElement', parentId: pending.parentId, node, index: pending.index },
+        ],
+        'Change element type'
+      )
       setPending({ ...pending, id: newId, kind: next })
     },
     [pending]

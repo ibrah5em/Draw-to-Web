@@ -69,6 +69,44 @@ export function dispatch(op: Operation): void {
 }
 
 /**
+ * Apply several operations as a SINGLE history entry.
+ *
+ * Every op runs in order against one `produceWithPatches` draft, so the
+ * whole sequence undoes/redoes in one step — the same guarantee preset
+ * insertion gives (Y-STR-04). Use this when one user action is only
+ * expressible as multiple C3 ops (e.g. convert a parent to a grid *and*
+ * insert the child it now holds, or replace a node = delete + re-insert).
+ *
+ * Behaves like {@link dispatch} otherwise: if any op throws, immer rolls
+ * the draft back and nothing is recorded (atomic); an empty net-patch
+ * batch is silently dropped. An empty `ops` array is a no-op.
+ *
+ * @param ops - Operations applied in order against one shared draft.
+ * @param label - History label; defaults to each op's label joined by `+`.
+ */
+export function dispatchBatch(ops: ReadonlyArray<Operation>, label?: string): void {
+  if (ops.length === 0) {
+    return
+  }
+  const docBefore = useDocumentStore.getState().document
+  const [docAfter, patches, inversePatches] = produceWithPatches(docBefore, (draft) => {
+    for (const op of ops) {
+      applyOperation(draft, op)
+    }
+  })
+  if (patches.length === 0) {
+    return
+  }
+  useHistoryStore.getState().record({
+    patches,
+    inversePatches,
+    label: label ?? ops.map(labelFor).join(' + '),
+    timestamp: Date.now(),
+  })
+  useDocumentStore.getState().commit(docAfter)
+}
+
+/**
  * Revert the most recent dispatched op. Returns `true` when an entry was
  * popped, `false` when the past stack was empty. Marks the document
  * dirty on success — undoing changes the in-memory document away from

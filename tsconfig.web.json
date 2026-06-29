@@ -15,6 +15,9 @@
       "@ui/*": ["./src/ui/*"],
       "@store/*": ["./src/store/*"],
       "@document/*": ["./src/document/*"],
+      "@draw": ["./src/draw/index.ts"],
+      "@draw/*": ["./src/draw/*"],
+      "@match/*": ["./src/match/*"],
       "@generator/*": ["./src/generator/*"],
       "@seo/*": ["./src/seo/*"],
       "@export/*": ["./src/export/*"],
@@ -27,11 +30,14 @@
     "src/ui/**/*",
     "src/store/**/*",
     "src/document/**/*",
+    "src/draw/**/*",
+    "src/match/**/*",
     "src/generator/**/*",
     "src/runtime/**/*",
     "src/seo/**/*",
     "src/export/**/*",
     "src/templates/**/*",
-    "src/shared/**/*"
+    "src/shared/**/*",
+    "mcp/**/*"
   ]
 }

@@ -1,13 +1,17 @@
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
+/**
+ * Root Vite config — consumed ONLY by `vite-node` (the headless MCP server
+ * entry, `mcp/server.ts`, and the repo's existing `vite-node` scripts).
+ *
+ * Electron builds use `electron.vite.config.ts`; Vitest uses
+ * `vitest.config.ts`. This file exists so a plain `vite-node` run resolves the
+ * project's `@`-aliases (the document/store/ui modules the server reuses
+ * import each other through them). Aliases mirror `vitest.config.ts`.
+ */
+
 import { resolve } from 'path'
+import { defineConfig } from 'vite'
 
 export default defineConfig({
-  plugins: [react()],
-  test: {
-    globals: true,
-    include: ['tests/**/*.{test,spec}.{ts,tsx}'],
-  },
   resolve: {
     alias: {
       '@ui': resolve(__dirname, 'src/ui'),

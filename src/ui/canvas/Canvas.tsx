@@ -23,6 +23,8 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 
+import { SquareDashedMousePointer } from 'lucide-react'
+
 import { isTokenRef, resolveToken } from '@document/tokens'
 import { useDocumentSettings, useTokens, useTree } from '@store/documentStore'
 import { useSessionStore } from '@store/sessionStore'
@@ -32,6 +34,7 @@ import { BREAKPOINT_WIDTH_PX } from '../topbar/BreakpointSwitcher'
 import type { StyleResolver } from './buildStyle'
 import { CanvasContextMenu } from './CanvasContextMenu'
 import { CanvasNodeBoundary } from './CanvasNode'
+import { DrawSurface } from './DrawSurface'
 import styles from './Canvas.module.css'
 import { inferSemantics } from './inferSemantics'
 import {
@@ -74,6 +77,28 @@ export function Canvas(): JSX.Element {
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const marqueeRef = useRef<MarqueeState | null>(null)
   const [marqueeRect, setMarqueeRect] = useState<Rect | null>(null)
+  const [drawMode, setDrawMode] = useState(false)
+  const [showDrawHint, setShowDrawHint] = useState(() => {
+    try {
+      return localStorage.getItem('dtw.draw.hintSeen') !== '1'
+    } catch {
+      return false
+    }
+  })
+
+  const dismissDrawHint = useCallback((): void => {
+    setShowDrawHint(false)
+    try {
+      localStorage.setItem('dtw.draw.hintSeen', '1')
+    } catch {
+      // Storage unavailable — non-fatal; the hint just shows again next time.
+    }
+  }, [])
+
+  const toggleDrawMode = useCallback((): void => {
+    dismissDrawHint()
+    setDrawMode((on) => !on)
+  }, [dismissDrawHint])
 
   const collectIntersecting = useCallback((rect: Rect): string[] => {
     const viewport = viewportRef.current
@@ -202,8 +227,32 @@ export function Canvas(): JSX.Element {
               ))}
             </div>
           ) : null}
+          {drawMode ? <DrawSurface /> : null}
         </div>
       </CanvasContextMenu>
+      <div className={styles.drawTool}>
+        <button
+          type="button"
+          className={styles.drawToggle}
+          data-active={drawMode}
+          aria-pressed={drawMode}
+          aria-label="Draw element"
+          title="Draw element — drag on the canvas to create"
+          onClick={toggleDrawMode}
+        >
+          <SquareDashedMousePointer size={16} />
+          <span className={styles.drawToggleLabel}>{drawMode ? 'Drawing…' : 'Draw'}</span>
+        </button>
+        {showDrawHint && !drawMode ? (
+          <div className={styles.drawHint} role="note">
+            <strong>New: Draw to create.</strong> Click here, then drag a box on the canvas — it
+            becomes a real element snapped to the grid.
+            <button type="button" className={styles.drawHintDismiss} onClick={dismissDrawHint}>
+              Got it
+            </button>
+          </div>
+        ) : null}
+      </div>
       {marqueeStyle && <div className={styles.marquee} style={marqueeStyle} aria-hidden />}
     </div>
   )

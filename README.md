@@ -134,6 +134,39 @@ element primitives, no new store ownership.
   with `npm run mcp`; documents and ZIP bundles land under `DTW_MCP_DIR`
   (default `.dtw-mcp/`).
 
+### Using the MCP server
+
+The server speaks MCP over stdio (newline-delimited JSON-RPC 2.0). Point any
+MCP-capable client at the launch command:
+
+```jsonc
+// e.g. an MCP client config ("mcpServers" entry)
+{
+  "draw-to-web": {
+    "command": "npm",
+    "args": ["run", "mcp"],
+    "env": { "DTW_MCP_DIR": "/abs/path/to/output" },
+  },
+}
+```
+
+Or drive it directly for a smoke test — initialize, then list tools:
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' \
+  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+  | npm run --silent mcp
+# → server advertises "draw-to-web" and lists 20 tools (create_document …
+#   apply_template, match_layout, run_a11y_check, preview_html, export_site).
+```
+
+A typical agent flow: `create_document` → `apply_template` / `insert_preset` →
+`set_tokens` / `set_theme` → `run_a11y_check` → `export_site`. Every mutation
+routes through the same `Operation` union the canvas uses, and `export_site`
+runs the full nine-stage pipeline including the axe-core gate.
+
 ## Export pipeline
 
 `exportProject(document, options)` in `src/export/index.ts` chains nine stages

@@ -1,11 +1,5 @@
 /**
- * Hydrated portfolio export budget (I-EXP-01).
- *
- * The `e2e-example.test.ts` budget assertion runs against
- * `PORTFOLIO_DOCUMENT` with `assets: {}` — the `optimize-images` stage
- * is a no-op, so the wall-clock number it produces is optimistic. The
- * spec's <10 s portfolio budget covers the *whole* pipeline including
- * variant packaging.
+ * Hydrated portfolio image pipeline (I-EXP-01).
  *
  * This test hydrates the portfolio document with three assets (four
  * variant widths each), writes real WebP bytes to a temp dir via
@@ -14,8 +8,12 @@
  * heaviest realistic option set — `minify: true` + `inlineJS: true` —
  * against a fresh `createPortfolioTemplate('Ada Lovelace')`.
  *
- * The assertion is the same hard <10 s number from
- * `docs/0.2.0v/plan.md` Section 14 / `.claude/rules/testing.md`.
+ * It guards the *functional* image path: every on-disk variant is read
+ * in a single batched IPC call and lands in the ZIP. The wall-clock
+ * budget (plan.md §14 / testing.md) lives in the perf lane (tests/perf/),
+ * kept out of the default `npm run test` so it can't flake under CPU load
+ * (gh #89); the generous test-level timeout below stays only as a coarse
+ * hang-guard, not a perf assertion.
  */
 
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
@@ -102,8 +100,8 @@ afterAll(async () => {
   if (workDir.length > 0) await rm(workDir, { recursive: true, force: true })
 })
 
-describe('portfolio export budget (I-EXP-01) — hydrated assets', () => {
-  it('packs every on-disk variant into the ZIP and finishes under 10 s', async () => {
+describe('portfolio image pipeline (I-EXP-01) — hydrated assets', () => {
+  it('reads every on-disk variant in a single batch and packs it into the ZIP', async () => {
     const doc: Document = {
       ...createPortfolioTemplate('Ada Lovelace'),
       assets: manifestEntries(),
@@ -137,22 +135,19 @@ describe('portfolio export budget (I-EXP-01) — hydrated assets', () => {
       },
     })
 
-    const t0 = performance.now()
     const result = await exportProject(doc, {
       projectName: 'portfolio',
       minify: true,
       inlineJS: true,
     })
-    const elapsedMs = performance.now() - t0
 
     // eslint-disable-next-line no-console
     console.log(
-      `[budget] hydrated portfolio (minify+inlineJS): ${elapsedMs.toFixed(0)}ms ` +
-        `(budget <10000ms, ${VARIANT_WIDTHS.length * hydratedAssets.length} variants on disk)`
+      `[pipeline] hydrated portfolio (minify+inlineJS): ` +
+        `${VARIANT_WIDTHS.length * hydratedAssets.length} variants on disk`
     )
 
     expect(result.success).toBe(true)
-    expect(elapsedMs).toBeLessThan(10_000)
     // optimize-images batches every path into a single IPC call (dedupe + sort).
     expect(readBatches).toBe(1)
 

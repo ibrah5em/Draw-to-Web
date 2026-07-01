@@ -1,4 +1,4 @@
-# Draw-to-Web — Supervisor Architecture Report (v0.2.0)
+# Draw-to-Web — Supervisor Architecture Report (v0.3.0)
 
 **Project:** Draw-to-Web Builder
 **Author:** Ibrahim Haski (221116)
@@ -7,11 +7,13 @@
 stores + history (Yousef) and the canvas / panels UI (LuF8y) are referenced
 only at their interface boundaries (contracts C5, C10).
 
-> **Status:** DRAFT. Section 7 (Performance) is now filled — `Y-PRF-04`
-> (`docs/0.2.0v/perf-baseline.md`, Yousef) has landed. Section 9 (Demo
-> readiness) still depends on `X-09` (the demo rehearsal), which has not been
-> held; it is stubbed below and must be filled before this report — and the
-> `v0.3.0` tag — is considered complete.
+> **Status:** FINAL for the `v0.3.0` cut — the M5 polish of the v0.2.0 sprint
+> architecture (the docs stay under `docs/0.2.0v/` as one sprint cycle).
+> Section 7 (Performance) is filled — `Y-PRF-04` (`docs/0.2.0v/perf-baseline.md`,
+> Yousef) landed. Section 9 (Demo readiness) records a **conscious waiver**:
+> `v0.3.0` shipped without the `X-09` rehearsal and without render-layer perf
+> sign-off (`DECISIONS.md` D-02, 2026-06-03); both remain the top post-release
+> item. See §9 and §12.
 
 ## 1. What changed from v0.1.0
 

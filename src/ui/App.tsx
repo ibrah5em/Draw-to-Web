@@ -19,6 +19,7 @@ import { InsertSidebar } from './sidebar/InsertSidebar'
 import { BreakpointSwitcher } from './topbar/BreakpointSwitcher'
 import { CanvasViewToggles } from './topbar/CanvasViewToggles'
 import { ExportButton } from './topbar/ExportButton'
+import { MatchButton } from './topbar/MatchButton'
 import { MenuBar } from './topbar/MenuBar'
 import { SaveIndicator } from './topbar/SaveIndicator'
 import { ThemeToggle } from './topbar/ThemeToggle'
@@ -208,6 +209,7 @@ export function App(): JSX.Element {
           <CanvasViewToggles />
           <ViewToggles toggles={panelToggles} />
           <ThemeToggle />
+          <MatchButton />
           <ExportButton />
         </div>
       </header>

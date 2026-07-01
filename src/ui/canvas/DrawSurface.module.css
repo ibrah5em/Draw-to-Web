@@ -1,0 +1,86 @@
+/* Draw-to-create overlay. Editor chrome only — never emitted into output.
+   Absolute positioning is allowed here because it overlays the editor canvas
+   (the same exemption the grid overlay uses), not the exported page. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* Live column highlight while dragging — shows which columns will be occupied
+   within the TARGET container's box. Positioned per-drag via inline styles. */
+.columns {
+  position: absolute;
+  display: grid;
+  gap: var(--sp-2);
+  pointer-events: none;
+}
+
+.column {
+  background: transparent;
+  border-radius: 2px;
+  transition: background 100ms ease;
+}
+
+.column[data-active='true'] {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* Snap guides at the left/right edges of the snapped column band. */
+.guide {
+  position: absolute;
+  width: 0;
+  border-left: 1px dashed color-mix(in srgb, var(--accent) 70%, transparent);
+  pointer-events: none;
+}
+
+/* The drawn rectangle itself. */
+.preview {
+  position: absolute;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1.5px solid var(--accent);
+  border-radius: 4px;
+}
+
+/* Live dimensions / columns read-out following the rectangle. */
+.dimLabel {
+  position: absolute;
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* Brief insert flash drawn over the newly created node. */
+.flash {
+  position: absolute;
+  pointer-events: none;
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+  animation: drawFlash 700ms ease-out forwards;
+}
+
+@keyframes drawFlash {
+  0% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+  100% {
+    opacity: 0;
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash {
+    animation: none;
+    opacity: 0;
+  }
+}

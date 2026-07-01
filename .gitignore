@@ -16,3 +16,7 @@ cross-browser-out/
 draft/
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# MCP server runtime workspace + scratch project files
+.dtw-mcp/
+acme.dtw

@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -62,7 +62,11 @@ jobs:
             artifacts: |
               dist/*.AppImage
               dist/*.deb
-          - os: windows-latest
+          # Pinned to windows-2025 explicitly: `windows-latest` is being
+          # redirected to the windows-2025 image, so pinning keeps the NSIS
+          # packaging step on a known runner instead of tracking the moving
+          # `latest` label (gh-actions #88).
+          - os: windows-2025
             script: build:win
             artifacts: |
               dist/*.exe
@@ -73,10 +77,10 @@ jobs:
               dist/*.zip
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -91,7 +95,7 @@ jobs:
         run: npm run ${{ matrix.script }} -- --publish never
 
       - name: Upload installer artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: installers-${{ matrix.os }}
           path: ${{ matrix.artifacts }}
@@ -104,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all installer artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: installers-*
           path: dist
@@ -114,7 +118,7 @@ jobs:
       # categorized notes from merged PRs since the previous tag. Pair with a
       # .github/release.yml if we want to customize categories later.
       - name: Attach installers + changelog to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/*.AppImage

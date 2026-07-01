@@ -42,15 +42,12 @@ describe('export pipeline — end to end', () => {
 
   it('emits every stage in order via onProgress, then succeeds', async () => {
     const stages: ExportStage[] = []
-    const t0 = performance.now()
     const result = await exportProject(doc, {
       projectName: 'portfolio',
       onProgress: (e) => stages.push(e.stage),
     })
-    const elapsedMs = performance.now() - t0
 
     // eslint-disable-next-line no-console
-    console.log(`\n[e2e] full export: ${elapsedMs.toFixed(0)}ms (budget <10000ms)`)
     console.log('[e2e] stages:', stages.join(' → '))
 
     expect(result.success).toBe(true)
@@ -65,16 +62,15 @@ describe('export pipeline — end to end', () => {
       'bundle',
       'save',
     ])
-    expect(elapsedMs).toBeLessThan(10_000)
     if (result.success) expect(result.report.accessibility.passed).toBe(true)
   })
 
-  it('stays under the 10s portfolio budget with minify=true and inlineJS=true', async () => {
-    // The default-options run is timed in the test above; this one
-    // exercises the heaviest path (html-minifier-terser + lightningcss
-    // + terser + inline-JS splice) so the budget covers both shapes.
-    // Use a local IPC stub so the minified buffer doesn't clobber the
-    // `savedBuffer` the `bundle contents` describe inspects below.
+  it('runs the heaviest path (minify + inlineJS) to success', async () => {
+    // Exercises html-minifier-terser + lightningcss + terser + inline-JS
+    // splice. The wall-clock budget for this path lives in the perf lane
+    // (tests/perf/exportBudgets.perf.test.ts); here we only assert the heavy
+    // path completes. Use a local IPC stub so the minified buffer doesn't
+    // clobber the `savedBuffer` the `bundle contents` describe inspects below.
     const win = globalThis.window as { electronAPI: unknown }
     const prevElectronAPI = win.electronAPI
     win.electronAPI = {
@@ -83,17 +79,12 @@ describe('export pipeline — end to end', () => {
       },
     }
     try {
-      const t0 = performance.now()
       const result = await exportProject(doc, {
         projectName: 'portfolio-min',
         minify: true,
         inlineJS: true,
       })
-      const elapsedMs = performance.now() - t0
-      // eslint-disable-next-line no-console
-      console.log(`[e2e] minify+inline: ${elapsedMs.toFixed(0)}ms (budget <10000ms)`)
       expect(result.success).toBe(true)
-      expect(elapsedMs).toBeLessThan(10_000)
     } finally {
       win.electronAPI = prevElectronAPI
     }
@@ -107,16 +98,13 @@ describe('export pipeline — end to end', () => {
     expect(report.errors).toHaveLength(0)
   })
 
-  it('dry-run preview returns html+css under 500ms', async () => {
+  it('dry-run preview returns html + css (no gate, no bundle)', async () => {
     // The dry-run path (I-EXP-04) is the document-model preview: it skips
-    // the a11y gate + bundle + save and returns the formatted bytes.
-    const t0 = performance.now()
+    // the a11y gate + bundle + save and returns the formatted bytes. Its
+    // wall-clock budget lives in the perf lane (tests/perf/).
     const preview = await exportProject(doc, { dryRun: true })
-    const elapsedMs = performance.now() - t0
-    console.log(`[e2e] preview: ${elapsedMs.toFixed(0)}ms (budget <500ms)`)
     expect(typeof preview.html).toBe('string')
     expect(typeof preview.css).toBe('string')
-    expect(elapsedMs).toBeLessThan(500)
   })
 
   describe('bundle contents', () => {

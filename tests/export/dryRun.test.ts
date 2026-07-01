@@ -3,38 +3,26 @@
  * (L-DLG-07) calls `exportProject(doc, { dryRun: true })` to get the
  * formatted bytes without touching the bundle, save, or a11y stages.
  *
- * Budget: <750 ms on the portfolio template (steady-state ~325 ms;
- * 750 ms leaves headroom for ambient CI/WSL2 noise without masking a
- * real regression in the Prettier-bound hot path).
+ * This suite asserts the dry-run *contract* (shape of the returned bytes,
+ * gate/IPC bypass, minify/inlineJS behaviour). The wall-clock budget for
+ * the dry-run hot path lives in the perf lane (tests/perf/), kept out of
+ * the default `npm run test` so it can't flake under CPU load (gh #89).
  */
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createPortfolioTemplate } from '@templates/portfolio'
 import { exportProject } from '@export/index'
 
 describe('exportProject — dry-run mode (I-EXP-04)', () => {
   const doc = createPortfolioTemplate('Ada Lovelace')
 
-  // Prime Prettier's ESM module graph so the steady-state budget is
-  // representative of how the Code Preview panel (L-DLG-07) actually
-  // behaves — it's a long-lived panel that re-runs on store change,
-  // not a cold spawn each time.
-  beforeAll(async () => {
-    await exportProject(doc, { dryRun: true })
-  })
-
   it('returns formatted html / css / js without touching IPC or the gate', async () => {
-    const t0 = performance.now()
     const result = await exportProject(doc, { dryRun: true })
-    const elapsedMs = performance.now() - t0
-    // eslint-disable-next-line no-console
-    console.log(`[dryRun] ${elapsedMs.toFixed(0)}ms (budget <750ms, warm)`)
 
     expect(result.html.length).toBeGreaterThan(0)
     expect(result.css.length).toBeGreaterThan(0)
     expect(result.js.length).toBeGreaterThan(0)
     expect(result.html.startsWith('<!doctype html>')).toBe(true)
     expect(result.css).toMatch(/:root\s*\{/)
-    expect(elapsedMs).toBeLessThan(750)
   })
 
   it('skips the a11y gate so previews still render when violations exist', async () => {

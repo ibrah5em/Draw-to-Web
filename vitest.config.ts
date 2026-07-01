@@ -1,25 +1,18 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig, configDefaults } from 'vitest/config'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import { testAlias } from './vitest.shared'
 
 export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
+    // Wall-clock perf budgets live in their own lane (`npm run test:perf`,
+    // vitest.perf.config.ts) so a loaded machine can't flake the default
+    // suite. See gh-actions #89.
+    exclude: [...configDefaults.exclude, '**/*.perf.test.ts'],
   },
   resolve: {
-    alias: {
-      '@ui': resolve(__dirname, 'src/ui'),
-      '@store': resolve(__dirname, 'src/store'),
-      '@document': resolve(__dirname, 'src/document'),
-      '@draw': resolve(__dirname, 'src/draw'),
-      '@match': resolve(__dirname, 'src/match'),
-      '@generator': resolve(__dirname, 'src/generator'),
-      '@seo': resolve(__dirname, 'src/seo'),
-      '@export': resolve(__dirname, 'src/export'),
-      '@templates': resolve(__dirname, 'src/templates'),
-      '@shared': resolve(__dirname, 'src/shared'),
-    },
+    alias: testAlias,
   },
 })

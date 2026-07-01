@@ -20,6 +20,7 @@
     "build:mcp": "vite build -c vite.mcp.config.ts",
     "start:mcp": "node dist/mcp/server.mjs",
     "test": "vitest run",
+    "test:perf": "vitest run --config vitest.perf.config.ts",
     "test:a11y": "vitest run tests/templates tests/seo/axeGate.test.ts tests/export/e2eValidate.test.ts tests/export/exportProject.test.ts",
     "lint": "eslint . --ext .ts,.tsx && prettier --check .",
     "typecheck": "tsc --noEmit",

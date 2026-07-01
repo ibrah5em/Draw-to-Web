@@ -6,6 +6,12 @@ portable HTML/CSS bundle plus opt-in vetted JS snippets (theme toggle,
 scroll-spy, mobile menu, reveals, animation gating, terminal typing). All
 runtime behaviour is independently toggleable; all flags off → JS-free output.
 
+**New in v1.0.0:** _draw a rectangle_ to create an element (the shape is
+interpreted into a placed primitive), _match my layout_ to adopt one of six
+bundled professional designs from a rough draft, and a **headless MCP server**
+that drives the same document / generate / export pipeline over stdio without
+Electron. See [Authoring surfaces (v1.0.0)](#authoring-surfaces-v100).
+
 ## Stack
 
 - **Electron 28** — desktop shell
@@ -18,8 +24,9 @@ runtime behaviour is independently toggleable; all flags off → JS-free output.
 - **prettier + lightningcss + html-minifier-terser** — output formatting + minification
 - **jszip** — export bundling
 - **axe-core** — accessibility hard gate (blocks export on critical/serious)
+- **@modelcontextprotocol/sdk** — headless MCP server over the document pipeline
 - **Vite + electron-vite + electron-builder** — dev + build + packaging
-- **Vitest** — testing (~820 tests across document, generator, runtime, seo, export, templates, store, ui)
+- **Vitest** — testing (1042 tests across document, generator, runtime, seo, export, templates, store, ui, draw, match, mcp)
 
 ## Requirements
 
@@ -40,20 +47,25 @@ npm run dev
 
 ## Commands
 
-| Command                 | Description                                            |
-| ----------------------- | ------------------------------------------------------ |
-| `npm run dev`           | Start Electron in dev mode (HMR for main + renderer)   |
-| `npm run compile`       | Build main + preload + renderer bundles (no installer) |
-| `npm run build`         | Build + package for the current platform               |
-| `npm run build:win`     | Build + package Windows NSIS installer                 |
-| `npm run build:linux`   | Build + package Linux AppImage and .deb                |
-| `npm run build:mac`     | Build + package macOS dmg + zip (x64 + arm64)          |
-| `npm run build:dir`     | Build only (no installer, fast iteration)              |
-| `npm test`              | Run the full Vitest suite                              |
-| `npm run test:a11y`     | Run only the a11y suites                               |
-| `npm run lint`          | ESLint + Prettier check                                |
-| `npm run typecheck`     | TypeScript `tsc --noEmit` (main + preload)             |
-| `npm run typecheck:web` | TypeScript `tsc --noEmit` (renderer)                   |
+| Command                             | Description                                            |
+| ----------------------------------- | ------------------------------------------------------ |
+| `npm run dev`                       | Start Electron in dev mode (HMR for main + renderer)   |
+| `npm run compile`                   | Build main + preload + renderer bundles (no installer) |
+| `npm run build`                     | Build + package for the current platform               |
+| `npm run build:win`                 | Build + package Windows NSIS installer                 |
+| `npm run build:linux`               | Build + package Linux AppImage and .deb                |
+| `npm run build:mac`                 | Build + package macOS dmg + zip (x64 + arm64)          |
+| `npm run build:dir`                 | Build only (no installer, fast iteration)              |
+| `npm test`                          | Run the full Vitest suite                              |
+| `npm run test:a11y`                 | Run only the a11y suites                               |
+| `npm run test:perf`                 | Run the wall-clock perf-budget lane (separate config)  |
+| `npm run lint`                      | ESLint + Prettier check                                |
+| `npm run typecheck`                 | TypeScript `tsc --noEmit` (main + preload)             |
+| `npm run typecheck:web`             | TypeScript `tsc --noEmit` (renderer)                   |
+| `npm run mcp`                       | Start the headless MCP server over stdio (vite-node)   |
+| `npm run build:mcp`                 | Build the MCP server bundle (`dist/mcp/server.mjs`)    |
+| `npm run start:mcp`                 | Run the built MCP server bundle                        |
+| `npm run generate:match-signatures` | Regenerate the match-library signatures                |
 
 ## Architecture
 
@@ -69,6 +81,7 @@ itself.
 - **Document Model** (`src/document/`) — Types, Zod schemas, operations, tokens, validation, migrations, presets — the source of truth
 - **Stores** (`src/store/`) — Zustand stores for document + history (immer patches)
 - **Output pipeline** (`src/generator/`, `src/runtime/`, `src/seo/`, `src/export/`) — HTML/CSS/JS emit, runtime snippets, SEO injection, export bundling
+- **Authoring surfaces** (`src/draw/`, `src/match/`, `mcp/`) — draw-to-create, match-layout, and the headless MCP server (all pure/headless, reusing the operations + export pipeline)
 - **Shell** (`src/main/`, `src/preload/`, `src/shared/`) — Electron lifecycle, IPC handlers, native file ops, typed bridge
 
 ### Process boundaries
@@ -88,8 +101,38 @@ itself.
 - Exactly one `<h1>`, no heading-level skips, `alt` on every `<img>`, ARIA labels on icon-only buttons, `prefers-reduced-motion` honoured.
 - Deterministic output — same input tree → byte-equal HTML/CSS.
 
-See [`docs/0.2.0v/plan.md`](docs/0.2.0v/plan.md) for the v0.2.0 execution plan.
-Archived v0.1.0 docs live in [`docs/0.1.0v/`](docs/0.1.0v/).
+See the [`docs/1.0.0v/`](docs/1.0.0v/) supervisor report for the v1.0.0
+architecture, [`docs/0.2.0v/plan.md`](docs/0.2.0v/plan.md) for the sprint
+execution plan, and [`docs/0.1.0v/`](docs/0.1.0v/) for archived v0.1.0 docs.
+
+## Authoring surfaces (v1.0.0)
+
+Three authoring capabilities added in v1.0.0. All three are pure/headless at the
+core and reuse the existing document operations and export pipeline — no new
+element primitives, no new store ownership.
+
+- **Draw to create** (`src/draw/`) — drag a rectangle on the canvas and it
+  becomes an element. `interpretRectangle` guesses the element kind (ranked
+  alternatives + confidence + explainer hint); `snapToGrid` resolves the drawn
+  box to a grid placement (column start/span + insertion index — pure math, never
+  pixels); the canvas builds the node with the existing `createPrimitive` factory
+  and dispatches a normal `insertElement` op. Drawn pixels never touch the store.
+- **Match my layout** (`src/match/`) — turn a rough draft into a professional
+  design. `extractSignature` builds a deterministic structural fingerprint of the
+  tree; `matchLayout` ranks it against six bundled pages (agency, docs-article,
+  gallery-media, landing-saas, portfolio-split, resume-minimal), each shipping a
+  build-time signature; `adoptLibraryPage` hydrates the chosen page through the
+  same path a `.dtw` load uses.
+- **Headless MCP server** (`mcp/`) — a stdio [Model Context
+  Protocol](https://modelcontextprotocol.io) server exposing ~20 tools over the
+  document / perception / mutation / export pipeline (`create_document`,
+  `insert_element`, `insert_preset`, `apply_template`, `set_tokens`, `set_theme`,
+  `set_runtime`, `set_seo`, `match_layout`, `preview_html`, `export_site`, …).
+  Runs without Electron via an `fs`-backed export shim; every tool is a thin
+  adapter over the existing operations (C3) and generate / a11y / export entry
+  points, so MCP-driven exports go through the same axe-core hard gate. Start it
+  with `npm run mcp`; documents and ZIP bundles land under `DTW_MCP_DIR`
+  (default `.dtw-mcp/`).
 
 ## Export pipeline
 
@@ -142,8 +185,8 @@ in one shot to a GitHub Release with auto-generated notes from merged PRs.
 To cut a release:
 
 ```bash
-git tag v0.3.0 -m "release notes"
-git push origin v0.3.0
+git tag v1.0.0 -m "release notes"
+git push origin v1.0.0
 ```
 
 ### Installing the unsigned builds
@@ -179,6 +222,10 @@ work required.
 | `tests/store/`     | Document + history stores, persistence                  |
 | `tests/ui/`        | Renderer components (Testing Library + jsdom)           |
 | `tests/a11y/`      | End-to-end axe-core runs on rendered output             |
+| `tests/draw/`      | Rectangle interpret / grid snap / node mapping          |
+| `tests/match/`     | Layout signature / matcher / bundled library            |
+| `tests/mcp/`       | MCP tools, session store, end-to-end tool flows         |
+| `tests/perf/`      | Wall-clock export/perf budgets (`npm run test:perf`)    |
 
 Run a single suite with `npx vitest run tests/seo/`.
 
@@ -197,7 +244,11 @@ src/
   seo/              Head, OG, JSON-LD, sitemap, robots emitters
   export/           Pipeline orchestrator + axe gate + minify + ZIP + self-host fonts
   templates/        Blank, portfolio, landing, resume starters
-tests/              Vitest suites mirroring src/
+  draw/             Draw-to-create — rectangle interpret + grid snap + node mapping
+  match/            Match-layout — signature + matcher + bundled page library
+mcp/                Headless MCP server (stdio) over the document pipeline
+tests/              Vitest suites mirroring src/ (+ draw, match, mcp, perf)
+docs/1.0.0v/        v1.0.0 supervisor report (current)
 docs/0.2.0v/        v0.2.0 execution plan + architecture docs
 docs/0.1.0v/        v0.1.0 archived docs (historical reference)
 .github/workflows/  CI + release configuration

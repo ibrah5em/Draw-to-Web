@@ -1,0 +1,63 @@
+% SOURCES: docs/0.2.0v/plan.md (§4 Guiding Principles, §6 Contracts, §17 Milestones,
+%          §7 Day 0); CLAUDE.md (Sprint Model, Git Workflow); .claude/rules/*;
+%          docs/1.0.0v/supervisor-report.md (§8 Build & CI)
+% GUIDANCE: Describe HOW the team worked, not what was built. This is a strong
+% chapter for this project because the process is unusually well-documented.
+
+\chapter{Work Methodology}
+\label{ch:methodology}
+
+\section{Development Model: Task-Driven Milestones}
+% DRAFT (review):
+Development followed a \emph{task-driven, milestone-gated} model rather than a
+fixed time-box. Progress was unlocked by completing the tasks that gate each
+milestone, from \textbf{M1 (Foundation)} through \textbf{M5 (Polish + Demo)} and
+the \textbf{v1.0.0} demo cut. Every task carried a single owner, a priority
+(\texttt{P0} blocks the demo, \texttt{P1} is a Tier-1 feature, \texttt{P2} is
+polish), and explicit dependency links.
+% TODO: cite the milestone table (reproduce a compact version here or in ch. 4).
+
+\section{Team Structure and Ownership}
+% SOURCES: CLAUDE.md (Module Ownership); docs/0.2.0v/plan.md (§10 Tasks)
+% DRAFT (review):
+Three engineers owned disjoint areas to avoid merge contention:
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Document Model, generator, runtime, SEO, export, shell, CI} ---
+        the output pipeline and Electron shell.
+  \item \textbf{State stores} --- Zustand stores, undo/redo history via
+        \texttt{immer} patches, persistence, autosave/crash-recovery.
+  \item \textbf{User interface} --- canvas, panels, sidebar, topbar, layers tree.
+\end{itemize}
+% TODO: confirm names/IDs and add a one-line responsibility per member.
+
+\section{Cross-Owner Contracts}
+% SOURCES: docs/0.2.0v/plan.md (§6 Contracts C1–C12); docs/0.2.0v/architecture.md (§6)
+% DRAFT (review):
+Interfaces between owners were fixed as twelve numbered \emph{contracts}
+(C1--C12): the shared types, the Zod schemas, the operation set, the typed IPC
+surface, the store hooks, the generator entry point, the presets registry, the
+validation function, the token resolver, the semantic-inference hint, the image
+IPC contract, and the export orchestrator. Any breaking change to a contract
+required a labelled pull request and review from the named downstream consumer,
+which kept parallel work from silently diverging.
+
+\section{Quality Gates and Tooling}
+% SOURCES: .claude/rules/git.md, preflight.md; CLAUDE.md (Commands, Code Quality);
+%          docs/1.0.0v/supervisor-report.md (§8)
+% DRAFT (review):
+Every push ran three gates --- lint (ESLint + Prettier), type-checking (strict
+TypeScript across all \texttt{tsconfig}s), and the test suite --- enforced locally
+by a pre-push hook and again in continuous integration. Specialised review passes
+checked output determinism, the no-\texttt{position:absolute} invariant,
+accessibility, and contract changes. A weekly integration ritual merged open
+branches and ran the full matrix.
+% TODO: note the ``no AI attribution'' policy if relevant to your academic
+% integrity statement.
+
+\section{Version Control and Release Workflow}
+% SOURCES: .claude/rules/git.md; .github/workflows/{ci,release}.yml; CHANGELOG.md
+% DRAFT (review):
+Work used conventional commits on short-lived feature branches squash-merged into
+\texttt{main}. Releases were tag-driven: pushing a \texttt{v*} tag triggered a
+per-operating-system build matrix that produced native installers and published a
+GitHub Release. Versions progressed v0.1.0 → v0.2.0 → v0.3.0 → \textbf{v1.0.0}.

@@ -1,0 +1,57 @@
+% SOURCES: README.md (Stack); CLAUDE.md (Tech Stack); docs/0.2.0v/plan.md
+%          (§9 Library-to-Feature Map — this is the JUSTIFICATION source);
+%          docs/1.0.0v/supervisor-report.md
+% GUIDANCE: The marking scheme wants technologies + a JUSTIFICATION for each.
+% Table below is drafted from the repo; review the justifications in your words.
+
+\chapter{Technologies Used}
+\label{ch:tech}
+
+\section{Overview}
+% DRAFT (review):
+The application is a TypeScript codebase spanning an Electron main process, a
+preload security bridge, and a React renderer, built and packaged with Vite and
+electron-builder. Table~\ref{tab:tech} lists the principal technologies and the
+reason each was chosen.
+
+\begin{table}[H]
+  \centering
+  \caption{Principal technologies and justification.}
+  \label{tab:tech}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l l X@{}}
+    \toprule
+    \textbf{Technology} & \textbf{Role} & \textbf{Justification} \\
+    \midrule
+    Electron \cite{electron} & Desktop shell & Cross-platform desktop with native file access; local-first, no server. \\
+    React 18 \cite{react} & UI & Declarative rendering of the document tree; mature ecosystem. \\
+    TypeScript 5 \cite{typescript} & Language & Strict typing across three processes; contracts enforced at compile time. \\
+    Zustand + immer \cite{zustand,immer} & State + history & Minimal store; \texttt{immer} patches give undo/redo for free. \\
+    Zod \cite{zod} & Validation & Schema validation at IPC and file-load boundaries; types via \texttt{z.infer}. \\
+    axe-core \cite{axecore} & A11y gate & Industry-standard engine; blocks export on critical/serious issues. \\
+    prettier \cite{prettier} & Output format & Makes generated HTML/CSS read as hand-written before minification. \\
+    Lightning CSS \cite{lightningcss} & CSS minify & Fast, correct CSS transform/minify in the export pipeline. \\
+    sharp \cite{sharp} & Images & WebP + \texttt{srcset} generation in the main process. \\
+    Vite \cite{vite} & Build/dev & Fast HMR dev server and production bundling. \\
+    MCP SDK \cite{mcp-spec} & Headless API & Exposes the pipeline as tools to agents/clients over stdio. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+% TODO: add any you want to feature individually below (@dnd-kit, react-arborist,
+% Radix UI, chroma-js, jszip, html-minifier-terser). plan.md §9 justifies each.
+
+\section{Selected Justifications in Depth}
+% DRAFT (review): expand 2–3 that best show engineering judgement.
+\subsection*{Why a single Document Model + immer}
+Undo/redo, persistence, and generation all reduce to functions of one immutable
+document. \texttt{immer} lets operations be written as if mutating a draft while
+producing patches that the history store replays for undo/redo.
+
+\subsection*{Why an accessibility hard gate}
+% SOURCES: plan.md §13; supervisor-report §6
+Accessibility is treated as a build error, not a warning: \texttt{axe-core} runs
+on the generated HTML and blocks export on any critical or serious violation,
+which guarantees a compliance floor no manual review could match.
+
+% TODO: add one more (e.g. determinism via prettier + stable IDs).

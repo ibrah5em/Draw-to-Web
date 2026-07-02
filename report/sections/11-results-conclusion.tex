@@ -1,0 +1,68 @@
+% SOURCES: docs/1.0.0v/supervisor-report.md (§9, §12, §13); DECISIONS.md (D-02..D-04);
+%          docs/0.2.0v/plan.md (§22 Out of Scope, §23 Honest Summary);
+%          draft/Features/future-authoring.md, future-product.md (future work)
+% GUIDANCE: Restate objectives → what was achieved (evidence) → limitations
+% (honest) → future work → conclusion. Tie each result back to O1–O6 in ch. 2.
+
+\chapter{Results and Conclusion}
+\label{ch:results}
+
+\section{Results Against Objectives}
+% DRAFT (review): map outcomes to the objectives from ch. 2.
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{O1 (single source of truth)} --- achieved: one Document Model;
+        canvas renders it, generator walks it.
+  \item \textbf{O2 (semantic, deterministic output)} --- achieved and
+        test-guarded (determinism + no-\texttt{position:absolute} invariants).
+  \item \textbf{O3 (accessibility by construction)} --- achieved: the
+        \texttt{axe-core} hard gate blocks export on critical/serious issues.
+  \item \textbf{O4 (tokens-driven, responsive)} --- achieved: token blocks,
+        theming, and per-breakpoint media queries.
+  \item \textbf{O5 (opt-in runtime)} --- achieved: JavaScript-free output when all
+        behaviours are disabled.
+  \item \textbf{O6 (authoring surfaces)} --- achieved in v1.0.0: draw-to-create,
+        match-layout, and the headless MCP server, verified by their test suites.
+\end{itemize}
+
+\section{Summary of Results}
+% DRAFT (review): the verified headline numbers.
+The v1.0.0 release is green across all automated gates: \textbf{1042 tests}
+passing, lint and strict type-checking clean, the accessibility gate enforced, and
+the data-layer/export performance budgets met with wide margins
+(ch.~\ref{ch:testing}). The application is packaged and released with native
+installers for Windows, macOS, and Linux.
+
+\section{Limitations}
+% SOURCES: DECISIONS.md D-02/D-04; supervisor-report §7/§9/§12; issue #95
+% DRAFT (review) — be honest; markers reward this.
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Render-layer performance is not yet empirically signed off.} The
+        six in-app render metrics (drag FPS, theme toggle, breakpoint switch,
+        layers scroll, cold-start) were consciously waived at release and remain
+        to be captured on demo hardware (issue~\#95).
+  \item \textbf{The demo has not been formally rehearsed} on the packaged build
+        (the same waiver).
+  \item \textbf{Builds are unsigned} (no code-signing certificate), so users pass
+        a one-time OS trust prompt.
+  \item \textbf{Scope is Tier~1 plus three Tier~2 surfaces}; the broader
+        editor-experience and product features remain out of scope.
+\end{itemize}
+
+\section{Future Work}
+% SOURCES: draft/Features/future-authoring.md (Tier 2); future-product.md (Tier 3)
+% DRAFT (review):
+Future work follows the project's scope tiers: completing the Tier~2 editor
+experience, and the Tier~3 product concerns (cloud, accounts, collaboration).
+Nearer-term: close issue~\#95 (render-layer numbers + rehearsal), add code
+signing, and formalise the MCP tool surface as a versioned contract.
+
+\section{Conclusion}
+% DRAFT (review):
+Draw-to-Web demonstrates that visual, no-code authoring and high-quality output
+need not be in tension. By making a single Document Model the source of truth and
+treating semantics, determinism, and accessibility as build-time guarantees rather
+than manual afterthoughts, the tool produces portable, hand-written-quality
+HTML/CSS with opt-in JavaScript. Version~1.0.0 extends this foundation with
+faster authoring (draw-to-create, match-layout) and a headless, scriptable
+interface (MCP), while keeping the same accessibility gate on every path.
+% TODO: a closing sentence in your own voice.

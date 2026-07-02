@@ -1,0 +1,162 @@
+% SOURCES: docs/diagrams/*.png (already in report/figures/); docs/0.2.0v/architecture.md;
+%          docs/0.2.0v/element-model.md (the class model); src/document/types.ts (ground
+%          truth for the class diagram); docs/1.0.0v/supervisor-report.md (§2 diagram)
+% GUIDANCE: The marking scheme asks for UML (class, sequence, use-case). Five
+% architecture figures already exist and are wired in below. You still need to
+% PRODUCE three formal UML diagrams — PlantUML skeletons are provided as comments
+% so you can render them to figures/ and \includegraphics them.
+
+\chapter{System Analysis}
+\label{ch:analysis}
+
+\section{Architectural Overview}
+% DRAFT (review): the existing diagrams carry this section.
+Draw-to-Web is organised into layers with a strictly one-directional data flow:
+the user interface writes to the store through operations, the document layer is
+the single source of truth, and the output layer reads the document to generate
+and export. Figure~\ref{fig:architecture} shows the layered architecture and
+Figure~\ref{fig:dataflow} the one-directional data flow.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\linewidth]{01-architecture.png}
+  \caption{Layered architecture: UI $\rightarrow$ Document Model $\rightarrow$ output pipeline.}
+  \label{fig:architecture}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\linewidth]{02-dataflow.png}
+  \caption{One-directional data flow. The canvas renders the document; the generator walks it.}
+  \label{fig:dataflow}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.88\linewidth]{04-component-hierarchy.png}
+  \caption{Renderer component hierarchy.}
+  \label{fig:components}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.80\linewidth]{05-state-stores.png}
+  \caption{State stores and their relationships.}
+  \label{fig:stores}
+\end{figure}
+
+\section{Class Diagram (Document Model)}
+% SOURCES: src/document/types.ts; docs/0.2.0v/element-model.md
+% GUIDANCE: The Document Model is the class model. Generate a UML class diagram
+% from src/document/types.ts and place it here. PlantUML starter (render to
+% figures/class-diagram.png):
+%
+%   @startuml
+%   class Document {
+%     +version: string
+%     +tree: ElementNode
+%     +tokens: Tokens
+%     +seo: SEOConfig
+%     +runtime: RuntimeFlags
+%     +variables: DocumentVariables
+%   }
+%   abstract class ElementNode {
+%     +id: string
+%     +semanticRole
+%     +style: ResponsiveProperties
+%     +states: StatesMap
+%   }
+%   class ContainerNode
+%   class TextNode
+%   class ImageNode
+%   class ButtonNode
+%   class LinkNode
+%   class IconNode
+%   class ListNode
+%   class DividerNode
+%   Document "1" *-- "1" ElementNode : tree
+%   ElementNode <|-- ContainerNode
+%   ElementNode <|-- TextNode
+%   ElementNode <|-- ImageNode
+%   ElementNode <|-- ButtonNode
+%   ElementNode <|-- LinkNode
+%   ElementNode <|-- IconNode
+%   ElementNode <|-- ListNode
+%   ElementNode <|-- DividerNode
+%   ContainerNode "1" o-- "*" ElementNode : children
+%   Document *-- Tokens
+%   @enduml
+%
+\begin{figure}[H]
+  \centering
+  % TODO: \includegraphics[width=\linewidth]{class-diagram.png}
+  \fbox{\parbox[c][5cm][c]{0.9\linewidth}{\centering\itshape
+    TODO: class diagram of the Document Model, generated from
+    \texttt{src/document/types.ts} (PlantUML starter in the source comments).}}
+  \caption{Class diagram of the Document Model.}
+  \label{fig:class}
+\end{figure}
+
+\section{Use-Case Diagram}
+% SOURCES: ch. 5 use cases (UC-1..UC-4)
+% GUIDANCE: PlantUML starter (render to figures/usecase-diagram.png):
+%   @startuml
+%   left to right direction
+%   actor Author
+%   actor "MCP Client" as MCP
+%   rectangle "Draw-to-Web" {
+%     Author -- (Author & export a page)
+%     Author -- (Draw to create element)
+%     Author -- (Match my layout)
+%     Author -- (Save / open project)
+%     MCP -- (Drive builder headlessly)
+%   }
+%   @enduml
+\begin{figure}[H]
+  \centering
+  % TODO: \includegraphics[width=0.85\linewidth]{usecase-diagram.png}
+  \fbox{\parbox[c][4.5cm][c]{0.9\linewidth}{\centering\itshape
+    TODO: use-case diagram for the actors and use cases in ch.~\ref{ch:requirements}.}}
+  \caption{Use-case diagram.}
+  \label{fig:usecase}
+\end{figure}
+
+\section{Sequence Diagrams}
+% SOURCES: docs/diagrams/03-export-pipeline.png; src/export/index.ts (9 stages);
+%          src/draw/* (draw-to-create flow)
+% DRAFT (review): the export pipeline flow is already illustrated.
+Figure~\ref{fig:exportflow} shows the nine-stage export pipeline as a flow.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\linewidth]{03-export-pipeline.png}
+  \caption{The nine-stage export pipeline (validate $\rightarrow$ \ldots $\rightarrow$ save).}
+  \label{fig:exportflow}
+\end{figure}
+
+% GUIDANCE: add a proper UML SEQUENCE diagram for at least one interaction.
+% PlantUML starter for draw-to-create (render to figures/seq-draw.png):
+%   @startuml
+%   actor Author
+%   participant Canvas
+%   participant "interpretRectangle" as Interpret
+%   participant "snapToGrid" as Snap
+%   participant Store
+%   Author -> Canvas : drag rectangle
+%   Canvas -> Interpret : normalised rect
+%   Interpret --> Canvas : ranked kind + confidence
+%   Canvas -> Snap : bounds, grid, breakpoint
+%   Snap --> Canvas : grid placement
+%   Canvas -> Store : insertElement(op)
+%   Store --> Canvas : updated document
+%   Canvas --> Author : element placed
+%   @enduml
+\begin{figure}[H]
+  \centering
+  % TODO: \includegraphics[width=\linewidth]{seq-draw.png}
+  \fbox{\parbox[c][4.5cm][c]{0.9\linewidth}{\centering\itshape
+    TODO: sequence diagram for the draw-to-create interaction
+    (PlantUML starter in the source comments).}}
+  \caption{Sequence diagram: draw-to-create.}
+  \label{fig:seqdraw}
+\end{figure}

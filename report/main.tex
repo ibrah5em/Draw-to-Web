@@ -1,0 +1,157 @@
+% =====================================================================
+%  Draw-to-Web — Graduation Project Report
+%  LaTeX scaffold. Compile with:  latexmk -pdf main.tex
+%  (uses biblatex + biber; Overleaf handles this automatically)
+%
+%  HOW THIS SCAFFOLD WORKS
+%  - Each numbered chapter lives in sections/NN-*.tex and is \input below.
+%  - Every chapter file starts with a "% SOURCES:" comment block listing the
+%    repo files that back it, so you write from evidence, not memory.
+%  - Content marked  % TODO  is yours to write/verify.
+%  - Content already drafted from the repo docs is real but should be reviewed.
+%  - DO NOT invent the pending perf numbers (render-layer FPS / rehearsal) —
+%    they are tracked in issue #95 and marked as such in ch. 10–11.
+% =====================================================================
+\documentclass[12pt,a4paper,oneside]{report}
+
+% ---- Encoding & fonts (pdfLaTeX) ----
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amssymb} % \checkmark and math symbols used in tables
+
+% ---- Layout ----
+\usepackage[a4paper,margin=2.5cm,headheight=15pt]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{parskip}
+\usepackage{emptypage}
+
+% ---- Graphics & figures ----
+\usepackage{graphicx}
+\graphicspath{{figures/}{../docs/diagrams/}}
+\usepackage{caption}
+\usepackage{float}
+
+% ---- Tables ----
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{longtable}
+
+% ---- Code listings ----
+\usepackage{xcolor}
+\usepackage{listings}
+\definecolor{codebg}{RGB}{247,247,247}
+\definecolor{codekw}{RGB}{0,92,197}
+\definecolor{codecm}{RGB}{106,115,125}
+\definecolor{codestr}{RGB}{3,47,98}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  keywordstyle=\color{codekw}\bfseries,
+  commentstyle=\color{codecm}\itshape,
+  stringstyle=\color{codestr},
+  numbers=left, numberstyle=\tiny\color{codecm}, numbersep=8pt,
+  breaklines=true, showstringspaces=false, frame=single, framerule=0pt,
+  captionpos=b, tabsize=2,
+}
+
+% ---- Misc ----
+\usepackage{enumitem}
+\usepackage{csquotes}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\nouppercase{\leftmark}}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ---- Bibliography (biblatex + biber, IEEE-like numeric) ----
+\usepackage[backend=biber,style=numeric-comp,sorting=none]{biblatex}
+\addbibresource{references.bib}
+
+% ---- Hyperlinks (load near-last) ----
+\usepackage[hidelinks,breaklinks]{hyperref}
+\hypersetup{
+  pdftitle={Draw-to-Web: A Desktop Visual Authoring Tool for Semantic, Responsive Web Pages},
+  pdfauthor={Ibrahim Haski},
+  bookmarksnumbered=true,
+}
+
+% =====================================================================
+\begin{document}
+
+% ------------------------- TITLE PAGE -------------------------
+% TODO: replace the placeholders (university, faculty, department,
+% supervisor, co-authors' full names, academic year).
+\begin{titlepage}
+  \centering
+  {\Large \textbf{<UNIVERSITY NAME>}}\\[0.3cm]
+  {\large <FACULTY> --- <DEPARTMENT>}\\[2.5cm]
+
+  \rule{\linewidth}{0.4mm}\\[0.6cm]
+  {\huge \bfseries Draw-to-Web}\\[0.3cm]
+  {\Large A Desktop Visual Authoring Tool for Generating\\[0.2cm]
+   Semantic, Responsive, Accessible Web Pages}\\[0.4cm]
+  \rule{\linewidth}{0.4mm}\\[1.5cm]
+
+  \begin{minipage}{0.45\textwidth}
+    \begin{flushleft}\large
+      \textit{Prepared by:}\\
+      Ibrahim Haski \quad (221116)\\
+      Yousef Deeb \quad (112004)\\
+      <THIRD AUTHOR / "LuF8y"> \quad (<ID>)\\
+    \end{flushleft}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.45\textwidth}
+    \begin{flushright}\large
+      \textit{Supervised by:}\\
+      <SUPERVISOR NAME>\\
+    \end{flushright}
+  \end{minipage}\\[3cm]
+
+  {\large Graduation Project Report}\\[0.3cm]
+  {\large Academic Year <20XX--20XX>}\\[0.5cm]
+  \vfill
+\end{titlepage}
+
+% ------------------------- FRONT MATTER -------------------------
+\pagenumbering{roman}
+
+% TODO (optional): Abstract, Acknowledgements, Dedication
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+% SOURCES: README.md (intro), docs/1.0.0v/supervisor-report.md (§1, §13),
+%          draft/Features/features.md
+% GUIDANCE: 150–250 words — problem, approach, what was built, key results.
+% TODO: write the abstract last, once ch. 11 (Results) is final.
+\input{sections/00-abstract}
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+% ------------------------- BODY -------------------------
+\clearpage
+\pagenumbering{arabic}
+
+\input{sections/01-introduction}
+\input{sections/02-objective}
+\input{sections/03-methodology}
+\input{sections/04-implementation-plan}
+\input{sections/05-requirements}
+\input{sections/06-reference-study}
+\input{sections/07-analysis}
+\input{sections/08-technologies}
+\input{sections/09-implementation}
+\input{sections/10-testing-evaluation}
+\input{sections/11-results-conclusion}
+
+% ------------------------- REFERENCES -------------------------
+\clearpage
+\addcontentsline{toc}{chapter}{References}
+\printbibliography[title={References}]
+
+\end{document}

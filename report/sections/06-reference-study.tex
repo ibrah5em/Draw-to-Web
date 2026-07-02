@@ -1,0 +1,78 @@
+% SOURCES: external (you must verify claims first-hand before submission);
+%          draft/Features/*.md for how Draw-to-Web positions itself.
+% GUIDANCE: The marking scheme wants a review of SIMILAR projects with the
+% advantages and shortcomings of EACH, then a positioning of your project.
+% Everything below is a SCAFFOLD with candidate points — VERIFY each claim
+% against the current product before you cite it; these tools change often.
+
+\chapter{Reference Study}
+\label{ch:refstudy}
+
+\section{Survey of Similar Projects}
+% DRAFT SCAFFOLD (verify every claim):
+
+\subsection{Webflow}
+A browser-based visual builder that emphasises design control and clean output
+\cite{webflow}.
+\textbf{Advantages (verify):} strong CSS-level control; publishes reasonably
+semantic markup; large template ecosystem.
+\textbf{Shortcomings (verify):} subscription/hosting lock-in; export can be
+gated behind paid tiers; not a local desktop tool; no accessibility hard gate.
+
+\subsection{Framer}
+A design-first site builder with rich interactions \cite{framer}.
+\textbf{Advantages (verify):} excellent motion/prototyping; fast to a polished
+result.
+\textbf{Shortcomings (verify):} output leans on a proprietary runtime; less
+control over raw semantic HTML; hosting-oriented.
+
+\subsection{Wix}
+A mass-market website builder \cite{wix}.
+\textbf{Advantages (verify):} very low barrier to entry; all-in-one hosting.
+\textbf{Shortcomings (verify):} historically heavy, non-portable output;
+limited semantic/accessibility guarantees; strong platform lock-in.
+
+\subsection{Elementor (WordPress)}
+A WordPress page builder \cite{elementor}.
+\textbf{Advantages (verify):} huge ecosystem; visual editing over WordPress.
+\textbf{Shortcomings (verify):} requires a WordPress stack; markup/DOM weight;
+plugin-dependent.
+
+\subsection{Bootstrap Studio / Pinegrow}
+Desktop visual editors that emit real HTML/CSS \cite{bootstrapstudio,pinegrow}.
+\textbf{Advantages (verify):} local, code-visible, export-friendly.
+\textbf{Shortcomings (verify):} framework-coupled (Bootstrap); steeper learning
+curve; no built-in accessibility export gate; no tokens-first theming.
+
+\section{Comparative Analysis}
+% DRAFT SCAFFOLD: fill each cell after you verify. Keep the dimensions that
+% distinguish Draw-to-Web (local, semantic, a11y-gated, tokens-first, portable).
+\begin{table}[H]
+  \centering
+  \caption{Comparison of visual web builders (VERIFY before submission).}
+  \label{tab:comparison}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l c c c c c@{}}
+    \toprule
+    \textbf{Dimension} & \textbf{Draw-to-Web} & \textbf{Webflow} & \textbf{Framer} & \textbf{Wix} & \textbf{Elementor} \\
+    \midrule
+    Local desktop app        & Yes & No  & No  & No  & No  \\
+    Semantic HTML output      & Yes & \textasciitilde & \textasciitilde & No  & \textasciitilde \\
+    Accessibility hard gate   & Yes & No  & No  & No  & No  \\
+    Tokens-first theming      & Yes & \textasciitilde & \textasciitilde & No  & No  \\
+    JS-free output option     & Yes & No  & No  & No  & No  \\
+    Portable (no lock-in)     & Yes & \textasciitilde & No  & No  & No  \\
+    Headless/scriptable (MCP) & Yes & No  & No  & No  & No  \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+% TODO: replace Yes/No/~ with verified findings; add a paragraph on how the gaps
+% above motivate Draw-to-Web's design.
+
+\section{Positioning of Draw-to-Web}
+% DRAFT (review):
+Against this landscape, Draw-to-Web's distinguishing bets are: a \emph{local}
+desktop tool that treats output quality as a first-class requirement (semantic,
+deterministic, accessibility-gated), a \emph{tokens-first} styling model, an
+\emph{opt-in} runtime (down to JavaScript-free output), and a \emph{headless}
+MCP interface to the same pipeline. % TODO: tie back to the shortcomings above.

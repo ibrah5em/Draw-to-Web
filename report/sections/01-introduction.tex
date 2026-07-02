@@ -1,0 +1,56 @@
+% SOURCES: README.md; draft/Features/features.md; docs/0.2.0v/plan.md (§1 North Star,
+%          §2 Scope Tiers); docs/1.0.0v/supervisor-report.md (§1)
+% GUIDANCE: Set the scene for a general-technical reader. Field overview → gap →
+% what this project is. Keep it narrative; save deep detail for ch. 8–9.
+
+\chapter{Introduction}
+\label{ch:introduction}
+
+\section{Field of Work}
+% DRAFT (review): the domain framing.
+The modern web is built from HTML, CSS, and JavaScript, yet authoring a page that
+is simultaneously \emph{semantic}, \emph{responsive}, and \emph{accessible}
+remains a specialised skill. Over the last decade a class of \emph{visual web
+builders} --- tools such as Webflow, Framer, and Wix --- has lowered the barrier
+by letting users compose pages on a canvas rather than in a text editor
+\cite{webflow,framer,wix}. These tools trade code for direct manipulation, but
+they frequently do so at the cost of output quality: heavy runtimes, non-semantic
+``div soup'', absolute positioning, and markup that is difficult to audit for
+accessibility.
+
+% TODO: 1–2 paragraphs expanding the field: no-code/low-code movement, the
+% accessibility mandate (WCAG \cite{wcag21}), semantic HTML \cite{whatwg-html},
+% and the rise of design tokens as a styling discipline.
+
+\section{Problem Statement}
+% DRAFT (review):
+The core tension this project addresses is that \emph{visual authoring} and
+\emph{high-quality output} are usually treated as opposites. A user who cannot
+write code is typically forced to accept whatever markup a builder emits, with no
+guarantee of semantic structure, accessibility compliance, or portability.
+% TODO: sharpen into an explicit problem statement your evaluation can answer,
+% e.g. "Can a canvas-based editor produce hand-written-quality, accessibility-
+% gated, dependency-free HTML/CSS output?"
+
+\section{Proposed Solution}
+% DRAFT (review):
+Draw-to-Web is a desktop application that resolves this tension by making a single
+\emph{Document Model} the only source of truth. The canvas is a rendering of that
+model; a deterministic generator walks the same model to emit semantic HTML5,
+tokens-driven CSS, and opt-in vetted JavaScript. Accessibility is enforced by a
+hard gate (\texttt{axe-core}) that blocks export on any critical or serious
+violation. Version~1.0.0 adds three authoring surfaces: \emph{draw-to-create}
+(draw a rectangle to place an element), \emph{match-layout} (adopt a professional
+design from a rough draft), and a headless \emph{Model Context Protocol} (MCP)
+server that drives the same pipeline programmatically \cite{mcp-spec}.
+
+\section{Report Organisation}
+% DRAFT (review): update if you renumber chapters.
+The remainder of this report is organised as follows. Chapter~\ref{ch:objective}
+states the objectives. Chapter~\ref{ch:methodology} describes the work
+methodology. Chapter~\ref{ch:plan} presents the implementation plan.
+Chapter~\ref{ch:requirements} gathers requirements as use cases.
+Chapter~\ref{ch:refstudy} reviews similar projects. Chapter~\ref{ch:analysis}
+gives the system analysis (UML). Chapter~\ref{ch:tech} justifies the technologies.
+Chapter~\ref{ch:impl} details the implementation. Chapter~\ref{ch:testing} covers
+testing and evaluation, and Chapter~\ref{ch:results} concludes with results.

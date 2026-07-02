@@ -1,0 +1,46 @@
+% SOURCES: docs/0.2.0v/plan.md (§1 North Star, §4 Guiding Principles);
+%          README.md (Key invariants); CLAUDE.md (Core Design Rules)
+% GUIDANCE: One clear primary objective + a short list of specific, measurable
+% sub-objectives. Keep each sub-objective testable so ch. 10–11 can report on it.
+
+\chapter{Project Objective}
+\label{ch:objective}
+
+\section{Primary Objective}
+% DRAFT (review):
+To design and build a desktop application that lets non-developers author modern,
+semantic, responsive, and accessible web pages by direct manipulation on a canvas,
+and that exports a portable, human-readable HTML/CSS bundle with opt-in,
+independently toggleable JavaScript behaviours.
+
+\section{Specific Objectives}
+% DRAFT (review): these map directly onto measurable outcomes in ch. 10–11.
+\begin{enumerate}[label=\textbf{O\arabic*.}, leftmargin=3.2em]
+  \item \textbf{Single source of truth.} Represent every page as one Document
+        Model; the canvas renders it and the generator walks it, with no
+        component owning state independently.
+  \item \textbf{Semantic, deterministic output.} Emit semantic HTML5 by role and
+        guarantee byte-identical output for identical input (no timestamps, no
+        random identifiers).
+  \item \textbf{Accessibility by construction.} Enforce a hard gate that blocks
+        export on any critical or serious accessibility violation; honour a single
+        \texttt{<h1>}, heading order, \texttt{alt} text, ARIA labels, focus
+        visibility, and reduced-motion preferences.
+  \item \textbf{Tokens-driven, responsive styling.} Drive all styling through
+        design tokens with light/dark theming and per-breakpoint values
+        (desktop/tablet/mobile/small).
+  \item \textbf{Opt-in, vetted runtime.} Ship only the JavaScript the author
+        enables; with all behaviours disabled, produce JavaScript-free output.
+  \item \textbf{Accessible authoring surfaces (v1.0.0).} Provide draw-to-create,
+        match-layout, and a headless MCP server that reuse the same operations and
+        export pipeline.
+\end{enumerate}
+
+\section{Scope}
+% SOURCES: docs/0.2.0v/plan.md (§2 Scope Tiers, §22 Out of Scope); draft/Features/*.md
+% DRAFT (review):
+The project scope is the \emph{Tier~1} output-capability set (see
+\texttt{draft/Features/features.md}). Editor-experience niceties (Tier~2) and
+cloud/accounts/collaboration (Tier~3) are out of scope, except for the three
+Tier~2 authoring surfaces consciously brought into v1.0.0 (draw, match, MCP).
+% TODO: state the boundary explicitly for your defence.

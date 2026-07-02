@@ -1,0 +1,82 @@
+% SOURCES: docs/0.2.0v/architecture.md; docs/0.2.0v/element-model.md;
+%          docs/1.0.0v/supervisor-report.md (§4–§6, §5a); README.md;
+%          src/document/*, src/generator/*, src/export/*, src/draw/*, src/match/*, mcp/*
+% GUIDANCE: The "how it was built" chapter. Use short code listings (real snippets
+% from src/) to evidence claims. Keep listings small and captioned.
+
+\chapter{Implementation}
+\label{ch:impl}
+
+\section{The Document Model}
+% SOURCES: src/document/types.ts, operations.ts; element-model.md
+% DRAFT (review):
+Every page is one \texttt{Document}: a tree of \texttt{ElementNode}s plus tokens,
+SEO configuration, runtime flags, and variables. Primitive types
+(container, text, image, button, link, icon, list, divider) are the only node
+kinds; complex shapes (hero, cards grid, navigation) are \emph{presets} that
+compose primitives rather than new types. All mutation flows through a single
+discriminated \texttt{Operation} union whose handlers are pure functions over an
+\texttt{immer} draft.
+% TODO: paste a real operation type or handler here as a listing, e.g.:
+% \begin{lstlisting}[language=TypeScript,caption={An operation handler (src/document/operations.ts).}]
+% ... (copy a small, representative handler)
+% \end{lstlisting}
+
+\section{The Generator}
+% SOURCES: src/generator/index.ts, htmlEmitter.ts, cssEmitter.ts; architecture.md §5
+% DRAFT (review):
+The generator is a compiler, not an inferer: it walks the document and emits
+HTML/CSS/JS deterministically, so identical input yields byte-identical output.
+Tag selection is driven by each node's semantic role. CSS is tokens-driven ---
+a \texttt{:root} block defines every token, dark-theme overrides and a
+\texttt{prefers-color-scheme} block follow, and element rules reference
+\texttt{var(--token)}. Layout uses CSS Grid, Flexbox, and \texttt{clamp()}, never
+absolute positioning (enforced by a test-time invariant).
+
+\section{Runtime Snippets}
+% SOURCES: src/runtime/*, src/generator/jsEmitter.ts; supervisor-report §5
+% DRAFT (review):
+JavaScript is opt-in per behaviour (theme toggle, scroll-spy, smooth scroll,
+mobile navigation, nav-on-scroll, reveals, animation gating, terminal typing).
+The emitter concatenates only enabled snippets into an IIFE; if every flag is
+off, no \texttt{<script>} is emitted at all. Every snippet is passive, idempotent,
+and honours reduced-motion.
+
+\section{The Export Pipeline}
+% SOURCES: src/export/index.ts; src/seo/axeGate.ts; supervisor-report §6
+% DRAFT (review):
+Export (Figure~\ref{fig:exportflow}) chains nine stages ---
+\emph{validate, generate, inject-seo, a11y-gate, optimize-images, minify,
+sitemap-robots, bundle, save} --- each emitting a structured progress event. The
+result is a discriminated union so the UI can report exactly which stage failed.
+The accessibility gate runs before anything crosses the IPC boundary.
+
+\section{v1.0.0 Authoring Surfaces}
+% SOURCES: src/draw/*, src/match/*, mcp/*; supervisor-report §5a; README (Authoring surfaces)
+% DRAFT (review):
+\subsection{Draw-to-create}
+A drawn rectangle is normalised, classified by \texttt{interpretRectangle} (ranked
+kind + confidence), and snapped to a grid placement by \texttt{snapToGrid} (pure
+math, never pixels). The canvas then builds an ordinary node and dispatches a
+normal insert operation; the drawn pixels never enter the store.
+
+\subsection{Match-layout}
+\texttt{extractSignature} builds a deterministic structural fingerprint of a tree;
+\texttt{matchLayout} ranks it against six bundled professional pages (each with a
+build-time precomputed signature) with a per-dimension breakdown; the chosen page
+is hydrated through the same path a project load uses.
+
+\subsection{Headless MCP server}
+A stdio server exposes roughly twenty tools over the same pipeline
+(\texttt{create\_document}, \texttt{insert\_preset}, \texttt{apply\_template},
+\texttt{set\_tokens}, \texttt{match\_layout}, \texttt{run\_a11y\_check},
+\texttt{export\_site}, \ldots). Each tool is a thin adapter over the existing
+operations and entry points, so headless exports pass the same accessibility gate.
+
+\section{Process Boundaries and Security}
+% SOURCES: src/main/*, src/preload/*; plan.md §15; supervisor-report §3
+% DRAFT (review):
+The main process runs with context isolation, no node integration, and sandboxing;
+the preload exposes only a typed \texttt{electronAPI} bridge; every IPC handler
+validates input (path sanitisation, size caps, MIME sniffing); and a strict CSP is
+applied in production.

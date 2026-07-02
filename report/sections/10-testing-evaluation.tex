@@ -1,0 +1,87 @@
+% SOURCES: docs/0.2.0v/plan.md (§13 Testing Strategy, §14 Performance Budgets);
+%          docs/1.0.0v/supervisor-report.md (§7, §10); README.md (Testing);
+%          docs/1.0.0v/perf-capture-checklist.md; CHANGELOG.md
+% GUIDANCE: Describe the test STRATEGY, then the EVALUATION against the budgets.
+% The suite/gate figures below are verified for v1.0.0. The render-layer figures
+% are NOT yet captured (issue #95) — say so; do NOT invent them.
+
+\chapter{Testing and Evaluation}
+\label{ch:testing}
+
+\section{Testing Strategy}
+% DRAFT (review):
+Testing is automated and layered, mirroring the source tree. As of v1.0.0 the
+suite comprises \textbf{1042 tests across 110 files}, covering the document model,
+generator, runtime snippets, SEO, the export pipeline, templates, the stores, the
+user interface, and the v1.0.0 surfaces (\texttt{tests/draw}, \texttt{tests/match},
+\texttt{tests/mcp}). Table~\ref{tab:suites} summarises the suites.
+
+\begin{table}[H]
+  \centering
+  \caption{Test suites and their coverage.}
+  \label{tab:suites}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l X@{}}
+    \toprule
+    \textbf{Suite} & \textbf{Coverage} \\
+    \midrule
+    \texttt{tests/document/}  & Types, schemas, operations, tokens, validation, presets \\
+    \texttt{tests/generator/} & HTML/CSS/JS emitters, determinism, formatting \\
+    \texttt{tests/runtime/}   & Runtime snippet behaviour (jsdom) \\
+    \texttt{tests/seo/}       & head/OG/JSON-LD/sitemap/robots + the axe gate \\
+    \texttt{tests/export/}    & Full pipeline incl. minify, dry-run, self-host fonts \\
+    \texttt{tests/templates/} & Blank/portfolio/landing/resume round-trips \\
+    \texttt{tests/store/}, \texttt{tests/main/}, \texttt{tests/ui/} & Stores, IPC handlers, renderer components \\
+    \texttt{tests/a11y/}      & End-to-end axe-core on rendered output \\
+    \texttt{tests/draw/}, \texttt{tests/match/}, \texttt{tests/mcp/} & The v1.0.0 authoring surfaces \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Quality Gates}
+% DRAFT (review):
+Three gates run on every push and in continuous integration: lint (ESLint +
+Prettier), strict type-checking (main + renderer), and the full test suite.
+Additional automated checks enforce output determinism and the
+no-\texttt{position:absolute} invariant, and the \texttt{axe-core} accessibility
+gate blocks export on any critical or serious violation.
+
+\section{Performance Evaluation}
+% SOURCES: perf-capture-checklist.md; supervisor-report §7; plan §14
+% DRAFT (review): report the two categories honestly.
+Performance budgets split into two categories. \textbf{Data-layer and export
+budgets} are measured headlessly in a dedicated perf lane and pass with large
+margins (Table~\ref{tab:perf}). \textbf{Render-layer budgets} (drag FPS, theme
+toggle, breakpoint switch, layers scroll, cold-start) require the running
+application and a profiler; at the time of writing these are
+\emph{not yet captured} and are tracked as a post-release task (issue~\#95). They
+must not be reported as measured until captured on demo hardware.
+
+\begin{table}[H]
+  \centering
+  \caption{Headless performance results (v1.0.0 perf lane).}
+  \label{tab:perf}
+  \small
+  \begin{tabularx}{\linewidth}{@{}X l l c@{}}
+    \toprule
+    \textbf{Metric} & \textbf{Budget} & \textbf{Measured} & \textbf{Pass} \\
+    \midrule
+    Project save (.dtw serialise, 500 el)       & $<$ 500 ms  & $\approx$ 0.1 ms & \checkmark \\
+    Project open (parse + migrate + validate)   & $<$ 1500 ms & $\approx$ 1.3 ms & \checkmark \\
+    Undo/redo round-trip (500 el)               & $<$ 16 ms   & $\approx$ 0.1 ms & \checkmark \\
+    Dry-run / code preview                      & $<$ 500 ms  & $\approx$ 72 ms  & \checkmark \\
+    Full export (9 stages incl. axe + minify)   & $<$ 10 s    & $\approx$ 0.2--0.3 s & \checkmark \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+% NOTE: the numbers above were observed in this project's `npm run test:perf`
+% lane. Re-run and confirm on your machine before final submission.
+
+\section{Accessibility and Output-Quality Evaluation}
+% SOURCES: supervisor-report §5–§6; plan §14; verify:exports (project harness)
+% DRAFT (review) — VERIFY the Lighthouse/byte figures yourself before citing:
+The exported templates are reported by the project's export-verification harness
+to score Lighthouse SEO of 1.00 with valid JSON-LD, and the accessibility gate
+keeps critical/serious violations at zero. % TODO: re-run Lighthouse + gzip-size
+% checks (perf-capture-checklist / run-sheet §3) and record the exact figures for
+% HTML/CSS/JS byte budgets and Lighthouse Performance/Accessibility/SEO.

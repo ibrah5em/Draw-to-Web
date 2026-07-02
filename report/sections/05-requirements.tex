@@ -1,0 +1,74 @@
+% SOURCES: draft/Features/features.md (Tier-1 capabilities); docs/0.2.0v/plan.md
+%          (§11 Feature Checklist, §12 Additional In-Scope, §5 Architecture);
+%          README.md; docs/1.0.0v/supervisor-report.md
+% GUIDANCE: Split into functional + non-functional requirements, then present the
+% primary USE CASES (the marking scheme asks for these). A use-case diagram goes
+% in ch. 7 (Analysis); here, write the use-case descriptions.
+
+\chapter{Requirements Gathering}
+\label{ch:requirements}
+
+\section{Functional Requirements}
+% DRAFT (review): derived from the Tier-1 feature set.
+\begin{enumerate}[label=\textbf{FR\arabic*.}, leftmargin=3.4em]
+  \item The system shall let a user insert, select, move, reorder, group, and
+        delete elements on a canvas.
+  \item The system shall support primitive elements (container, text, image,
+        button, link, icon, list, divider) and \emph{presets} that compose them.
+  \item The system shall let a user define design tokens and bind element styles
+        to them, with light/dark theming.
+  \item The system shall support per-breakpoint style values
+        (desktop/tablet/mobile/small) and element states (hover/focus/active).
+  \item The system shall create an element from a drawn rectangle (draw-to-create).
+  \item The system shall match a drawn layout to a bundled professional design
+        (match-layout).
+  \item The system shall validate the document and export a portable HTML/CSS/JS
+        bundle as a ZIP archive.
+  \item The system shall expose the document/generate/export pipeline over a
+        headless MCP server.
+  \item The system shall save/open projects as versioned \texttt{.dtw} files with
+        crash recovery and external-change reload.
+\end{enumerate}
+
+\section{Non-Functional Requirements}
+% SOURCES: plan.md §14 Performance Budgets, §15 Security; CLAUDE.md (constraints)
+% DRAFT (review):
+\begin{enumerate}[label=\textbf{NFR\arabic*.}, leftmargin=3.8em]
+  \item \textbf{Accessibility:} export is blocked on any critical/serious
+        \texttt{axe-core} violation; WCAG-aligned output \cite{wcag21}.
+  \item \textbf{Determinism:} identical input yields byte-identical output.
+  \item \textbf{Performance:} data-layer and export operations meet defined
+        budgets (see ch.~\ref{ch:testing}).
+  \item \textbf{Security:} Electron runs with context isolation, no node
+        integration, sandboxing, a strict CSP, and Zod-validated IPC boundaries.
+  \item \textbf{Portability:} output has no build step and no mandatory runtime
+        dependencies.
+\end{enumerate}
+
+\section{Primary Use Cases}
+% GUIDANCE: one short structured description per use case (actor, precondition,
+% main flow, postcondition). These feed the use-case diagram in ch. 7.
+% DRAFT (review) — expand the flows:
+
+\subsection*{UC-1: Author and export a page}
+\textbf{Actor:} Author. \textbf{Pre:} app open. \textbf{Flow:} open a template or
+blank page → insert/edit elements → adjust tokens/theme/breakpoints → run
+validation → export ZIP. \textbf{Post:} a valid, accessible bundle on disk.
+
+\subsection*{UC-2: Draw to create an element}
+\textbf{Actor:} Author. \textbf{Flow:} select a container → drag a rectangle → the
+system ranks the likely element kind with a confidence hint → author accepts →
+the element is placed via a normal insert operation.
+
+\subsection*{UC-3: Match my layout}
+\textbf{Actor:} Author. \textbf{Flow:} rough out a layout → open Match → the system
+fingerprints the tree and ranks bundled designs with a per-dimension breakdown →
+author adopts one → it hydrates as a normal document.
+
+\subsection*{UC-4: Drive the builder headlessly (MCP)}
+\textbf{Actor:} MCP client / agent. \textbf{Flow:} \texttt{create\_document} →
+insert presets / set tokens / set theme → \texttt{run\_a11y\_check} →
+\texttt{export\_site}, all without the GUI.
+
+% TODO: add UC-5 (save/open project, crash recovery) and any others your marker
+% expects; then draw the use-case diagram in ch. 7.

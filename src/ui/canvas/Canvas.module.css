@@ -91,6 +91,13 @@
 .page {
   position: relative;
   flex: 1;
+  /* Size to content, not to the viewport's cross size. A definite-height flex
+     container (.viewport) with align-items: stretch would otherwise clamp the
+     page box to the viewport height, so taller content overflows the box —
+     leaving the grid overlay (inset: 0) and the page background cut off partway
+     down. flex-start + min-height keeps a full-viewport floor when content is
+     short and lets the box grow with content when it's tall. */
+  align-self: flex-start;
   max-width: 1280px;
   min-height: 100%;
   background: #ffffff;

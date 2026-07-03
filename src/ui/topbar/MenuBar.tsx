@@ -8,9 +8,10 @@
  */
 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { Check } from 'lucide-react'
+import { Check, ChevronRight } from 'lucide-react'
 import { useState, type JSX } from 'react'
 
+import type { BreakpointKey } from '@document/types'
 import { useDocumentStore } from '@store/documentStore'
 import { redo, undo } from '@store/dispatch'
 import { useHistoryStore } from '@store/historyStore'
@@ -22,6 +23,7 @@ import { runExport } from '../export/runExport'
 import { openLivePreview } from '../preview/livePreview'
 import { ShortcutsHelp } from '../shortcuts/ShortcutsHelp'
 
+import { BREAKPOINT_OPTIONS, BREAKPOINT_WIDTH_PX } from './breakpoints'
 import type { ViewToggle } from './ViewToggles'
 import styles from './MenuBar.module.css'
 
@@ -48,6 +50,50 @@ function MenuItem({
       <span>{label}</span>
       {shortcut ? <span className={styles.shortcut}>{shortcut}</span> : null}
     </DropdownMenu.Item>
+  )
+}
+
+/**
+ * View ▸ Canvas Size submenu (L-TOP-02). Drives `sessionStore.activeBreakpoint`
+ * — the same state the former topbar switcher wrote — with a radio checkmark on
+ * the active breakpoint. Icons are reused from {@link BREAKPOINT_OPTIONS}.
+ */
+function CanvasSizeSubmenu(): JSX.Element {
+  const active = useSessionStore((s) => s.activeBreakpoint)
+  const setActiveBreakpoint = useSessionStore((s) => s.setActiveBreakpoint)
+
+  return (
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger className={styles.item}>
+        <span>Canvas Size</span>
+        <ChevronRight size={14} className={styles.subChevron} />
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.SubContent className={styles.content} sideOffset={2} alignOffset={-4}>
+          <DropdownMenu.RadioGroup
+            value={active}
+            onValueChange={(value) => setActiveBreakpoint(value as BreakpointKey)}
+          >
+            {BREAKPOINT_OPTIONS.map((option) => (
+              <DropdownMenu.RadioItem
+                key={option.value}
+                value={option.value}
+                className={styles.sizeItem}
+              >
+                <DropdownMenu.ItemIndicator className={styles.indicator}>
+                  <Check size={12} />
+                </DropdownMenu.ItemIndicator>
+                <span aria-hidden className={styles.sizeIcon}>
+                  {option.icon(14)}
+                </span>
+                <span>{option.label}</span>
+                <span className={styles.sizeWidth}>{BREAKPOINT_WIDTH_PX[option.value]}</span>
+              </DropdownMenu.RadioItem>
+            ))}
+          </DropdownMenu.RadioGroup>
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Sub>
   )
 }
 
@@ -123,6 +169,8 @@ export function MenuBar({
             shortcut="Ctrl+Shift+P"
             onSelect={() => void openLivePreview()}
           />
+          <DropdownMenu.Separator className={styles.separator} />
+          <CanvasSizeSubmenu />
           <DropdownMenu.Separator className={styles.separator} />
           {panels.map((panel) => (
             <DropdownMenu.CheckboxItem

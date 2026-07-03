@@ -30,7 +30,7 @@ import { useDocumentSettings, useTokens, useTree } from '@store/documentStore'
 import { useSessionStore } from '@store/sessionStore'
 
 import { useViewPrefs } from '../state/viewPrefs'
-import { BREAKPOINT_WIDTH_PX } from '../topbar/BreakpointSwitcher'
+import { BREAKPOINT_WIDTH_PX } from '../topbar/breakpoints'
 import type { StyleResolver } from './buildStyle'
 import { CanvasContextMenu } from './CanvasContextMenu'
 import { CanvasNodeBoundary } from './CanvasNode'

@@ -50,7 +50,7 @@ import type {
   Typography,
 } from '@document/types'
 
-import { BREAKPOINT_WIDTH_PX } from '../../topbar/BreakpointSwitcher'
+import { BREAKPOINT_WIDTH_PX } from '../../topbar/breakpoints'
 import { layerLabel } from '../../layers/layerMeta'
 import { commitDocumentPatch } from '../document-settings/applySettings'
 import { BindableInput, ColorControl, Field, Segmented } from './controls'

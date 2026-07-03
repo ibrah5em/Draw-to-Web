@@ -16,7 +16,6 @@ import { BottomDock } from './panels/BottomDock'
 import { PropertiesPanel } from './panels/properties/PropertiesPanel'
 import { InsertDndProvider } from './sidebar/InsertDnd'
 import { InsertSidebar } from './sidebar/InsertSidebar'
-import { BreakpointSwitcher } from './topbar/BreakpointSwitcher'
 import { CanvasViewToggles } from './topbar/CanvasViewToggles'
 import { ExportButton } from './topbar/ExportButton'
 import { MatchButton } from './topbar/MatchButton'
@@ -205,7 +204,6 @@ export function App(): JSX.Element {
         <MenuBar panels={panelToggles} onOpenSettings={openSettings} />
         <div className={styles.titlebarActions}>
           <SaveIndicator />
-          <BreakpointSwitcher />
           <CanvasViewToggles />
           <ViewToggles toggles={panelToggles} />
           <ThemeToggle />

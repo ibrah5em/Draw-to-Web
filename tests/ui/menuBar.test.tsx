@@ -65,6 +65,12 @@ describe('MenuBar', () => {
     expect(labels).toEqual(['File', 'Edit', 'View', 'Help'])
   })
 
+  it('View menu exposes the Canvas Size submenu', () => {
+    render()
+    openMenu('View')
+    expect(menuItem('Canvas Size')).toBeTruthy()
+  })
+
   it('File → New resets to a blank document', () => {
     render()
     openMenu('File')

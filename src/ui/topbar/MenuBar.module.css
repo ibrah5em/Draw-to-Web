@@ -55,8 +55,46 @@
 }
 
 .item[data-highlighted],
-.checkboxItem[data-highlighted] {
+.checkboxItem[data-highlighted],
+.sizeItem[data-highlighted] {
   background: var(--bg-active);
+}
+
+.item[data-state='open'] {
+  background: var(--bg-hover);
+}
+
+.subChevron {
+  color: var(--text-secondary);
+}
+
+/* Canvas Size radio rows: [check] [icon] [label] … [width]. */
+.sizeItem {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  position: relative;
+  height: 26px;
+  padding: 0 var(--sp-2) 0 24px;
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.sizeIcon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--icon);
+}
+
+.sizeWidth {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
 }
 
 .item[data-disabled] {

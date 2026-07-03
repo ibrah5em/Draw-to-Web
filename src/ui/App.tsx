@@ -1,6 +1,6 @@
 import { useEffect, useState, type JSX } from 'react'
 import { Group, Panel, Separator, usePanelRef, type Layout } from 'react-resizable-panels'
-import { PanelBottom, PanelLeft, PanelRight } from 'lucide-react'
+import { PanelBottom, PanelLeft, PanelRight, PencilRuler } from 'lucide-react'
 
 import { createBlankTemplate } from '@templates/blank'
 import { createPortfolioTemplate } from '@templates/portfolio'
@@ -23,6 +23,7 @@ import { MenuBar } from './topbar/MenuBar'
 import { SaveIndicator } from './topbar/SaveIndicator'
 import { ThemeToggle } from './topbar/ThemeToggle'
 import { ViewToggles, type ViewToggle } from './topbar/ViewToggles'
+import { WindowControls } from './topbar/WindowControls'
 import { ConflictResolver } from './dialogs/ConflictResolver'
 import { DocumentSettings } from './dialogs/DocumentSettings'
 import { useEditorShortcuts } from './shortcuts/useEditorShortcuts'
@@ -200,15 +201,27 @@ export function App(): JSX.Element {
 
   return (
     <div className={styles.app}>
-      <header className={styles.titlebar}>
-        <MenuBar panels={panelToggles} onOpenSettings={openSettings} />
-        <div className={styles.titlebarActions}>
-          <SaveIndicator />
-          <CanvasViewToggles />
-          <ViewToggles toggles={panelToggles} />
-          <ThemeToggle />
-          <MatchButton />
-          <ExportButton />
+      <header
+        className={styles.titlebar}
+        data-mac={typeof window !== 'undefined' && window.electronAPI?.platform === 'darwin'}
+      >
+        <div className={styles.titlebarLeft}>
+          <div className={styles.brand}>
+            <PencilRuler size={16} className={styles.brandIcon} aria-hidden />
+            <span className={styles.brandName}>Draw to Web</span>
+          </div>
+          <MenuBar panels={panelToggles} onOpenSettings={openSettings} />
+        </div>
+        <div className={styles.titlebarRight}>
+          <div className={styles.titlebarActions}>
+            <SaveIndicator />
+            <CanvasViewToggles />
+            <ViewToggles toggles={panelToggles} />
+            <ThemeToggle />
+            <MatchButton />
+            <ExportButton />
+          </div>
+          <WindowControls />
         </div>
       </header>
 

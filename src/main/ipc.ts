@@ -513,6 +513,28 @@ export function registerIpcHandlers(): void {
     return { success: true, filePath: watched }
   })
 
+  // Custom title-bar window controls (Task 3 — frameless window). Resolve the
+  // target window from the invoking WebContents so a control always acts on its
+  // own window, falling back to the focused window if that lookup fails.
+  const senderWindow = (
+    event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent
+  ): BrowserWindow | null =>
+    BrowserWindow.fromWebContents(event.sender) ?? BrowserWindow.getFocusedWindow()
+
+  ipcMain.on('window:minimize', (event) => {
+    senderWindow(event)?.minimize()
+  })
+  ipcMain.on('window:maximize', (event) => {
+    const win = senderWindow(event)
+    if (!win) return
+    if (win.isMaximized()) win.unmaximize()
+    else win.maximize()
+  })
+  ipcMain.on('window:close', (event) => {
+    senderWindow(event)?.close()
+  })
+  ipcMain.handle('window:is-maximized', (event) => senderWindow(event)?.isMaximized() ?? false)
+
   // Synchronous — called once at preload startup to stamp the version into the bridge.
   ipcMain.on('app:version', (event) => {
     event.returnValue = app.getVersion()

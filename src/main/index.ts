@@ -108,6 +108,12 @@ function configureMenu(win: BrowserWindow): void {
 }
 
 function createWindow(): void {
+  // Frameless: the OS title bar is replaced by a custom in-renderer bar (Task 3).
+  // On macOS we keep the native traffic-light controls (titleBarStyle: 'hidden'
+  // + trafficLightPosition) rather than a fully-frameless window, so users get
+  // the platform-standard close/minimize/zoom buttons. Windows/Linux use
+  // frame: false and render our own min/max/close controls.
+  const isMac = process.platform === 'darwin'
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -115,6 +121,9 @@ function createWindow(): void {
     minHeight: 700,
     title: 'Draw to Web',
     show: false,
+    ...(isMac
+      ? { titleBarStyle: 'hidden' as const, trafficLightPosition: { x: 12, y: 11 } }
+      : { frame: false }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -124,6 +133,15 @@ function createWindow(): void {
   })
 
   configureMenu(win)
+
+  // Forward maximize/restore transitions to the renderer so the custom title
+  // bar's maximize button icon stays in sync — including OS-driven changes
+  // (double-click title bar, drag-to-edge snap, keyboard shortcuts).
+  const emitMaximizeState = (): void => {
+    if (!win.isDestroyed()) win.webContents.send('window:maximized', win.isMaximized())
+  }
+  win.on('maximize', emitMaximizeState)
+  win.on('unmaximize', emitMaximizeState)
 
   win.on('ready-to-show', () => win.show())
 

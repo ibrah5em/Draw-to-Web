@@ -32,6 +32,10 @@ const { handlers, syncHandlers, electronMock } = vi.hoisted(() => {
         getPath: vi.fn((_name: string) => '/tmp'),
         getVersion: vi.fn(() => '0.1.0-test'),
       },
+      BrowserWindow: {
+        fromWebContents: vi.fn(),
+        getFocusedWindow: vi.fn(),
+      },
     },
   }
 })
@@ -201,6 +205,86 @@ describe('app:version sync IPC', () => {
     const event = {} as { returnValue?: string }
     syncHandlers.get('app:version')!(event)
     expect(event.returnValue).toBe('0.1.0-test')
+  })
+})
+
+// ───────────── window controls (Task 3 — custom title bar) ─────────────
+
+describe('window control IPC handlers', () => {
+  /** A fake BrowserWindow with spies for each control method. */
+  function fakeWindow(maximized = false) {
+    return {
+      minimize: vi.fn(),
+      maximize: vi.fn(),
+      unmaximize: vi.fn(),
+      close: vi.fn(),
+      isMaximized: vi.fn(() => maximized),
+    }
+  }
+
+  /** Invoke a `ipcMain.on` handler with an event carrying a sender. */
+  function fire(channel: string): void {
+    const handler = syncHandlers.get(channel)
+    if (!handler) throw new Error(`No sync handler for ${channel}`)
+    handler({ sender: {} } as { returnValue?: unknown })
+  }
+
+  it('window:minimize minimizes the sender window', () => {
+    const win = fakeWindow()
+    electronMock.BrowserWindow.fromWebContents.mockReturnValue(win)
+    fire('window:minimize')
+    expect(win.minimize).toHaveBeenCalledOnce()
+  })
+
+  it('window:close closes the sender window', () => {
+    const win = fakeWindow()
+    electronMock.BrowserWindow.fromWebContents.mockReturnValue(win)
+    fire('window:close')
+    expect(win.close).toHaveBeenCalledOnce()
+  })
+
+  it('window:maximize maximizes a non-maximized window', () => {
+    const win = fakeWindow(false)
+    electronMock.BrowserWindow.fromWebContents.mockReturnValue(win)
+    fire('window:maximize')
+    expect(win.maximize).toHaveBeenCalledOnce()
+    expect(win.unmaximize).not.toHaveBeenCalled()
+  })
+
+  it('window:maximize restores an already-maximized window', () => {
+    const win = fakeWindow(true)
+    electronMock.BrowserWindow.fromWebContents.mockReturnValue(win)
+    fire('window:maximize')
+    expect(win.unmaximize).toHaveBeenCalledOnce()
+    expect(win.maximize).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the focused window when the sender lookup misses', () => {
+    const win = fakeWindow()
+    electronMock.BrowserWindow.fromWebContents.mockReturnValue(null)
+    electronMock.BrowserWindow.getFocusedWindow.mockReturnValue(win)
+    fire('window:minimize')
+    expect(win.minimize).toHaveBeenCalledOnce()
+  })
+
+  it('window control handlers no-op when no window resolves', () => {
+    electronMock.BrowserWindow.fromWebContents.mockReturnValue(null)
+    electronMock.BrowserWindow.getFocusedWindow.mockReturnValue(null)
+    expect(() => fire('window:minimize')).not.toThrow()
+  })
+
+  it('window:is-maximized reports the window state', async () => {
+    const win = fakeWindow(true)
+    electronMock.BrowserWindow.fromWebContents.mockReturnValue(win)
+    const result = await invoke<boolean>('window:is-maximized')
+    expect(result).toBe(true)
+  })
+
+  it('window:is-maximized reports false when no window resolves', async () => {
+    electronMock.BrowserWindow.fromWebContents.mockReturnValue(null)
+    electronMock.BrowserWindow.getFocusedWindow.mockReturnValue(null)
+    const result = await invoke<boolean>('window:is-maximized')
+    expect(result).toBe(false)
   })
 })
 

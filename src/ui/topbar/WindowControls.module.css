@@ -1,0 +1,35 @@
+.controls {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  /* Interactive — must opt out of the draggable title-bar region. */
+  -webkit-app-region: no-drag;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--icon);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.button:hover {
+  background: var(--bg-hover);
+  color: var(--icon-active);
+}
+
+.button:active {
+  background: var(--bg-active);
+}
+
+.close:hover {
+  background: var(--danger);
+  color: #ffffff;
+}

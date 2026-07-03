@@ -1,0 +1,122 @@
+%% Draw-to-Web — Document Model class diagram (generated from src/document/types.ts)
+%% Filled diamond (*--) = composition; hollow triangle (<|--) = generalisation.
+classDiagram
+  class Document {
+    +version: DocumentVersion
+    +meta: DocumentMeta
+    +tokens: Tokens
+    +tree: ElementNode
+    +seo: SEOConfig
+    +runtime: RuntimeFlags
+    +variables: DocumentVariables
+    +settings: DocumentSettings
+    +assets: AssetManifest
+  }
+
+  class Tokens {
+    +color[]
+    +spacing[]
+    +fontSize[]
+    +radius[]
+    +shadow[]
+  }
+  class SEOConfig {
+    +title, description
+    +openGraph, twitter
+    +jsonLd
+    +favicon, robots
+  }
+  class RuntimeFlags {
+    +themeToggle
+    +scrollSpy
+    +mobileNav, reveals
+    +8 opt-in flags total
+  }
+  class DocumentSettings {
+    +contrastTarget
+    +defaultTheme
+    +decorativeBackdrop
+  }
+
+  class ElementNode {
+    <<abstract>>
+    +id: ElementId
+    +name, semanticRole
+    +style: ResponsiveProperties~StyleBlock~
+    +states: StatesMap
+    +animation: AnimationSpec
+    +hiddenAt[]
+  }
+
+  class StyleBlock {
+    +width, height, padding
+    +background[], border, radius
+    +typography, shadows[]
+  }
+  class StatesMap {
+    +hover, focus-visible, active
+  }
+
+  class ContainerNode {
+    +type: 'container'
+    +children[]
+    +layout: LayoutConfig
+  }
+  class TextNode {
+    +type: 'text'
+    +tag: TextTag
+    +content
+  }
+  class ImageNode {
+    +type: 'image'
+    +alt, assetId
+    +sizesHint
+  }
+  class ButtonNode {
+    +type: 'button'
+    +content
+    +ariaLabel
+  }
+  class LinkNode {
+    +type: 'link'
+    +href, target
+    +rel
+  }
+  class IconNode {
+    +type: 'icon'
+    +name, inlineSvg
+    +decorative
+  }
+  class ListNode {
+    +type: 'list'
+    +ordered
+    +items[]
+  }
+  class DividerNode {
+    +type: 'divider'
+    +orientation
+  }
+
+  %% Document-level compositions
+  Document *-- Tokens : tokens
+  Document *-- SEOConfig
+  Document *-- RuntimeFlags
+  Document *-- DocumentSettings
+  Document *-- "1" ElementNode : tree
+
+  %% Element-level compositions
+  ElementNode *-- StyleBlock : style
+  ElementNode *-- StatesMap
+
+  %% Generalisation: eight concrete primitives
+  ElementNode <|-- ContainerNode
+  ElementNode <|-- TextNode
+  ElementNode <|-- ImageNode
+  ElementNode <|-- ButtonNode
+  ElementNode <|-- LinkNode
+  ElementNode <|-- IconNode
+  ElementNode <|-- ListNode
+  ElementNode <|-- DividerNode
+
+  %% Recursive composition: only ContainerNode owns children
+  ContainerNode *-- "0..*" ElementNode : children

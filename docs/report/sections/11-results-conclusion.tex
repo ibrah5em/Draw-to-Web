@@ -1,0 +1,85 @@
+% SOURCES: docs/1.0.0v/supervisor-report.md (§9, §12, §13); docs/DECISIONS.md (D-02..D-04);
+%          docs/0.2.0v/plan.md (§22 Out of Scope, §23 Honest Summary);
+%          draft/Features/future-authoring.md, future-product.md
+
+\chapter{Results and Conclusion}
+\label{ch:results}
+
+\section{Results Against Objectives}
+The six specific objectives from Chapter~\ref{ch:objective} were all met, and each
+is backed by an automated check rather than by assertion:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{O1 (single source of truth)} --- achieved. One Document Model holds
+        all page state; the canvas renders it and the generator walks it, with a
+        strictly one-directional data flow.
+  \item \textbf{O2 (semantic, deterministic output)} --- achieved and test-guarded
+        by the determinism check and the no-\texttt{position:absolute} invariant.
+  \item \textbf{O3 (accessibility by construction)} --- achieved. The
+        \texttt{axe-core} hard gate blocks export on any critical or serious issue,
+        on every export path.
+  \item \textbf{O4 (tokens-driven, responsive)} --- achieved through the
+        \texttt{:root} token block, theme overrides, \texttt{var()} references, and
+        per-breakpoint media queries.
+  \item \textbf{O5 (opt-in runtime)} --- achieved. With all runtime flags off the
+        output contains no \texttt{<script>} element.
+  \item \textbf{O6 (authoring surfaces)} --- achieved in v1.0.0. Draw-to-create,
+        match-layout, and the headless MCP server each ship with their own test
+        suite and reuse the same operations and export pipeline.
+\end{itemize}
+
+\section{Summary of Results}
+The v1.0.0 release is green across all automated gates: \textbf{1042 tests} pass,
+linting and strict type-checking are clean, the accessibility gate is enforced, and
+the data-layer and export performance budgets are met with wide margins
+(Chapter~\ref{ch:testing}). The application is packaged and released with native
+installers for Windows, macOS, and Linux, driven by a tag-triggered build matrix.
+The central claim of the project --- that visual, no-code authoring and
+hand-written-quality output are not in tension --- is therefore supported by a
+working, tested, and released artifact.
+
+\section{Limitations}
+% SOURCES: DECISIONS.md D-01/D-02/D-04; supervisor-report §7/§9/§12; issue #95
+Honesty about limitations is part of the result, and the project records them
+explicitly:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Render-layer performance is not yet empirically signed off.} The
+        six in-application render metrics (drag frame rate, theme toggle,
+        breakpoint switch, layers scroll, and cold-start) were consciously waived
+        at release and remain to be captured on the demo hardware (issue~\#95,
+        decision D-04).
+  \item \textbf{The demo has not been formally rehearsed} on the packaged build
+        --- the same waiver.
+  \item \textbf{Builds are unsigned}, as code signing was cut from scope
+        permanently (decision D-01), so users pass a one-time operating-system
+        trust prompt documented in the README.
+  \item \textbf{Scope is Tier~1 plus three Tier~2 surfaces}; the broader
+        editor-experience features and all Tier~3 product concerns (cloud,
+        accounts, collaboration) remain out of scope.
+\end{itemize}
+
+\section{Future Work}
+% SOURCES: draft/Features/future-authoring.md (Tier 2); future-product.md (Tier 3)
+Future work follows the project's own scope tiers. In the near term, the
+outstanding items above should be closed: capture the render-layer numbers and
+rehearse the demo (issue~\#95), and consider bringing the MCP tool surface under a
+formal, versioned contract like the other C1--C12 interfaces. In the medium term,
+the remainder of the Tier~2 editor experience (\texttt{future-authoring.md}) would
+round out the tool; in the long term, the Tier~3 product concerns
+(\texttt{future-product.md}) --- hosting, accounts, and real-time collaboration ---
+would turn it from a local tool into a platform. Adding code signing, revisited
+from decision D-01, is a small, self-contained task whenever certificates become
+available.
+
+\section{Conclusion}
+Draw-to-Web demonstrates that visual, no-code authoring and high-quality output
+need not be opposites. By making a single Document Model the source of truth and
+treating semantics, determinism, and accessibility as build-time guarantees rather
+than manual afterthoughts, the tool produces portable, hand-written-quality
+HTML and CSS with only the JavaScript the author opts into. Version~1.0.0 extends
+this foundation with faster authoring (draw-to-create and match-layout) and a
+headless, scriptable interface (MCP), while keeping the same accessibility gate on
+every path. The result is a builder whose output quality is not a matter of trust
+but a checkable, reproducible property of every export --- which is precisely the
+gap the reference study identified in the existing tools.

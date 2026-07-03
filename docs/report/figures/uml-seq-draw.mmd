@@ -1,0 +1,19 @@
+%% Draw-to-Web — sequence: draw-to-create
+%% A drawn rectangle becomes a real element via an ordinary insertElement
+%% operation; the drawn pixels themselves never enter the store.
+sequenceDiagram
+  actor Author
+  participant Canvas
+  participant IR as interpretRectangle
+  participant SG as snapToGrid
+  participant Store
+
+  Author->>Canvas: drag rectangle
+  Canvas->>IR: normalised rect
+  IR-->>Canvas: ranked kind + confidence
+  Author->>Canvas: confirm kind (picker)
+  Canvas->>SG: bounds, grid, breakpoint
+  SG-->>Canvas: column start/span + index
+  Canvas->>Store: dispatch insertElement(op)
+  Store-->>Canvas: updated document
+  Canvas-->>Author: element placed

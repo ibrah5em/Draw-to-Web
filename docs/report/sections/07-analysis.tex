@@ -1,0 +1,290 @@
+% SOURCES: figures/*.png (Mermaid architecture diagrams); docs/0.2.0v/architecture.md;
+%          docs/0.2.0v/element-model.md; src/document/types.ts (ground truth for the
+%          class diagram); src/export/index.ts (9-stage pipeline); src/draw/* (flow).
+% The three formal UML diagrams (class / use-case / sequence) are drawn natively in
+% TikZ (styles defined in main.tex), so no external diagram tool is required.
+
+\chapter{System Analysis}
+\label{ch:analysis}
+
+This chapter analyses the system: first the layered architecture and data flow,
+then the three formal UML views required for the design --- a \emph{class diagram}
+of the Document Model, a \emph{use-case diagram} of the actors and their goals, and
+\emph{sequence diagrams} of the two most characteristic interactions
+(draw-to-create and export).
+
+\section{Architectural Overview}
+Draw-to-Web is organised into layers with a strictly one-directional data flow: the
+user interface writes to the store through operations, the Document Model is the
+single source of truth, and the output layer reads the document to generate and
+export. Nothing flows the other way --- the canvas is a \emph{rendering} of the
+document, never the model itself. Figure~\ref{fig:architecture} shows the layered
+architecture across the Electron main, preload, and renderer processes, and
+Figure~\ref{fig:dataflow} shows the one-directional data flow that this layering
+enforces.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\linewidth]{01-architecture.png}
+  \caption{Layered architecture: renderer (UI $\rightarrow$ store $\rightarrow$ generator) over a sandboxed preload bridge and an Electron main process.}
+  \label{fig:architecture}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\linewidth]{02-dataflow.png}
+  \caption{One-directional data flow. The UI dispatches operations to the store; the generator and export pipeline read the resulting document.}
+  \label{fig:dataflow}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.86\linewidth]{04-component-hierarchy.png}
+  \caption{Renderer component hierarchy.}
+  \label{fig:components}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.78\linewidth]{05-state-stores.png}
+  \caption{State stores (document, history, session) and their relationships.}
+  \label{fig:stores}
+\end{figure}
+
+\section{Class Diagram (Document Model)}
+The Document Model is the heart of the system and therefore its class model. A
+single \texttt{Document} aggregates the design tokens, the SEO configuration, the
+runtime flags, the author settings, the variables, and the asset manifest, plus one
+element \texttt{tree}. Every renderable element is an \texttt{ElementNode} --- an
+abstract base (all elements share an identity, a per-breakpoint \texttt{style}, a
+\texttt{states} map, and an optional animation) specialised into eight concrete
+primitive types. Only \texttt{ContainerNode} owns children, and its children are
+themselves \texttt{ElementNode}s, which is the recursive composition that makes the
+document a tree. Complex shapes (hero, cards grid, navigation) are \emph{not} new
+classes: they are presets that compose these same primitives.
+Figure~\ref{fig:class} shows the model, generated from
+\texttt{src/document/types.ts}.
+
+\begin{figure}[p]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[node distance=10mm and 6mm]
+    % ---- Root document ----
+    \node[umlclass, text width=42mm] (doc) {
+      \textbf{Document}
+      \nodepart{two}
+      +version: DocumentVersion\\
+      +meta: DocumentMeta\\
+      +tokens: Tokens\\
+      +tree: ElementNode\\
+      +seo: SEOConfig\\
+      +runtime: RuntimeFlags\\
+      +variables: DocumentVariables\\
+      +settings: DocumentSettings\\
+      +assets: AssetManifest
+    };
+
+    % ---- Document-level value objects (right of doc) ----
+    \node[umlvalue, right=20mm of doc.north east, anchor=north west] (tokens) {
+      \textbf{Tokens}\nodepart{two}+color[\,]\\+spacing[\,]\\+fontSize[\,]\\+radius[\,]\\+shadow[\,]
+    };
+    \node[umlvalue, below=3mm of tokens] (seo) {
+      \textbf{SEOConfig}\nodepart{two}+title, description\\+openGraph, twitter\\+jsonLd\\+favicon, robots
+    };
+    \node[umlvalue, below=3mm of seo] (runtime) {
+      \textbf{RuntimeFlags}\nodepart{two}+themeToggle\\+scrollSpy\\+mobileNav, reveals\\(8 opt-in flags)
+    };
+    \node[umlvalue, below=3mm of runtime] (settings) {
+      \textbf{DocumentSettings}\nodepart{two}+contrastTarget\\+defaultTheme\\+decorativeBackdrop
+    };
+
+    % ---- Abstract element ----
+    \node[umlabstract, below=24mm of doc, text width=52mm] (en) {
+      \textit{\textbf{ElementNode}}\, \textit{(abstract)}
+      \nodepart{two}
+      +id: ElementId\\
+      +name, semanticRole\\
+      +style: ResponsiveProperties[StyleBlock]\\
+      +states: StatesMap\\
+      +animation: AnimationSpec\\
+      +hiddenAt[\,]
+    };
+
+    % ---- Element-level value objects (LEFT of en; kept compact so the recursive
+    %      "children" edge has a clear corridor below them) ----
+    \node[umlvalue, left=18mm of en.north west, anchor=north east] (style) {
+      \textbf{StyleBlock}\nodepart{two}+width, height, padding\\+background[\,], border, radius\\+typography, shadows[\,]
+    };
+    \node[umlvalue, below=3mm of style] (states) {
+      \textbf{StatesMap}\nodepart{two}+hover, focus-visible, active
+    };
+
+    % ---- Concrete subclasses: two rows of four ----
+    \node[umlnode, below=18mm of en, xshift=-45mm] (c1) {\textbf{ContainerNode}\nodepart{two}type='container'\\+children[\,]\\+layout: LayoutConfig};
+    \node[umlnode, right=6mm of c1] (c2) {\textbf{TextNode}\nodepart{two}type='text'\\+tag: TextTag\\+content};
+    \node[umlnode, right=6mm of c2] (c3) {\textbf{ImageNode}\nodepart{two}type='image'\\+alt, assetId\\+sizesHint};
+    \node[umlnode, right=6mm of c3] (c4) {\textbf{ButtonNode}\nodepart{two}type='button'\\+content\\+ariaLabel};
+    \node[umlnode, below=8mm of c1] (c5) {\textbf{LinkNode}\nodepart{two}type='link'\\+href, target\\+rel};
+    \node[umlnode, below=8mm of c2] (c6) {\textbf{IconNode}\nodepart{two}type='icon'\\+name, inlineSvg\\+decorative};
+    \node[umlnode, below=8mm of c3] (c7) {\textbf{ListNode}\nodepart{two}type='list'\\+ordered\\+items[\,]};
+    \node[umlnode, below=8mm of c4] (c8) {\textbf{DividerNode}\nodepart{two}type='divider'\\+orientation};
+
+    % ---- Compositions from Document ----
+    \draw[compose] (doc.east) -- (tokens.west) node[midway, above, font=\tiny]{tokens};
+    \draw[compose] (doc.east) -- (seo.west);
+    \draw[compose] (doc.east) -- (runtime.west);
+    \draw[compose] (doc.east) -- (settings.west);
+    \draw[compose] (doc.south) -- (en.north) node[midway, right, font=\tiny]{tree 1};
+
+    % ---- Compositions on the element (to the left) ----
+    \draw[compose] (en.west) -- (style.east) node[midway, above, font=\tiny]{style};
+    \draw[compose] (en.west) -- (states.east);
+
+    % ---- Generalisation (nested shared bus) ----
+    \coordinate (pbus) at ($(en.south)+(0,-6mm)$);
+    \draw[inherit] (pbus) -- (en.south);
+    \draw (c1.north |- pbus) -- (c4.north |- pbus);
+    \foreach \c in {c1,c2,c3,c4}{ \draw (\c.north) -- (\c.north |- pbus); }
+    \coordinate (r2y) at ($(c5.north)+(0,3mm)$);
+    \draw (en.south |- pbus) -- (en.south |- r2y);
+    \draw (c5.north |- r2y) -- (c8.north |- r2y);
+    \foreach \c in {c5,c6,c7,c8}{ \draw (\c.north) -- (\c.north |- r2y); }
+
+    % ---- Recursive composition: Container owns ElementNode children ----
+    \draw[compose] (c1.west) to[out=160, in=210, looseness=1.2]
+      node[pos=0.12, below left=-0.5mm and 0mm, font=\tiny, align=right]{children 0..*} (en.south west);
+  \end{tikzpicture}%
+  }
+  \caption{Class diagram of the Document Model. Filled diamonds denote composition; the hollow triangle denotes generalisation. \texttt{ContainerNode} composes further \texttt{ElementNode}s, making the document a recursive tree.}
+  \label{fig:class}
+\end{figure}
+
+\section{Use-Case Diagram}
+The system has two actors: the \emph{Author}, a human working in the graphical
+editor, and the \emph{MCP Client}, a program or agent driving the same pipeline
+headlessly. Figure~\ref{fig:usecase} shows their goals. Note that both
+\emph{Author \& export a page} and \emph{Drive builder headlessly} \emph{include}
+the shared \emph{Validate document} and \emph{Export ZIP bundle} use cases --- the
+same generation, accessibility gate, and packaging serve both the interactive and
+the headless path.
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.98\textwidth}{!}{%
+  \begin{tikzpicture}
+    % ---- Use cases: left column ----
+    \node[usecase] (uc1) {Author \& export\\a page};
+    \node[usecase, below=6mm of uc1] (uc2) {Draw to create\\an element};
+    \node[usecase, below=6mm of uc2] (uc3) {Match my\\layout};
+    \node[usecase, below=6mm of uc3] (uc5) {Save / open \&\\recover project};
+    % ---- Use cases: right column ----
+    \node[usecase, right=26mm of uc1] (ucA) {Insert / edit\\elements};
+    \node[usecase, below=6mm of ucA] (ucB) {Manage tokens\\\& theme};
+    \node[usecase, below=6mm of ucB] (ucV) {Validate\\document};
+    \node[usecase, below=6mm of ucV] (ucE) {Export ZIP\\bundle};
+    \node[usecase, below=6mm of ucE] (ucH) {Drive builder\\headlessly};
+    % ---- System boundary ----
+    \node[draw, thick, rounded corners, fit=(uc1)(uc5)(ucA)(ucH),
+      inner sep=7mm, label={[font=\bfseries]above:Draw-to-Web}] (sys) {};
+    % ---- Actors ----
+    \coordinate (author) at ($(uc3.west)+(-40mm,10mm)$);
+    \pic at (author) {ucactor};
+    \node[font=\footnotesize, below=15mm of author] {Author};
+    \coordinate (mcp) at ($(ucH.east)+(40mm,0mm)$);
+    \pic at (mcp) {ucactor};
+    \node[font=\footnotesize, below=15mm of mcp, align=center] {MCP\\Client};
+    % ---- Associations (Author) ----
+    \foreach \u in {uc1,uc2,uc3,uc5,ucA,ucB}{ \draw[ucedge] (author) -- (\u.west); }
+    % ---- Associations (MCP client) ----
+    \draw[ucedge] (mcp) -- (ucH.east);
+    % ---- Includes ----
+    \draw[ucinclude] (uc1) -- (ucV) node[midway, above, font=\tiny, sloped]{\guillemotleft include\guillemotright};
+    \draw[ucinclude] (ucH) to[out=150,in=270] node[pos=0.5, right, font=\tiny]{\guillemotleft include\guillemotright} (ucE.south);
+    \draw[ucinclude] (ucH) to[out=120,in=250] (ucV.south);
+    \draw[ucinclude] (uc1) to[out=-20,in=160] node[pos=0.5, below, font=\tiny]{\guillemotleft include\guillemotright} (ucE.west);
+  \end{tikzpicture}%
+  }
+  \caption{Use-case diagram. The Author drives the graphical goals; the MCP Client drives the headless goal. Both the interactive and headless export paths \guillemotleft include\guillemotright{} the same validation and packaging.}
+  \label{fig:usecase}
+\end{figure}
+
+\section{Sequence Diagrams}
+Two interactions best characterise the system. The first,
+Figure~\ref{fig:seqdraw}, is \emph{draw-to-create}: how a rectangle drawn on the
+canvas becomes a real element through an ordinary operation, so that the drawn
+pixels themselves never enter the store. The second, Figure~\ref{fig:seqexport}, is
+the \emph{export pipeline}: how a document is validated, generated, gated for
+accessibility, optimised across the IPC boundary, and packaged. The nine-stage
+pipeline is also shown as a flow in Figure~\ref{fig:exportflow}.
+
+\begin{figure}[H]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}
+    % participants
+    \node[seqbox] (p1) at (0,0)    {Author};
+    \node[seqbox] (p2) at (37mm,0) {Canvas};
+    \node[seqbox] (p3) at (78mm,0) {\texttt{interpret-}\\\texttt{Rectangle}};
+    \node[seqbox] (p4) at (119mm,0){\texttt{snapToGrid}};
+    \node[seqbox] (p5) at (156mm,0){Store};
+    % lifelines
+    \foreach \p in {p1,p2,p3,p4,p5}{ \draw[lifeline] (\p.south) -- ($(\p.south)+(0,-102mm)$); }
+    % message y-levels
+    \foreach \i/\y in {1/-14,2/-24,3/-33,4/-44,5/-54,6/-63,7/-74,8/-83,9/-94}{
+      \coordinate (m\i) at (0,\y mm); }
+    % messages
+    \draw[seqmsg] (p1 |- m1) -- (p2 |- m1) node[midway, above, font=\scriptsize]{drag rectangle};
+    \draw[seqmsg] (p2 |- m2) -- (p3 |- m2) node[midway, above, font=\scriptsize]{normalised rect};
+    \draw[seqret] (p3 |- m3) -- (p2 |- m3) node[midway, above, font=\scriptsize]{ranked kind + confidence};
+    \draw[seqmsg] (p1 |- m4) -- (p2 |- m4) node[midway, above, font=\scriptsize]{confirm kind (picker)};
+    \draw[seqmsg] (p2 |- m5) -- (p4 |- m5) node[midway, above, font=\scriptsize]{bounds, grid, breakpoint};
+    \draw[seqret] (p4 |- m6) -- (p2 |- m6) node[midway, above, font=\scriptsize]{column start/span + index};
+    \draw[seqmsg] (p2 |- m7) -- (p5 |- m7) node[midway, above, font=\scriptsize]{dispatch insertElement(op)};
+    \draw[seqret] (p5 |- m8) -- (p2 |- m8) node[midway, above, font=\scriptsize]{updated document};
+    \draw[seqret] (p2 |- m9) -- (p1 |- m9) node[midway, above, font=\scriptsize]{element placed};
+  \end{tikzpicture}%
+  }
+  \caption{Sequence diagram: draw-to-create. The canvas interprets the rectangle and snaps it to a grid placement (pure functions), then dispatches a normal \texttt{insertElement} operation; the drawn pixels never enter the store.}
+  \label{fig:seqdraw}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}
+    % participants
+    \node[seqbox] (p1) at (0,0)    {Author / UI};
+    \node[seqbox] (p2) at (40mm,0) {\texttt{exportProject}};
+    \node[seqbox] (p3) at (85mm,0) {Generator\\+ SEO};
+    \node[seqbox] (p4) at (125mm,0){\texttt{axeGate}};
+    \node[seqbox] (p5) at (162mm,0){Main (IPC)};
+    % lifelines
+    \foreach \p in {p1,p2,p3,p4,p5}{ \draw[lifeline] (\p.south) -- ($(\p.south)+(0,-110mm)$); }
+    % message y-levels
+    \foreach \i/\y in {1/-14,2/-24,3/-33,4/-44,5/-53,6/-64,7/-73,8/-84,9/-93,10/-104}{
+      \coordinate (m\i) at (0,\y mm); }
+    \draw[seqmsg] (p1 |- m1) -- (p2 |- m1) node[midway, above, font=\scriptsize]{export(document, options)};
+    \draw[seqmsg] (p2 |- m2) -- (p3 |- m2) node[midway, above, font=\scriptsize]{validate + generate};
+    \draw[seqret] (p3 |- m3) -- (p2 |- m3) node[midway, above, font=\scriptsize]{html / css / js};
+    \draw[seqmsg] (p2 |- m4) -- (p4 |- m4) node[midway, above, font=\scriptsize]{check(html)};
+    \draw[seqret] (p4 |- m5) -- (p2 |- m5) node[midway, above, font=\scriptsize]{violations};
+    \draw[seqmsg] (p2 |- m6) -- (p5 |- m6) node[midway, above, font=\scriptsize]{optimize images + minify};
+    \draw[seqret] (p5 |- m7) -- (p2 |- m7) node[midway, above, font=\scriptsize]{optimized assets};
+    \draw[seqmsg] (p2 |- m8) -- (p5 |- m8) node[midway, above, font=\scriptsize]{bundle ZIP + save(path)};
+    \draw[seqret] (p5 |- m9) -- (p2 |- m9) node[midway, above, font=\scriptsize]{ExportResult};
+    \draw[seqret] (p2 |- m10) -- (p1 |- m10) node[midway, above, font=\scriptsize]{success / structured error};
+    % a11y note (placed in whitespace right of the gate, above the minify message)
+    \node[draw, fill=yellow!15, font=\scriptsize, align=center, rounded corners]
+      at (147mm,-42mm) {critical / serious\\blocks export};
+  \end{tikzpicture}%
+  }
+  \caption{Sequence diagram: the export pipeline. The accessibility gate runs before any asset crosses the IPC boundary; a critical or serious violation aborts the export with a structured error.}
+  \label{fig:seqexport}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\linewidth]{03-export-pipeline.png}
+  \caption{The nine-stage export pipeline as a flow: validate $\rightarrow$ generate $\rightarrow$ inject-SEO $\rightarrow$ a11y-gate $\rightarrow$ optimize-images $\rightarrow$ minify $\rightarrow$ sitemap/robots $\rightarrow$ bundle $\rightarrow$ save.}
+  \label{fig:exportflow}
+\end{figure}

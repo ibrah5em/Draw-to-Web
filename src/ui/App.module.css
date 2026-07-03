@@ -1,6 +1,6 @@
 .app {
   display: grid;
-  grid-template-rows: var(--titlebar-height) 1fr var(--statusbar-height);
+  grid-template-rows: var(--titlebar-height) 1fr;
   height: 100vh;
   overflow: hidden;
   background: var(--bg-base);
@@ -116,9 +116,4 @@
   height: 1px;
   background: var(--border);
   pointer-events: none;
-}
-
-.statusbar {
-  background: #007acc;
-  flex-shrink: 0;
 }

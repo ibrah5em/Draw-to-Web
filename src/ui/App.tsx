@@ -331,8 +331,6 @@ export function App(): JSX.Element {
 
       <DocumentSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <ConflictResolver />
-
-      <footer className={styles.statusbar} />
     </div>
   )
 }

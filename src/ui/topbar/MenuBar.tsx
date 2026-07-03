@@ -8,9 +8,10 @@
  */
 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { Check } from 'lucide-react'
+import { Check, ChevronRight } from 'lucide-react'
 import { useState, type JSX } from 'react'
 
+import type { BreakpointKey } from '@document/types'
 import { useDocumentStore } from '@store/documentStore'
 import { redo, undo } from '@store/dispatch'
 import { useHistoryStore } from '@store/historyStore'
@@ -22,6 +23,7 @@ import { runExport } from '../export/runExport'
 import { openLivePreview } from '../preview/livePreview'
 import { ShortcutsHelp } from '../shortcuts/ShortcutsHelp'
 
+import { BREAKPOINT_OPTIONS, BREAKPOINT_WIDTH_PX } from './breakpoints'
 import type { ViewToggle } from './ViewToggles'
 import styles from './MenuBar.module.css'
 
@@ -51,6 +53,50 @@ function MenuItem({
   )
 }
 
+/**
+ * View ▸ Canvas Size submenu (L-TOP-02). Drives `sessionStore.activeBreakpoint`
+ * — the same state the former topbar switcher wrote — with a radio checkmark on
+ * the active breakpoint. Icons are reused from {@link BREAKPOINT_OPTIONS}.
+ */
+function CanvasSizeSubmenu(): JSX.Element {
+  const active = useSessionStore((s) => s.activeBreakpoint)
+  const setActiveBreakpoint = useSessionStore((s) => s.setActiveBreakpoint)
+
+  return (
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger className={styles.item}>
+        <span>Canvas Size</span>
+        <ChevronRight size={14} className={styles.subChevron} />
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.SubContent className={styles.content} sideOffset={2} alignOffset={-4}>
+          <DropdownMenu.RadioGroup
+            value={active}
+            onValueChange={(value) => setActiveBreakpoint(value as BreakpointKey)}
+          >
+            {BREAKPOINT_OPTIONS.map((option) => (
+              <DropdownMenu.RadioItem
+                key={option.value}
+                value={option.value}
+                className={styles.sizeItem}
+              >
+                <DropdownMenu.ItemIndicator className={styles.indicator}>
+                  <Check size={12} />
+                </DropdownMenu.ItemIndicator>
+                <span aria-hidden className={styles.sizeIcon}>
+                  {option.icon(14)}
+                </span>
+                <span>{option.label}</span>
+                <span className={styles.sizeWidth}>{BREAKPOINT_WIDTH_PX[option.value]}</span>
+              </DropdownMenu.RadioItem>
+            ))}
+          </DropdownMenu.RadioGroup>
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Sub>
+  )
+}
+
 function Menu({ label, children }: { label: string; children: JSX.Element }): JSX.Element {
   return (
     <DropdownMenu.Root>
@@ -68,10 +114,13 @@ function Menu({ label, children }: { label: string; children: JSX.Element }): JS
 export function MenuBar({
   panels,
   onOpenSettings,
+  onOpenAppSettings,
 }: {
   panels: ReadonlyArray<ViewToggle>
   /** Open the Document Settings dialog (L-DLG-02), owned by the shell. */
   onOpenSettings?: () => void
+  /** Open the global application Settings dialog (Task 4), owned by the shell. */
+  onOpenAppSettings?: () => void
 }): JSX.Element {
   const theme = useSessionStore((s) => s.theme)
   const toggleTheme = useSessionStore((s) => s.toggleTheme)
@@ -124,6 +173,8 @@ export function MenuBar({
             onSelect={() => void openLivePreview()}
           />
           <DropdownMenu.Separator className={styles.separator} />
+          <CanvasSizeSubmenu />
+          <DropdownMenu.Separator className={styles.separator} />
           {panels.map((panel) => (
             <DropdownMenu.CheckboxItem
               key={panel.id}
@@ -156,6 +207,10 @@ export function MenuBar({
           <MenuItem label="Keyboard shortcuts…" onSelect={() => setShortcutsOpen(true)} />
         </>
       </Menu>
+
+      <button type="button" className={styles.trigger} onClick={() => onOpenAppSettings?.()}>
+        Settings
+      </button>
 
       <ShortcutsHelp open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </nav>

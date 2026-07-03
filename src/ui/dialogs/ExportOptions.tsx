@@ -18,6 +18,7 @@ import { useEffect, useState, type JSX } from 'react'
 
 import type { ExportOptions } from '@export/index'
 
+import { useAppSettings } from '../state/appSettings'
 import styles from './ExportOptions.module.css'
 
 /** The subset of {@link ExportOptions} this dialog collects. */
@@ -72,14 +73,6 @@ const TOGGLES: ReadonlyArray<ToggleDef> = [
   },
 ]
 
-const DEFAULTS: Omit<ExportOptionValues, 'projectName'> = {
-  minify: true,
-  inlineJS: false,
-  selfHostFonts: false,
-  includeSourceComments: false,
-  theme: 'auto',
-}
-
 /** Export Options modal. Collects I-EXP-03 options and a filename. */
 export function ExportOptions({
   open,
@@ -88,16 +81,19 @@ export function ExportOptions({
   defaultName,
   busy = false,
 }: ExportOptionsProps): JSX.Element {
-  const [values, setValues] = useState<ExportOptionValues>({
-    ...DEFAULTS,
+  // Seed from the user's persisted export defaults (Settings ▸ Export defaults)
+  // rather than fixed constants, so the dialog reflects saved preferences.
+  const exportDefaults = useAppSettings((s) => s.exportDefaults)
+  const [values, setValues] = useState<ExportOptionValues>(() => ({
+    ...useAppSettings.getState().exportDefaults,
     projectName: defaultName,
-  })
+  }))
 
-  // Re-seed the filename whenever the dialog (re)opens for a new document so
-  // a renamed project surfaces its current name instead of a stale one.
+  // Re-seed from saved defaults + the current document name whenever the dialog
+  // (re)opens, so a renamed project and updated preferences both surface.
   useEffect(() => {
-    if (open) setValues((v) => ({ ...v, projectName: defaultName }))
-  }, [open, defaultName])
+    if (open) setValues({ ...exportDefaults, projectName: defaultName })
+  }, [open, defaultName, exportDefaults])
 
   const setToggle = (key: ToggleDef['key'], next: boolean): void =>
     setValues((v) => ({ ...v, [key]: next }))

@@ -1,6 +1,6 @@
 .app {
   display: grid;
-  grid-template-rows: var(--titlebar-height) 1fr var(--statusbar-height);
+  grid-template-rows: var(--titlebar-height) 1fr;
   height: 100vh;
   overflow: hidden;
   background: var(--bg-base);
@@ -14,15 +14,56 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--sp-3);
+  padding: 0;
   user-select: none;
   flex-shrink: 0;
+  /* Frameless window: the whole bar is a drag handle; interactive children
+     (menu, toolbar buttons, window controls) opt back out with no-drag. */
+  -webkit-app-region: drag;
+}
+
+.titlebarLeft {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-left: var(--sp-3);
+}
+
+/* macOS keeps its native traffic lights on the left — clear space for them. */
+.titlebar[data-mac='true'] .titlebarLeft {
+  padding-left: 78px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding-right: var(--sp-3);
+  white-space: nowrap;
+}
+
+.brandIcon {
+  color: var(--accent);
+}
+
+.brandName {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.titlebarRight {
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .titlebarActions {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
+  padding-right: var(--sp-2);
+  -webkit-app-region: no-drag;
 }
 
 .main {
@@ -116,9 +157,4 @@
   height: 1px;
   background: var(--border);
   pointer-events: none;
-}
-
-.statusbar {
-  background: #007acc;
-  flex-shrink: 0;
 }

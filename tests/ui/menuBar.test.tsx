@@ -59,10 +59,35 @@ function menuItem(text: string, role = 'menuitem'): HTMLElement {
 }
 
 describe('MenuBar', () => {
-  it('renders File / Edit / View / Help triggers', () => {
+  it('renders File / Edit / View / Help / Settings triggers', () => {
     render()
     const labels = [...container.querySelectorAll('button')].map((b) => b.textContent)
-    expect(labels).toEqual(['File', 'Edit', 'View', 'Help'])
+    expect(labels).toEqual(['File', 'Edit', 'View', 'Help', 'Settings'])
+  })
+
+  it('Settings trigger invokes onOpenAppSettings', () => {
+    let opened = 0
+    act(() =>
+      root.render(
+        <MenuBar
+          panels={[]}
+          onOpenAppSettings={() => {
+            opened += 1
+          }}
+        />
+      )
+    )
+    const settings = [...container.querySelectorAll('button')].find(
+      (b) => b.textContent === 'Settings'
+    )
+    act(() => settings?.click())
+    expect(opened).toBe(1)
+  })
+
+  it('View menu exposes the Canvas Size submenu', () => {
+    render()
+    openMenu('View')
+    expect(menuItem('Canvas Size')).toBeTruthy()
   })
 
   it('File → New resets to a blank document', () => {

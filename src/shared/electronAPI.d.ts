@@ -129,6 +129,37 @@ interface ElectronAPI {
    * with no watcher running succeeds and returns `filePath: null`.
    */
   unwatchProject: () => Promise<{ success: boolean; filePath?: string | null }>
+  /**
+   * Host OS platform (`process.platform`). Surfaced so the custom title bar
+   * (Task 3) can adapt per-platform — macOS keeps native traffic lights and
+   * hides the custom window controls.
+   */
+  platform:
+    | 'aix'
+    | 'android'
+    | 'darwin'
+    | 'freebsd'
+    | 'haiku'
+    | 'linux'
+    | 'openbsd'
+    | 'sunos'
+    | 'win32'
+    | 'cygwin'
+    | 'netbsd'
+  /** Minimizes the host window (custom title-bar control). */
+  minimizeWindow: () => void
+  /** Toggles maximize/restore on the host window (custom title-bar control). */
+  maximizeWindow: () => void
+  /** Closes the host window (custom title-bar control). */
+  closeWindow: () => void
+  /** Resolves to whether the host window is currently maximized. */
+  isWindowMaximized: () => Promise<boolean>
+  /**
+   * Subscribes to host-window maximize/unmaximize transitions so the custom
+   * title bar's maximize icon stays in sync with OS-driven changes. Returns an
+   * unsubscribe function.
+   */
+  onWindowMaximizedChange: (callback: (maximized: boolean) => void) => () => void
 }
 
 declare global {

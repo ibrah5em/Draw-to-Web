@@ -60,4 +60,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   watchProject: (filePath: string) => ipcRenderer.invoke('watcher:start', filePath),
   unwatchProject: () => ipcRenderer.invoke('watcher:stop'),
+
+  // Custom title-bar window controls (Task 3). `platform` lets the renderer
+  // adapt the bar (macOS keeps native traffic lights, so it hides the custom
+  // min/max/close buttons and leaves room on the left).
+  platform: process.platform,
+  minimizeWindow: () => ipcRenderer.send('window:minimize'),
+  maximizeWindow: () => ipcRenderer.send('window:maximize'),
+  closeWindow: () => ipcRenderer.send('window:close'),
+  isWindowMaximized: () => ipcRenderer.invoke('window:is-maximized') as Promise<boolean>,
+  onWindowMaximizedChange: (callback: (maximized: boolean) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, maximized: boolean) => callback(maximized)
+    ipcRenderer.on('window:maximized', handler)
+    return () => ipcRenderer.removeListener('window:maximized', handler)
+  },
 })

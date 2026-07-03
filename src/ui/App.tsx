@@ -26,6 +26,8 @@ import { ViewToggles, type ViewToggle } from './topbar/ViewToggles'
 import { WindowControls } from './topbar/WindowControls'
 import { ConflictResolver } from './dialogs/ConflictResolver'
 import { DocumentSettings } from './dialogs/DocumentSettings'
+import { AppSettings } from './dialogs/AppSettings'
+import { useAppSettingsSync } from './state/appSettingsSync'
 import { useEditorShortcuts } from './shortcuts/useEditorShortcuts'
 import styles from './App.module.css'
 
@@ -105,7 +107,10 @@ export function App(): JSX.Element {
   )
   const [settingsOpen, setSettingsOpen] = useState(false)
   const openSettings = (): void => setSettingsOpen(true)
+  const [appSettingsOpen, setAppSettingsOpen] = useState(false)
+  const openAppSettings = (): void => setAppSettingsOpen(true)
 
+  useAppSettingsSync()
   useDeleteSelection()
   useLivePreviewShortcut(() => void openLivePreview())
   useEditorShortcuts()
@@ -210,7 +215,11 @@ export function App(): JSX.Element {
             <PencilRuler size={16} className={styles.brandIcon} aria-hidden />
             <span className={styles.brandName}>Draw to Web</span>
           </div>
-          <MenuBar panels={panelToggles} onOpenSettings={openSettings} />
+          <MenuBar
+            panels={panelToggles}
+            onOpenSettings={openSettings}
+            onOpenAppSettings={openAppSettings}
+          />
         </div>
         <div className={styles.titlebarRight}>
           <div className={styles.titlebarActions}>
@@ -341,6 +350,7 @@ export function App(): JSX.Element {
       />
 
       <DocumentSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <AppSettings open={appSettingsOpen} onClose={() => setAppSettingsOpen(false)} />
       <ConflictResolver />
     </div>
   )

@@ -114,10 +114,13 @@ function Menu({ label, children }: { label: string; children: JSX.Element }): JS
 export function MenuBar({
   panels,
   onOpenSettings,
+  onOpenAppSettings,
 }: {
   panels: ReadonlyArray<ViewToggle>
   /** Open the Document Settings dialog (L-DLG-02), owned by the shell. */
   onOpenSettings?: () => void
+  /** Open the global application Settings dialog (Task 4), owned by the shell. */
+  onOpenAppSettings?: () => void
 }): JSX.Element {
   const theme = useSessionStore((s) => s.theme)
   const toggleTheme = useSessionStore((s) => s.toggleTheme)
@@ -204,6 +207,10 @@ export function MenuBar({
           <MenuItem label="Keyboard shortcuts…" onSelect={() => setShortcutsOpen(true)} />
         </>
       </Menu>
+
+      <button type="button" className={styles.trigger} onClick={() => onOpenAppSettings?.()}>
+        Settings
+      </button>
 
       <ShortcutsHelp open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </nav>

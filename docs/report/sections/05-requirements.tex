@@ -1,0 +1,111 @@
+% SOURCES: draft/Features/features.md (Tier-1 capabilities); docs/0.2.0v/plan.md
+%          (§11 Feature Checklist, §12 Additional In-Scope, §5 Architecture, §14, §15);
+%          README.md; docs/1.0.0v/supervisor-report.md
+
+\chapter{Requirements Gathering}
+\label{ch:requirements}
+
+Requirements were elicited from the Tier-1 feature specification
+(\texttt{draft/Features/features.md}) and the architecture and constraints in the
+execution plan. They are presented here as functional requirements, non-functional
+requirements, and the primary use cases; the use-case \emph{diagram} that
+accompanies these descriptions appears in Chapter~\ref{ch:analysis},
+Figure~\ref{fig:usecase}.
+
+\section{Functional Requirements}
+\begin{enumerate}[label=\textbf{FR\arabic*.}, leftmargin=3.4em]
+  \item The system shall let a user insert, select, move, reorder, group, and
+        delete elements on a canvas, with full undo and redo.
+  \item The system shall support the primitive element types --- container, text,
+        image, button, link, icon, list, and divider --- and \emph{presets} that
+        compose those primitives into larger structures (hero, cards grid,
+        navigation, footer, and so on) without introducing new element types.
+  \item The system shall let a user define design tokens (colour, spacing, font
+        size, font family, line height, radius, shadow) and bind element styles to
+        them, with coordinated light and dark theme values.
+  \item The system shall support per-breakpoint style values (desktop, tablet,
+        mobile, small) and per-state overrides (hover, focus-visible, active) on
+        every element.
+  \item The system shall create an element from a rectangle the user draws on the
+        canvas, proposing the most likely element kind with a confidence hint
+        (draw-to-create).
+  \item The system shall match a rough drawn layout against bundled professional
+        designs and let the user adopt the best match as a full document
+        (match-layout).
+  \item The system shall validate the document and export a portable HTML/CSS/JS
+        bundle as a ZIP archive, together with SEO assets (sitemap, robots).
+  \item The system shall expose the document, generation, and export pipeline over
+        a headless Model Context Protocol (MCP) server, so the builder can be
+        driven without its graphical interface.
+  \item The system shall save and open projects as versioned \texttt{.dtw} files,
+        with autosave, crash recovery, and reload on external change.
+\end{enumerate}
+
+\section{Non-Functional Requirements}
+% SOURCES: plan.md §14 Performance Budgets, §15 Security; CLAUDE.md (constraints)
+\begin{enumerate}[label=\textbf{NFR\arabic*.}, leftmargin=3.8em]
+  \item \textbf{Accessibility.} Export shall be blocked on any critical or serious
+        \texttt{axe-core} violation, and the output shall satisfy the project's
+        WCAG-aligned rules (single \texttt{<h1>}, no heading skips, \texttt{alt}
+        text, ARIA labels on icon-only controls, visible focus, reduced-motion
+        support) \cite{wcag21}.
+  \item \textbf{Determinism.} Identical input shall yield byte-identical output
+        (no timestamps, no random identifiers), so exports are reproducible and
+        diff-able.
+  \item \textbf{Performance.} Data-layer operations (save, open, undo/redo) and the
+        export pipeline shall meet defined budgets (see
+        Chapter~\ref{ch:testing}).
+  \item \textbf{Security.} The Electron application shall run with context
+        isolation, no Node integration, and sandboxing; a strict Content Security
+        Policy in production; and Zod-validated IPC boundaries with path
+        sanitisation and size caps.
+  \item \textbf{Portability.} The exported output shall have no build step and no
+        mandatory runtime dependency, so it can be hosted anywhere as static files.
+  \item \textbf{Maintainability.} The codebase shall be strict TypeScript with no
+        \texttt{any}, named exports, and JSDoc on every exported function in the
+        core modules.
+\end{enumerate}
+
+\section{Primary Use Cases}
+Each use case below is given as a short structured description (actor,
+precondition, main flow, postcondition). Together they define the actors and
+system boundary drawn in Figure~\ref{fig:usecase}.
+
+\subsection*{UC-1: Author and export a page}
+\textbf{Actor:} Author. \quad\textbf{Precondition:} the application is open.
+\textbf{Main flow:} the author opens a template or a blank page; inserts and edits
+elements on the canvas; adjusts tokens, theme, and per-breakpoint values; runs the
+live validation console to resolve any issues; and requests an export.
+\textbf{Postcondition:} a valid, accessibility-gated ZIP bundle is written to disk.
+
+\subsection*{UC-2: Draw to create an element}
+\textbf{Actor:} Author. \quad\textbf{Precondition:} a container is selected.
+\textbf{Main flow:} the author drags a rectangle; the system normalises the box,
+ranks the likely element kind with a confidence hint, and offers alternatives; the
+author accepts a kind; the element is placed through an ordinary insert operation.
+\textbf{Postcondition:} a new element exists in the document at a grid-snapped
+position; the drawn pixels never enter the store.
+
+\subsection*{UC-3: Match my layout}
+\textbf{Actor:} Author. \quad\textbf{Precondition:} a rough layout has been sketched.
+\textbf{Main flow:} the author opens Match; the system computes a structural
+fingerprint of the current tree and ranks the bundled professional designs with a
+per-dimension breakdown; the author adopts one. \textbf{Postcondition:} the chosen
+design is hydrated as an ordinary document through the same path a project load
+uses.
+
+\subsection*{UC-4: Drive the builder headlessly (MCP)}
+\textbf{Actor:} MCP client / agent. \quad\textbf{Precondition:} the MCP server is
+running. \textbf{Main flow:} the client calls \texttt{create\_document}, then
+inserts presets, sets tokens, theme, runtime flags, and SEO, then calls
+\texttt{run\_a11y\_check} and \texttt{export\_site} --- all without the graphical
+interface. \textbf{Postcondition:} an exported bundle that has passed the same
+accessibility gate as an interactive export.
+
+\subsection*{UC-5: Save, open, and recover a project}
+\textbf{Actor:} Author. \quad\textbf{Precondition:} a project exists in memory or
+on disk. \textbf{Main flow:} the author saves the project as a versioned
+\texttt{.dtw} file, or opens one; on load, the file passes through Zod validation,
+version migration, and validation again; autosave protects unsaved work and crash
+recovery restores it after an abnormal exit. \textbf{Postcondition:} the document
+in memory matches the persisted state (or the most recent recoverable state).

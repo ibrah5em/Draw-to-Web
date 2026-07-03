@@ -1,0 +1,83 @@
+% SOURCES: README.md; draft/Features/features.md; docs/0.2.0v/plan.md (§1 North Star,
+%          §2 Scope Tiers); docs/1.0.0v/supervisor-report.md (§1)
+
+\chapter{Introduction}
+\label{ch:introduction}
+
+\section{Field of Work}
+The modern web is built from three languages --- HTML for structure, CSS for
+presentation, and JavaScript for behaviour --- yet authoring a page that is
+simultaneously \emph{semantic}, \emph{responsive}, and \emph{accessible} remains a
+specialised skill. Over the last decade a class of \emph{visual web builders} ---
+tools such as Webflow, Framer, and Wix --- has lowered the barrier to entry by
+letting users compose pages on a canvas rather than in a text editor
+\cite{webflow,framer,wix}. These tools trade code for direct manipulation, which
+is a genuine advance in accessibility of \emph{authoring}; but they frequently do
+so at the cost of the \emph{output}: heavy client-side runtimes, non-semantic
+``div soup'', absolute positioning that breaks on unexpected viewports, and markup
+that is difficult to audit against accessibility standards.
+
+Two forces sharpen the problem. First, the \emph{no-code / low-code} movement has
+brought a large, non-technical audience to web authoring, so the quality of what a
+builder emits is now the quality that most sites inherit. Second, accessibility
+has moved from a courtesy to a requirement: the Web Content Accessibility
+Guidelines (WCAG) \cite{wcag21} are referenced by legislation in many
+jurisdictions, and semantic HTML \cite{whatwg-html} is the foundation on which
+assistive technology depends. In parallel, professional front-end practice has
+converged on \emph{design tokens} --- named, themeable primitives for colour,
+spacing, and typography --- as the disciplined way to keep a design system
+consistent. A tool built today should treat semantics, accessibility, and tokens
+as first-class concerns rather than as afterthoughts to be patched on later.
+
+\section{Problem Statement}
+The core tension this project addresses is that \emph{visual authoring} and
+\emph{high-quality output} are usually treated as opposites. A user who cannot
+write code is typically forced to accept whatever markup a builder emits, with no
+guarantee of semantic structure, accessibility compliance, or portability, and
+often with a hard dependency on the vendor's hosting and runtime. The question the
+project sets out to answer is therefore concrete and testable:
+
+\begin{quote}
+\itshape Can a canvas-based visual editor produce hand-written-quality output ---
+semantic, deterministic, accessibility-gated HTML and CSS with only opt-in
+JavaScript --- without requiring the author to write or read code, and without
+locking the result to a proprietary platform?
+\end{quote}
+
+\section{Proposed Solution}
+Draw-to-Web is a desktop application that answers this question by making a single
+\emph{Document Model} the only source of truth. The canvas is a rendering of that
+model; a deterministic generator walks the same model to emit semantic HTML5,
+tokens-driven CSS, and opt-in vetted JavaScript. Every visual property is
+token-bindable and per-breakpoint, so theming and responsiveness fall out of the
+data model rather than being bolted on. Accessibility is enforced by a hard gate
+(\texttt{axe-core}) that blocks export on any critical or serious violation, and
+the output is formatted with \texttt{prettier} so that it reads as though a human
+wrote it. Because the tool is a local desktop application, the exported bundle is a
+plain folder of files with no build step and no mandatory runtime --- fully
+portable, with no vendor lock-in.
+
+Version~1.0.0 extends this foundation with three authoring surfaces that make the
+tool faster to use without weakening any of its guarantees, because each reuses the
+same document operations and export pipeline: \emph{draw-to-create} (draw a
+rectangle and the system proposes the element to place), \emph{match-layout}
+(sketch a rough structure and adopt a bundled professional design that matches it),
+and a headless \emph{Model Context Protocol} (MCP) server that drives the whole
+pipeline programmatically \cite{mcp-spec}, so the builder can be scripted by an
+agent or a client with no graphical interface.
+
+\section{Report Organisation}
+The remainder of this report is organised as follows. Chapter~\ref{ch:objective}
+states the primary and specific objectives and the project scope.
+Chapter~\ref{ch:methodology} describes the work methodology: the task-driven,
+milestone-gated process, the ownership model, and the quality gates.
+Chapter~\ref{ch:plan} presents the implementation plan and the deviations from it.
+Chapter~\ref{ch:requirements} gathers the functional and non-functional
+requirements and the primary use cases. Chapter~\ref{ch:refstudy} reviews similar
+projects and positions Draw-to-Web against them. Chapter~\ref{ch:analysis} gives
+the system analysis, including the UML class, use-case, and sequence diagrams.
+Chapter~\ref{ch:tech} lists the technologies used and justifies each choice.
+Chapter~\ref{ch:impl} details the implementation. Chapter~\ref{ch:testing} covers
+testing and evaluation against the defined budgets, and Chapter~\ref{ch:results}
+reports the results against the objectives, states the limitations honestly, and
+concludes.

@@ -1,0 +1,34 @@
+% SOURCES: README.md; docs/1.0.0v/supervisor-report.md (§1, §13); draft/Features/features.md
+% Abstract — written last, from the verified results in ch. 11. The pending
+% render-layer performance figures (issue #95) are deliberately NOT claimed here.
+
+Authoring a web page that is at once \emph{semantic}, \emph{responsive}, and
+\emph{accessible} still demands specialist skill, and the visual ``no-code''
+builders that promise to remove that barrier typically do so at the expense of
+output quality: heavy proprietary runtimes, non-semantic markup, absolute
+positioning, and pages that are difficult to audit for accessibility.
+\textbf{Draw-to-Web} is a desktop application that resolves this tension. A single
+\emph{Document Model} is the only source of truth: the canvas is a rendering of
+that model, and a deterministic generator walks the same model to emit semantic
+HTML5, tokens-driven CSS, and opt-in, independently toggleable JavaScript. When no
+runtime behaviour is enabled, the output contains no \texttt{<script>} at all.
+Accessibility is enforced as a build-time hard gate --- \texttt{axe-core} runs on
+the generated HTML and blocks export on any \emph{critical} or \emph{serious}
+violation --- rather than left to manual review. The system was built as a
+strict-TypeScript Electron + React application with a Zustand/immer state layer, a
+Zod-validated process boundary, and a nine-stage export pipeline. Version~1.0.0
+adds three authoring surfaces that reuse the same operations and export path:
+\emph{draw-to-create} (draw a rectangle to place an element), \emph{match-layout}
+(adopt a professional design from a rough draft), and a headless \emph{Model
+Context Protocol} (MCP) server. The v1.0.0 release is green across all automated
+gates: \textbf{1042 automated tests} across 110 files pass, linting and strict
+type-checking are clean, the accessibility gate is enforced on every export path,
+and the data-layer and export performance budgets are met with wide margins (for
+example a full nine-stage export of a portfolio page completes in roughly
+0.2--0.3~s against a 10~s budget). The work shows that visual, no-code authoring
+and hand-written-quality output need not be opposites.
+
+\vspace{0.6em}
+\noindent\textbf{Keywords:} visual web authoring; no-code; semantic HTML5;
+web accessibility (WCAG); design tokens; deterministic code generation; Electron;
+Model Context Protocol.

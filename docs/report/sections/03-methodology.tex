@@ -1,0 +1,84 @@
+% SOURCES: docs/0.2.0v/plan.md (§4, §6, §17, §7); CLAUDE.md (Sprint Model, Git Workflow);
+%          .claude/rules/*; docs/1.0.0v/supervisor-report.md (§8)
+
+\chapter{Work Methodology}
+\label{ch:methodology}
+
+This chapter describes \emph{how} the team worked --- the development model,
+ownership structure, interface contracts, and quality gates --- rather than what
+was built. The process was unusually well documented for a student project, and
+that discipline is itself one of the project's results.
+
+\section{Development Model: Task-Driven Milestones}
+Development followed a \emph{task-driven, milestone-gated} model rather than a
+fixed time-box. Progress was unlocked by completing the tasks that gate each
+milestone, not by the calendar: a milestone was ``done'' only when its gating tasks
+were complete \emph{and} every quality gate was green. Five milestones carried the
+work from \textbf{M1 (Foundation)} through \textbf{M5 (Polish + Demo)}, followed by
+the \textbf{v1.0.0} demo cut (the milestone table is reproduced in
+Chapter~\ref{ch:plan}, Table~\ref{tab:milestones}). Every task carried a single
+owner, a priority (\texttt{P0} blocks the demo, \texttt{P1} is a Tier-1 feature,
+\texttt{P2} is polish), and explicit \texttt{depends:}/\texttt{blocks:} links, so
+the critical path was always visible and the Document Model --- which blocks every
+other area --- was scheduled to land first.
+
+\section{Team Structure and Ownership}
+% SOURCES: CLAUDE.md (Module Ownership); docs/0.2.0v/plan.md (§10 Tasks)
+Three engineers owned disjoint areas of the codebase, which kept merge contention
+low and made every file traceable to a responsible owner:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Ibrahim Haski} --- the Document Model
+        (\texttt{types}, \texttt{schemas}, \texttt{operations}, \texttt{tokens},
+        \texttt{validation}, \texttt{migrations}, \texttt{presets}), the output
+        pipeline (\texttt{generator}, \texttt{runtime}, \texttt{seo},
+        \texttt{export}), the Electron shell and IPC, and the build/CI
+        configuration.
+  \item \textbf{Yousef Deeb} --- the state layer: the Zustand stores, undo/redo
+        history implemented as \texttt{immer} patches, persistence
+        (the \texttt{.dtw} file format), autosave and crash recovery, and
+        external-change reload; and, in v1.0.0, the draw / match / MCP surfaces.
+  \item \textbf{Abd Alrazak Qahwaji} --- the user interface: the canvas, the
+        properties, layers, and tokens panels, the sidebar, the topbar, and the
+        semantic-inference hints the generator consumes.
+\end{itemize}
+
+\section{Cross-Owner Contracts}
+% SOURCES: docs/0.2.0v/plan.md (§6 Contracts C1–C12); docs/0.2.0v/architecture.md (§6)
+Because three people worked in parallel against a shared model, the interfaces
+between owners were fixed as twelve numbered \emph{contracts} (C1--C12). These
+include the shared types (C1), the Zod schemas kept in lockstep with them (C2), the
+operation set (C3), the typed IPC surface (C4), the store hooks (C5), the generator
+entry point (C6), the presets registry (C7), the validation function (C8), the
+token resolver (C9), the semantic-inference hint (C10), the image-upload IPC
+contract (C11), and the export orchestrator (C12). Any breaking change to a
+contract required a pull request labelled \texttt{contract-change} and a review
+from the named downstream consumer; this single rule is what allowed the three
+lanes to move quickly without silently diverging.
+
+\section{Quality Gates and Tooling}
+% SOURCES: .claude/rules/git.md, preflight.md; CLAUDE.md (Commands, Code Quality)
+Every push had to pass three gates: linting (ESLint + Prettier), strict
+type-checking (TypeScript in strict mode across the main, preload, and renderer
+\texttt{tsconfig}s), and the full automated test suite. These were enforced twice
+--- locally by a \texttt{husky} pre-push hook and again in continuous integration
+--- so a red build could not reach \texttt{main}. On top of the three gates,
+specialised automated review passes checked properties that unit tests do not
+naturally cover: output \emph{determinism}, the no-\texttt{position:absolute}
+invariant, accessibility of generated output, and correctness of any contract
+change. A weekly integration ritual merged all open feature branches, ran the full
+matrix, and held a short debrief with no new commits, which caught cross-lane
+integration problems early rather than at release. As a matter of academic
+integrity, the project also enforced a ``no AI attribution'' policy on all commits,
+pull requests, and reviews; the work and its authorship are the students' own.
+
+\section{Version Control and Release Workflow}
+% SOURCES: .claude/rules/git.md; .github/workflows/{ci,release}.yml; CHANGELOG.md
+Work used \emph{conventional commits} (for example
+\texttt{feat(generator): emit skip-to-content link}) on short-lived feature
+branches that were squash-merged into \texttt{main}; the \texttt{main} branch was
+never force-pushed. Releases were tag-driven: pushing a \texttt{v*} tag triggered a
+per-operating-system build matrix that produced native installers (Windows NSIS,
+Linux AppImage/deb, macOS dmg/zip) and published a single GitHub Release. Versions
+progressed v0.1.0 $\rightarrow$ v0.2.0 $\rightarrow$ v0.3.0 $\rightarrow$
+\textbf{v1.0.0}, with each tag corresponding to a completed milestone.

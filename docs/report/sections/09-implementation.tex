@@ -1,0 +1,127 @@
+% SOURCES: docs/0.2.0v/architecture.md; docs/0.2.0v/element-model.md;
+%          docs/1.0.0v/supervisor-report.md (§4–§6, §5a); README.md;
+%          src/document/*, src/generator/*, src/export/*, src/draw/*, src/match/*, mcp/*
+
+\chapter{Implementation}
+\label{ch:impl}
+
+This chapter describes how the system was built, following the data as it flows
+from the Document Model through the generator to the export pipeline, and then the
+three v1.0.0 authoring surfaces and the security boundary.
+
+\section{The Document Model}
+% SOURCES: src/document/types.ts, operations.ts; element-model.md
+Every page is one \texttt{Document}: a tree of \texttt{ElementNode}s together with
+the design tokens, SEO configuration, runtime flags, variables, settings, and asset
+manifest (the class model in Figure~\ref{fig:class}). The primitive types ---
+container, text, image, button, link, icon, list, and divider --- are the only node
+kinds; complex shapes such as a hero or a cards grid are \emph{presets} that compose
+primitives, not new classes. This ``composition over enumeration'' rule keeps the
+model small and the generator simple.
+
+All mutation flows through a single discriminated \texttt{Operation} union. Each
+operation is a pure function over an \texttt{immer} draft --- signature
+\texttt{(draft: Document, op: Op) => void} --- applying exactly one logical change,
+and each carries a \texttt{kind} discriminator so the store can capture patches for
+undo/redo. Listing~\ref{lst:ops} shows two representative operations; note that
+style writes are targeted at a named breakpoint slot, so an edit to the tablet
+value never silently overwrites the desktop base.
+
+\begin{lstlisting}[language=,caption={Two operations from the discriminated union (\texttt{src/document/operations.ts}).},label=lst:ops]
+/** Insert an element under an existing container. */
+export interface InsertElementOp {
+  readonly kind: 'insertElement'
+  readonly parentId: ElementId
+  readonly node: ElementNode
+  /** Position among parent.children; appended when omitted. */
+  readonly index?: number
+}
+
+/**
+ * Write a value into node.style[breakpoint][...path]. The named
+ * breakpoint slot is created if absent; siblings are left untouched.
+ */
+export interface UpdateNodeStyleOp {
+  readonly kind: 'updateNodeStyle'
+  readonly id: ElementId
+  readonly breakpoint: BreakpointKey
+  readonly path: PropertyPath
+  readonly value: unknown
+}
+\end{lstlisting}
+
+Files load through a strict boundary: a \texttt{.dtw} file is parsed, validated
+with Zod, run through any version migrations, and validated again, so an old or
+corrupt file can never reach the internal types unchecked.
+
+\section{The Generator}
+% SOURCES: src/generator/index.ts, htmlEmitter.ts, cssEmitter.ts; architecture.md §5
+The generator is a compiler, not an inferer: it walks the document and emits
+HTML, CSS, and JS deterministically, so identical input yields byte-identical
+output. Tag selection is driven by each node's semantic role (with a sensible
+default per type), which is how the output earns its semantic structure. The CSS is
+tokens-driven --- a \texttt{:root} block defines every token, dark-theme overrides
+and a \texttt{prefers-color-scheme} block follow, and element rules reference
+\texttt{var(--token)} rather than raw values. Layout is expressed with CSS Grid,
+Flexbox, and \texttt{clamp()}, and never with absolute positioning; this invariant
+is enforced by a test that scans the generated CSS.
+
+\section{Runtime Snippets}
+% SOURCES: src/runtime/*, src/generator/jsEmitter.ts; supervisor-report §5
+JavaScript is opt-in per behaviour: theme toggle, scroll-spy, smooth scroll, mobile
+navigation, nav-on-scroll, reveals, animation gating, and terminal typing are each
+gated by a flag that defaults to off. The JS emitter concatenates only the enabled
+snippets into a single IIFE; if every flag is off, no \texttt{<script>} is emitted
+at all. Every snippet is written to the same discipline --- passive event
+listeners, work deferred with \texttt{requestAnimationFrame} or debounced, a
+no-operation when its feature is disabled, and full respect for
+\texttt{prefers-reduced-motion} --- so enabling a behaviour never degrades the
+page's performance or accessibility.
+
+\section{The Export Pipeline}
+% SOURCES: src/export/index.ts; src/seo/axeGate.ts; supervisor-report §6
+Export (Figures~\ref{fig:seqexport} and~\ref{fig:exportflow}) chains nine stages
+--- \emph{validate, generate, inject-SEO, a11y-gate, optimize-images, minify,
+sitemap/robots, bundle, save} --- each emitting a structured progress event so the
+UI can show exactly where the pipeline is. The result is a discriminated union, so
+a failure reports precisely which stage failed and why. The accessibility gate runs
+\emph{before} any asset crosses the IPC boundary to the main process, so a failing
+document never reaches image optimisation or packaging.
+
+\section{v1.0.0 Authoring Surfaces}
+% SOURCES: src/draw/*, src/match/*, mcp/*; supervisor-report §5a; README
+\subsection{Draw-to-create}
+A drawn rectangle is normalised, classified by \texttt{interpretRectangle}
+(a ranked kind with a confidence score and a short explainer), and resolved to a
+grid placement by \texttt{snapToGrid} (pure math over column start/span and an
+insertion index --- never pixels). The canvas then builds an ordinary node with the
+existing primitive factory and dispatches a normal \texttt{insertElement} operation,
+so the drawn pixels never enter the store (Figure~\ref{fig:seqdraw}).
+
+\subsection{Match-layout}
+\texttt{extractSignature} builds a deterministic structural fingerprint of a
+document tree (again, never pixels); \texttt{matchLayout} ranks that fingerprint
+against six bundled professional pages --- each shipping a build-time precomputed
+signature --- with a per-dimension breakdown; and the chosen page is hydrated
+through the very same entry point that a project load uses. Adopting a design is
+therefore indistinguishable, downstream, from opening a file.
+
+\subsection{Headless MCP server}
+A \texttt{stdio} Model Context Protocol server exposes roughly twenty tools over
+the same pipeline (\texttt{create\_document}, \texttt{insert\_preset},
+\texttt{apply\_template}, \texttt{set\_tokens}, \texttt{match\_layout},
+\texttt{run\_a11y\_check}, \texttt{export\_site}, and so on). Each tool is a thin
+adapter over the existing operations and entry points --- no logic is
+reimplemented --- and it runs without Electron by using a filesystem-backed export
+shim. Because it reuses the same pipeline, a headless export passes the same
+accessibility gate as an interactive one.
+
+\section{Process Boundaries and Security}
+% SOURCES: src/main/*, src/preload/*; plan.md §15; supervisor-report §3
+The main process runs with context isolation, no Node integration, and sandboxing;
+the preload exposes only a typed \texttt{electronAPI} bridge, so the renderer can
+never reach raw \texttt{ipcRenderer} or Node built-ins. Every IPC handler validates
+its input --- path sanitisation, size caps, and MIME sniffing on uploads --- and a
+strict Content Security Policy is applied in production (relaxed only for
+hot-module reload in development). Validation happens at the edges; the internal
+types are trusted in between.

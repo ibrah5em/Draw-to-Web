@@ -1,0 +1,37 @@
+%% Draw-to-Web — use-case diagram (actors: Author + MCP Client)
+%% Mermaid has no native use-case notation, so this uses the flowchart idiom:
+%% stadium nodes ([...]) are use cases, rectangles are actors, solid lines (---)
+%% are associations, and dashed edges are «include» dependencies.
+flowchart LR
+  Author["Author<br/>(actor)"]
+
+  subgraph SYS["Draw-to-Web"]
+    UC1(["Author &amp; export a page"])
+    UC2(["Draw to create an element"])
+    UC3(["Match my layout"])
+    UC5(["Save / open &amp; recover project"])
+    UCA(["Insert / edit elements"])
+    UCB(["Manage tokens &amp; theme"])
+    UCV(["Validate document"])
+    UCE(["Export ZIP bundle"])
+    UCH(["Drive builder headlessly"])
+  end
+
+  MCP["MCP Client<br/>(actor)"]
+
+  %% Author associations
+  Author --- UC1
+  Author --- UC2
+  Author --- UC3
+  Author --- UC5
+  Author --- UCA
+  Author --- UCB
+
+  %% MCP Client association
+  MCP --- UCH
+
+  %% «include» dependencies — both paths share validation + packaging
+  UC1 -. «include» .-> UCV
+  UC1 -. «include» .-> UCE
+  UCH -. «include» .-> UCV
+  UCH -. «include» .-> UCE

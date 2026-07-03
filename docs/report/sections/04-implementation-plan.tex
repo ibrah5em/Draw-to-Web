@@ -1,0 +1,93 @@
+% SOURCES: docs/0.2.0v/plan.md (§10 Tasks, §17 Milestones, §9 Library-to-Feature Map);
+%          docs/CHANGELOG.md; docs/DECISIONS.md; docs/1.0.0v/supervisor-report.md (§1)
+
+\chapter{Project Implementation Plan}
+\label{ch:plan}
+
+\section{Milestone Breakdown}
+The work was divided into five gated milestones plus the v1.0.0 demo cut
+(Table~\ref{tab:milestones}). The ordering encodes the technical dependencies of
+the system: the Document Model and the store had to exist before anything could be
+rendered or generated (M1); themable output required the token system (M2);
+composition and responsiveness required presets and per-breakpoint style (M3); the
+runtime, SEO, and the accessibility gate hardened the output (M4); and polish plus
+a released artifact completed the sprint (M5). Each milestone was ``done'' only
+when its gating tasks were complete and all quality gates were green.
+
+\begin{table}[H]
+  \centering
+  \caption{Milestone plan and definition of done.}
+  \label{tab:milestones}
+  \begin{tabularx}{\linewidth}{@{}l l X@{}}
+    \toprule
+    \textbf{Milestone} & \textbf{Theme} & \textbf{Definition of done (summary)} \\
+    \midrule
+    M1 & Foundation            & Types + store + recursive canvas + undo/redo + persistence + basic generator + export shell. \\
+    M2 & Tokens + Themes       & Token registry + theme toggle + auto-layout + \texttt{:root} block + \texttt{var()} refs. \\
+    M3 & Composition + Resp.   & 6+ presets + hover/focus states + breakpoint switcher + multi-select + image upload. \\
+    M4 & Runtime + Hardening   & Full runtime snippets + SEO + validation console + \texttt{axe-core} gate + templates. \\
+    M5 & Polish + Demo         & Polish + performance budgets + release artifact + rehearsed demo. \\
+    v1.0.0 & Demo cut          & draw-to-create + match-layout + headless MCP server; released with native installers. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Task Allocation and the Critical Path}
+% SOURCES: docs/0.2.0v/plan.md (§10); CLAUDE.md (Module Ownership)
+Tasks were identified by owner and area --- for example \texttt{I-DOC-*} for the
+Document Model, \texttt{I-GEN-*} for the generator, \texttt{I-RUN-*} for runtime
+snippets, \texttt{Y-*} for the store, and \texttt{L-*} for the user interface ---
+each with a priority and explicit dependency links. The critical path ran through
+the Document Model: because the types (C1), schemas (C2), and operations (C3) are
+consumed by every other lane, the \texttt{I-DOC} tasks were front-loaded and had to
+land before the store, canvas, and generator could be written against a stable
+shape. Table~\ref{tab:allocation} summarises the allocation of areas to owners.
+
+\begin{table}[H]
+  \centering
+  \caption{Allocation of work areas to owners.}
+  \label{tab:allocation}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l X@{}}
+    \toprule
+    \textbf{Owner} & \textbf{Areas (task prefixes)} \\
+    \midrule
+    Ibrahim Haski      & Document Model (\texttt{I-DOC}), Electron shell (\texttt{I-ELE}), generator (\texttt{I-GEN}), runtime (\texttt{I-RUN}), SEO (\texttt{I-SEO}), export (\texttt{I-EXP}), templates (\texttt{I-TPL}), build/CI (\texttt{I-BLD}). \\
+    Yousef Deeb        & Zustand stores, history via \texttt{immer} patches, persistence, autosave/crash recovery, external-change reload (\texttt{Y-*}); draw / match / MCP surfaces (v1.0.0). \\
+    Abd Alrazak Qahwaji & Canvas, properties/layers/tokens panels, sidebar, topbar, live validation console, semantic-inference hints (\texttt{L-*}). \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Deviations from the Plan}
+\label{sec:deviations}
+% SOURCES: DECISIONS.md (D-01..D-04)
+A plan is only credible if its deviations are recorded honestly. Four decisions
+in the project's append-only decision log changed the plan, and each is
+summarised here.
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{D-01 --- Code signing cancelled permanently.} Windows Authenticode
+        signing and macOS notarization (task \texttt{I-BLD-05}) were cut from scope,
+        not merely deferred: the team has no code-signing certificate and no Apple
+        Developer ID and decided the cost was not justified. Builds therefore ship
+        \emph{unsigned}, and the README documents how users bypass the resulting
+        one-time operating-system trust prompt.
+  \item \textbf{D-02 / D-04 --- Releases shipped ahead of the manual demo
+        rehearsal and the render-layer performance sign-off.} The v0.3.0 and
+        v1.0.0 tags were cut while two \emph{manual} items remained open: the
+        rehearsed demo on the packaged build, and the empirical render-layer
+        performance capture (drag FPS, theme-toggle latency, and similar). These
+        are not code defects --- the automated suite is green --- but a conscious,
+        documented waiver, tracked as the top post-release item (issue~\#95).
+  \item \textbf{D-03 --- Three Tier-2 authoring surfaces brought forward into
+        v1.0.0.} Draw-to-create, match-layout, and the MCP server were originally
+        Tier-2 (out of scope), but were merged and shipped as the headline of the
+        demo cut because they are the most demonstrable features in the product
+        and, being pure and headless at their core and reusing the existing
+        operations, added capability without adding architectural risk.
+\end{itemize}
+
+Recording these deviations, with their rationale and accepted consequences, is
+part of the methodology (Chapter~\ref{ch:methodology}): the decision log is the
+mechanism that keeps ``what we planned'' and ``what we shipped'' reconcilable.

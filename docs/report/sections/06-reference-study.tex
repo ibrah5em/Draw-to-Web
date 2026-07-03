@@ -1,0 +1,99 @@
+% SOURCES: draft/Features/*.md for how Draw-to-Web positions itself; vendor sites
+%          (cited). NB: commercial builders evolve quickly — re-check specifics at
+%          submission time; the comparison below reflects their general positioning.
+
+\chapter{Reference Study}
+\label{ch:refstudy}
+
+This chapter surveys the most relevant existing visual web builders, notes the
+advantages and shortcomings of each with respect to \emph{output quality}, and then
+positions Draw-to-Web against them. The dimensions chosen for comparison are the
+ones that motivated this project: whether the tool is a local desktop application,
+whether it produces semantic and portable output, whether it enforces
+accessibility, whether styling is tokens-first, whether JavaScript-free output is
+possible, and whether the pipeline is scriptable. Because commercial products
+change frequently, specific feature claims should be re-verified at submission.
+
+\section{Survey of Similar Projects}
+
+\subsection{Webflow}
+Webflow is a browser-based visual builder aimed at professional designers, with
+fine-grained control over the CSS box model and a large template ecosystem
+\cite{webflow}. \textbf{Advantages:} strong style-level control; markup that is
+more semantic than most drag-and-drop builders; mature hosting and content
+management. \textbf{Shortcomings:} it is a hosted, subscription platform rather
+than a local tool; clean code export is gated behind paid tiers; and it offers no
+built-in accessibility gate that blocks publishing on violations.
+
+\subsection{Framer}
+Framer is a design-first site builder known for rich interactions and motion
+\cite{framer}. \textbf{Advantages:} excellent prototyping and animation; very fast
+to a polished, hosted result. \textbf{Shortcomings:} the published site leans on a
+proprietary runtime, so the output is not a portable, dependency-free bundle; the
+author has limited control over the raw semantic structure of the HTML; and it is
+oriented around Framer's own hosting.
+
+\subsection{Wix}
+Wix is a mass-market, all-in-one website builder \cite{wix}. \textbf{Advantages:}
+the lowest barrier to entry of the tools surveyed; hosting, templates, and domain
+management are integrated. \textbf{Shortcomings:} historically heavy and
+non-portable output; limited semantic and accessibility guarantees; and strong
+platform lock-in --- the site cannot meaningfully be exported and self-hosted.
+
+\subsection{Elementor (WordPress)}
+Elementor is a visual page builder that runs inside WordPress \cite{elementor}.
+\textbf{Advantages:} an enormous plugin and theme ecosystem; visual editing on top
+of the world's most common CMS. \textbf{Shortcomings:} it requires a full WordPress
+(PHP + database) stack; the generated DOM is typically heavy and nested; and output
+quality depends heavily on the surrounding theme and plugins.
+
+\subsection{Bootstrap Studio and Pinegrow}
+These are desktop visual editors that emit real HTML and CSS, and are therefore the
+closest in spirit to Draw-to-Web \cite{bootstrapstudio,pinegrow}.
+\textbf{Advantages:} local applications; the code is visible and export-friendly;
+no mandatory hosting. \textbf{Shortcomings:} both are framework-coupled (Bootstrap
+Studio is built around Bootstrap; Pinegrow around Bootstrap/Tailwind/foundation
+frameworks); the learning curve is closer to a code editor than to a canvas; and
+neither ships a tokens-first theming model or an accessibility export gate that
+blocks on violations.
+
+\section{Comparative Analysis}
+Table~\ref{tab:comparison} compares the tools on the dimensions that distinguish
+Draw-to-Web. A tick (\checkmark) means the property holds; a dash (\textemdash)
+means it does not; a tilde (\textasciitilde) means partial or configuration
+dependent.
+
+\begin{table}[H]
+  \centering
+  \caption{Comparison of visual web builders on output-quality dimensions.}
+  \label{tab:comparison}
+  \small
+  \begin{tabularx}{\linewidth}{@{}X c c c c c@{}}
+    \toprule
+    \textbf{Dimension} & \textbf{Draw-to-Web} & \textbf{Webflow} & \textbf{Framer} & \textbf{Wix} & \textbf{Elementor} \\
+    \midrule
+    Local desktop app          & \checkmark & \textemdash & \textemdash & \textemdash & \textemdash \\
+    Semantic HTML output        & \checkmark & \textasciitilde & \textasciitilde & \textemdash & \textasciitilde \\
+    Accessibility hard gate     & \checkmark & \textemdash & \textemdash & \textemdash & \textemdash \\
+    Tokens-first theming        & \checkmark & \textasciitilde & \textasciitilde & \textemdash & \textemdash \\
+    JS-free output option       & \checkmark & \textemdash & \textemdash & \textemdash & \textemdash \\
+    Portable / no lock-in       & \checkmark & \textasciitilde & \textemdash & \textemdash & \textasciitilde \\
+    Headless / scriptable (MCP) & \checkmark & \textemdash & \textemdash & \textemdash & \textemdash \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Positioning of Draw-to-Web}
+The survey shows a consistent gap: the established builders optimise for the
+authoring experience and for hosting, and treat output quality as a secondary
+concern that the author cannot fully control. Even the desktop tools that do emit
+real code couple it to a CSS framework and provide no built-in accessibility gate.
+Against this landscape, Draw-to-Web's distinguishing bets are deliberate responses
+to the shortcomings above: it is a \emph{local} desktop tool whose exported bundle
+is portable and free of vendor lock-in; it treats output quality as a first-class,
+enforced requirement (semantic, deterministic, and accessibility-gated); it uses a
+\emph{tokens-first} styling model rather than framework classes; it makes the
+runtime \emph{opt-in} down to fully JavaScript-free output; and it exposes the same
+pipeline through a \emph{headless} MCP interface for scripting and automation. In
+short, where the incumbents ask the author to trust the platform, Draw-to-Web makes
+the quality of the output a checkable, reproducible property of every export.

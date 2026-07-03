@@ -1,0 +1,74 @@
+% SOURCES: README.md (Stack); CLAUDE.md (Tech Stack); docs/0.2.0v/plan.md
+%          (§9 Library-to-Feature Map — the JUSTIFICATION source);
+%          docs/1.0.0v/supervisor-report.md
+
+\chapter{Technologies Used}
+\label{ch:tech}
+
+\section{Overview}
+The application is a single TypeScript codebase spanning three runtime contexts:
+an Electron \emph{main} process (privileged, native OS access), a \emph{preload}
+security bridge, and a React \emph{renderer} (the editor UI). It is built and
+packaged with Vite and electron-builder. Every technology was chosen against a
+specific requirement rather than by default; Table~\ref{tab:tech} lists the
+principal choices and the reason for each, and the sections that follow expand on
+the choices that best show the engineering rationale.
+
+\begin{table}[H]
+  \centering
+  \caption{Principal technologies and justification.}
+  \label{tab:tech}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l l X@{}}
+    \toprule
+    \textbf{Technology} & \textbf{Role} & \textbf{Justification} \\
+    \midrule
+    Electron \cite{electron} & Desktop shell & Cross-platform desktop with native file access; local-first, no server required. \\
+    React 18 \cite{react} & UI & Declarative rendering of the document tree; mature ecosystem and tooling. \\
+    TypeScript 5 \cite{typescript} & Language & Strict typing across three processes; the cross-owner contracts are enforced at compile time. \\
+    Zustand + immer \cite{zustand,immer} & State + history & Minimal store with no boilerplate; \texttt{immer} patches yield undo/redo almost for free. \\
+    Zod \cite{zod} & Validation & Schema validation at the IPC and file-load boundaries; types are derived via \texttt{z.infer} to keep schema and type in lockstep. \\
+    axe-core \cite{axecore} & A11y gate & Industry-standard accessibility engine; blocks export on any critical or serious issue. \\
+    prettier \cite{prettier} & Output format & Formats generated HTML/CSS so it reads as hand-written before minification. \\
+    Lightning CSS \cite{lightningcss} & CSS minify & Fast, correct CSS transform and minification in the export pipeline. \\
+    sharp \cite{sharp} & Images & Generates WebP and \texttt{srcset} variants in the main process. \\
+    Vite \cite{vite} & Build / dev & Fast hot-module-reload dev server and production bundling. \\
+    MCP SDK \cite{mcp-spec} & Headless API & Exposes the pipeline as tools to agents and clients over \texttt{stdio}. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Beyond the principals, the editor uses \texttt{@dnd-kit} for canvas drag-and-drop
+and \texttt{react-arborist} for the layers tree; Radix UI primitives for accessible
+tabs, dialogs, and popovers; \texttt{react-colorful} and \texttt{chroma-js} for the
+colour picker and contrast checks; and \texttt{jszip} plus
+\texttt{html-minifier-terser} in the export pipeline. Each of these maps to a
+specific Tier-1 feature in the execution plan's library-to-feature justification.
+
+\section{Selected Justifications in Depth}
+
+\subsection*{Why a single Document Model backed by immer}
+Making one immutable \texttt{Document} the source of truth means that undo/redo,
+persistence, and generation all reduce to functions of one value. \texttt{immer}
+is what makes this ergonomic: each operation is written as if it were mutating a
+draft, while \texttt{produceWithPatches} captures the forward and inverse patches
+that the history store replays for undo and redo. The operations therefore never
+need to know anything about history --- reversibility is a property of the patch
+round-trip, not of the operation code.
+
+\subsection*{Why an accessibility hard gate rather than a linter}
+Accessibility is treated as a build \emph{error}, not a warning. The
+\texttt{axe-core} engine runs on the generated HTML inside a \texttt{jsdom}
+document, and any critical or serious violation aborts the export. This guarantees
+a compliance floor that no manual review process could match consistently, and ---
+crucially --- it applies to \emph{every} export path, including the headless MCP
+server, so the guarantee cannot be bypassed by scripting the tool.
+
+\subsection*{Why prettier plus stable identifiers gives deterministic output}
+A recurring requirement is that identical input must yield byte-identical output.
+Two decisions make this hold: element identifiers are generated once and are stable
+across save/load (they are never regenerated), and the generator emits no
+timestamps or random values. Running the emitted HTML and CSS through
+\texttt{prettier} then produces a canonical, human-readable form, so two exports of
+the same document are not merely equivalent but textually identical --- which makes
+the output diff-able and the pipeline testable by exact comparison.

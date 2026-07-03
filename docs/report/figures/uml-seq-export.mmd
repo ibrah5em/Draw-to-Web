@@ -1,0 +1,21 @@
+%% Draw-to-Web — sequence: export pipeline
+%% The accessibility gate runs before any asset crosses the IPC boundary;
+%% a critical or serious violation aborts the export with a structured error.
+sequenceDiagram
+  actor UI as Author / UI
+  participant EP as exportProject
+  participant Gen as Generator + SEO
+  participant Axe as axeGate
+  participant Main as Main (IPC)
+
+  UI->>EP: export(document, options)
+  EP->>Gen: validate + generate
+  Gen-->>EP: html / css / js
+  EP->>Axe: check(html)
+  Note right of Axe: critical / serious blocks export
+  Axe-->>EP: violations
+  EP->>Main: optimize images + minify
+  Main-->>EP: optimized assets
+  EP->>Main: bundle ZIP + save(path)
+  Main-->>EP: ExportResult
+  EP-->>UI: success / structured error

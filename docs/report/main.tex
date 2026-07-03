@@ -29,9 +29,53 @@
 
 % ---- Graphics & figures ----
 \usepackage{graphicx}
-\graphicspath{{figures/}{../docs/diagrams/}}
+\graphicspath{{figures/}}
 \usepackage{caption}
 \usepackage{float}
+
+% ---- Diagrams (native TikZ UML — no external renderer needed) ----
+% The three UML diagrams (class / use-case / sequence) in ch. 7 are drawn
+% directly in TikZ so the report is self-contained: it compiles on Overleaf
+% or any TeX Live / MiKTeX install with no PlantUML, Mermaid, Java or dot.
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, shapes.multipart, shapes.geometric,
+  fit, calc, backgrounds}
+\tikzset{
+  % --- UML class boxes (name compartment | attributes compartment) ---
+  umlclass/.style={
+    draw, rectangle split, rectangle split parts=2, fill=blue!6,
+    font=\ttfamily\scriptsize, text width=33mm, align=left,
+    inner sep=3pt, line width=0.4pt, rounded corners=1pt,
+  },
+  umlabstract/.style={umlclass, fill=violet!8},
+  umlvalue/.style={umlclass, fill=teal!7, text width=30mm},
+  umlnode/.style={umlclass, fill=orange!8, text width=27mm},
+  % --- UML relations ---
+  inherit/.style={-{Triangle[open, length=3.4mm, width=3.4mm]}, line width=0.5pt},
+  compose/.style={{Diamond[fill=black, length=3.2mm, width=2.2mm]}-{Stealth[length=2mm]},
+    line width=0.5pt},
+  aggregate/.style={{Diamond[open, length=3.2mm, width=2.2mm]}-{Stealth[length=2mm]},
+    line width=0.5pt},
+  % --- Use-case diagram ---
+  usecase/.style={draw, ellipse, align=center, font=\footnotesize,
+    minimum width=32mm, minimum height=11mm, fill=blue!5, inner sep=1pt},
+  ucedge/.style={line width=0.5pt},
+  ucinclude/.style={-{Stealth[length=2.2mm]}, dashed, line width=0.5pt},
+  ucactor/.pic={
+    \draw[line width=0.5pt] (0,0) circle (2.2mm);
+    \draw[line width=0.5pt] (0,-2.2mm) -- (0,-9mm);
+    \draw[line width=0.5pt] (-4mm,-5mm) -- (4mm,-5mm);
+    \draw[line width=0.5pt] (0,-9mm) -- (-3.6mm,-14mm);
+    \draw[line width=0.5pt] (0,-9mm) -- (3.6mm,-14mm);
+  },
+  % --- Sequence diagram ---
+  seqbox/.style={draw, fill=blue!8, minimum width=24mm, minimum height=7mm,
+    font=\small, align=center, rounded corners=1pt},
+  lifeline/.style={dashed, line width=0.4pt, gray},
+  activation/.style={draw, fill=blue!12, minimum width=2.4mm},
+  seqmsg/.style={-{Stealth[length=2.4mm]}, line width=0.5pt},
+  seqret/.style={-{Stealth[length=2.4mm]}, line width=0.5pt, dashed},
+}
 
 % ---- Tables ----
 \usepackage{booktabs}
@@ -83,17 +127,23 @@
 \begin{document}
 
 % ------------------------- TITLE PAGE -------------------------
-% TODO: replace the placeholders (university, faculty, department,
-% supervisor, co-authors' full names, academic year).
+% NOTE: A few identity details cannot be derived from the repository and are
+% left as clearly-marked placeholders in [brackets] — replace them with your
+% own values: the faculty/department (if different), the supervisor's name,
+% and the third author's student ID. Add the university logo where indicated.
 \begin{titlepage}
   \centering
-  {\Large \textbf{<UNIVERSITY NAME>}}\\[0.3cm]
-  {\large <FACULTY> --- <DEPARTMENT>}\\[2.5cm]
+  % \includegraphics[width=3cm]{university-logo.png}\\[0.4cm]  % add logo here
+  {\Large \textbf{Antioch University}}\\[0.3cm]
+  {\large Faculty of Informatics Engineering --- Department of Software Engineering}\\[2.5cm]
 
   \rule{\linewidth}{0.4mm}\\[0.6cm]
   {\huge \bfseries Draw-to-Web}\\[0.3cm]
   {\Large A Desktop Visual Authoring Tool for Generating\\[0.2cm]
    Semantic, Responsive, Accessible Web Pages}\\[0.4cm]
+  % Arabic title: add here if your programme requires it (needs a UTF-8 Arabic
+  % font, e.g. compile with XeLaTeX + polyglossia, or paste as an image).
+  % {\large \itshape [العنوان بالعربية]}\\[0.4cm]
   \rule{\linewidth}{0.4mm}\\[1.5cm]
 
   \begin{minipage}{0.45\textwidth}
@@ -101,19 +151,19 @@
       \textit{Prepared by:}\\
       Ibrahim Haski \quad (221116)\\
       Yousef Deeb \quad (112004)\\
-      <THIRD AUTHOR / "LuF8y"> \quad (<ID>)\\
+      Abd Alrazak Qahwaji \quad ([ID])\\
     \end{flushleft}
   \end{minipage}
   \hfill
   \begin{minipage}{0.45\textwidth}
     \begin{flushright}\large
       \textit{Supervised by:}\\
-      <SUPERVISOR NAME>\\
+      \textrm{[Supervisor Name]}\\
     \end{flushright}
   \end{minipage}\\[3cm]
 
-  {\large Graduation Project Report}\\[0.3cm]
-  {\large Academic Year <20XX--20XX>}\\[0.5cm]
+  {\large \textbf{Graduation Project Report}}\\[0.3cm]
+  {\large Academic Year 2025--2026}\\[0.5cm]
   \vfill
 \end{titlepage}
 

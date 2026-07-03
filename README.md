@@ -281,9 +281,14 @@ src/
   match/            Match-layout — signature + matcher + bundled page library
 mcp/                Headless MCP server (stdio) over the document pipeline
 tests/              Vitest suites mirroring src/ (+ draw, match, mcp, perf)
-docs/1.0.0v/        v1.0.0 supervisor report (current)
-docs/0.2.0v/        v0.2.0 execution plan + architecture docs
-docs/0.1.0v/        v0.1.0 archived docs (historical reference)
+docs/                All project documentation (single home)
+  CHANGELOG.md       Release history
+  DECISIONS.md       Architecture / scope decision log
+  1.0.0v/            v1.0.0 supervisor report (current)
+  0.2.0v/            v0.2.0 execution plan + architecture docs
+  0.1.0v/            v0.1.0 archived docs (historical reference)
+  guides/            Developer guide + user manual (PDF)
+  report/            LaTeX graduation report (self-contained; figures + UML)
 .github/workflows/  CI + release configuration
 ```
 
